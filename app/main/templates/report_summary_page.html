@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Report Summary</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
+  {% extends "main_base.html" %}
+  <body>
+    {% block content %}
+    <div class="jumbotron text-center">
+      <h1 class="display-4"><strong>研報摘要</strong></h1>
+      <hr class="my-4" />
+    </div>
+    <div class="container mt-4">
+      <br />
+      <!-- 僅顯示標題的前50個字元 -->
+      <h2 class="display-6">標題: {{ title[:50] }} ({{date}})</h2>
+      <div class="alert alert-secondary" role="alert">
+        以下內容來源於{{source}}，經AI摘要生成，內容僅供研究團隊參考
+        <a href="{{url}}">(報告下載)</a>
+      </div>
+ 
+      <div id="$m" class="markdown-body"></div>
+      <textarea id="$t" style="display: none">
+{{summary}}
+      </textarea>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        $m.innerHTML = marked.parse($t.value);
+      });
+    </script>
+    {% endblock %}
+  </body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <style>
+      /* 使用 Flexbox 布局，使标题和按钮在同一行显示 */
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    </style>
+    {% extends "main_base.html" %}
+  </head>
+  {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">{{company_ticker}}</h1>
+      <hr class="my-4" />
+      <button class="btn btn-secondary btn-lg active">內部報告</button>
+      <button class="btn btn-secondary btn-lg active">歷史資訊</button>
+    </div>
+
+    <div class="container mt-4">
+      <h1 class="display-6">市場觀點</h1>
+      <div class="alert alert-secondary" role="alert">
+        以下觀點來自於{{company_ticker}}的近十篇研究報告，經AI彙整生成
+        <strong>（更新日期：{{stock_report_review_date}}）</strong>
+      </div>
+      <div class="row">
+        <div class="col-md-6 left-container">
+          <h2>Bullish Outlook</h2>
+          <ol class="list-group">
+            {% for argument in bullish_argument_list %}
+            <li class="list-group-item">
+              <strong>{{loop.index}}.</strong> {{argument}}
+            </li>
+            {% endfor %}
+          </ol>
+          <br />
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-toggle="collapse"
+            data-target="#bullish_outlook_diff"
+            aria-expanded="false"
+            aria-controls="bullish_outlook_diff"
+          >
+            觀點變化
+          </button>
+          <br />
+          <div class="collapse" id="bullish_outlook_diff">
+            <div
+              class="card card-body"
+              id="bullish_outlook_diff_markdown"
+            ></div>
+            <textarea id="bullish_outlook_diff_content" style="display: none">
+{{bullish_outlook_diff}}</textarea
+            >
+          </div>
+        </div>
+        <div class="col-md-6 right-container">
+          <h2>Bearish Outlook</h2>
+          <ol class="list-group">
+            {% for argument in bearish_argument_list %}
+            <li class="list-group-item">
+              <strong>{{loop.index}}.</strong> {{argument}}
+            </li>
+            {% endfor %}
+          </ol>
+          <br />
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-toggle="collapse"
+            data-target="#bearish_outlook_diff"
+            aria-expanded="false"
+            aria-controls="bearish_outlook_diff"
+          >
+            觀點變化
+          </button>
+          <br />
+          <div class="collapse" id="bearish_outlook_diff">
+            <div
+              class="card card-body"
+              id="bearish_outlook_diff_markdown"
+            ></div>
+            <textarea id="bearish_outlook_diff_content" style="display: none">
+{{bearish_outlook_diff}}</textarea
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <br />
+
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">即時新聞 {{stock_info_date}}</h1>
+      <div class="alert alert-secondary" role="alert">
+        以下內容來源於Bloomberg News，經AI彙整生成
+      </div>
+      <div id="stock-info-daily-markdown" class="markdown-body"></div>
+      <textarea id="stock-info-daily" style="display: none">
+{{stock_info_daily}}</textarea
+      >
+    </div>
+    <br />
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">報告精選</h1>
+      <div class="alert alert-secondary" role="alert">
+        點擊報告標題可自動下載報告；點擊摘要鍵將進入報告重點摘要頁面
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">報告列表</h5>
+          <!-- Table with hoverable rows -->
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Title</th>
+                <th scope="col">Date</th>
+                <th scope="col">Source</th>
+                <th scope="col">
+                  <a
+                    href="{{url_for('main.render_static_html', page='report_upload_page')}}"
+                    class="btn btn-dark btn-sm"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <!-- 使用 Font Awesome 的 + 號圖標 -->
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stock_report_meta in stock_report_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>
+                  <a href="{{ stock_report_meta['url'] }}"
+                    >{{ stock_report_meta['title'] }}</a
+                  >
+                </td>
+                <td>{{stock_report_meta['date']}}</td>
+                <td>{{stock_report_meta['source']}}</td>
+                <td>
+                  <a
+                    class="btn btn-secondary"
+                    href="{{ url_for('main.report_summary_page', report_id=stock_report_meta['_id']) }}"
+                    >摘要</a
+                  >
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <!-- End Table with hoverable rows -->
+        </div>
+      </div>
+    </div>
+    <!-- <div class="container mt-2 mx-6">
+      <h1 class="display-6">營收組成</h1>
+      <img src="{{ url_for('static', filename='images/AAPL_IS.png') }}" class="card-img-top" alt="Example Image" />
+    </div> -->
+
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">問題追蹤</h1>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title header-title">問題列表</h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Question</th>
+                <th>Upload Date</th>
+                <th>Uploader</th>
+                <th>
+                  <a
+                    href="{{url_for('main.render_static_html', page='issue_register')}}"
+                    class="btn btn-dark btn-sm"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <!-- 使用 Font Awesome 的 + 號圖標 -->
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue_meta in issue_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>{{issue_meta["issue"]}}</td>
+                <td>{{issue_meta["upload_timestamp"]}}</td>
+                <td>{{issue_meta["username"]}}</td>
+                <td>
+                  <button
+                    class="btn btn-secondary"
+                    data-toggle="collapse"
+                    data-target="#summary{{loop.index}}"
+                    aria-expanded="false"
+                    aria-controls="summary{{loop.index}}"
+                  >
+                    查看
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="5">
+                  <div id="summary{{loop.index}}" class="collapse">
+                    <div class="alert alert-secondary" role="alert">
+                      以下內容由AI自近10篇研究報告彙整<strong
+                        >（更新日期：{{issue_meta['issue_review_date']}}）</strong
+                      >
+                    </div>
+                    <textarea
+                      id="issue_review_diff_content_{{loop.index}}"
+                      style="display: none"
+                    >
+{{issue_meta["issue_review_diff"]}}</textarea
+                    >
+                    <div
+                      class="alert alert-light"
+                      role="alert"
+                      id="issue_review_diff_markdown_{{loop.index}}"
+                    ></div>
+                    <h3>報告觀點總結</h3>
+                    <!-- 將換行符 \n 替換為 HTML 的換行標籤 <br>。 | safe 用來確保 replace('\n', '<br>') 操作產生的 <br> 標籤會被解釋為 HTML 換行標籤，而不是顯示為普通文本。 -->
+                    <p>
+                      {{ issue_meta["issue_review"].replace('\n', '<br />') |
+                      safe }}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script>
+      $(document).ready(function () {
+        // Process the stock info daily content
+        $("#stock-info-daily-markdown").html(
+          marked.parse($("#stock-info-daily").val())
+        );
+        // Process the bullish and bearish outlook diff content
+        $("#bullish_outlook_diff_markdown").html(
+          marked.parse($("#bullish_outlook_diff_content").val())
+        );
+        $("#bearish_outlook_diff_markdown").html(
+          marked.parse($("#bearish_outlook_diff_content").val())
+        );
+
+        // Process each issue review diff content
+        $('textarea[id^="issue_review_diff_content_"]').each(function () {
+          var index = $(this).attr("id").split("_").pop();
+          $("#issue_review_diff_markdown_" + index).html(
+            marked.parse($(this).val())
+          );
+        });
+      });
+    </script>
+  </body>
+  {% endblock %}
+</html>

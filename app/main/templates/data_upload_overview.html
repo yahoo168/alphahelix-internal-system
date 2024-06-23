@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {% extends "main_base.html" %}
+    <meta charset="utf-8" />
+    <title>Marked in the browser</title>
+  </head>
+  {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Data Upload System</h1>
+      <hr class="my-4" />
+      <p class="lead">一站式上傳自動化所需的資料</p>
+    </div>
+    <br />
+    <br />
+
+    <div class=".container mt-5 mb-5 mx-4">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <a
+            href="{{url_for('main.render_static_html', page='report_upload_page')}}"
+            class="btn btn-light custom-high-button btn-block"
+            >美股研報上傳
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a
+            href="#"
+            class="btn btn-secondary custom-high-button btn-block"
+            >主題研報上傳
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a
+            href="#"
+            class="btn btn-light custom-high-button btn-block"
+            >策略研報上傳
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

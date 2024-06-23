@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 引入 Bootstrap CSS -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .range-label {
+        display: flex;
+        justify-content: space-between;
+      }
+      .ticker-btn {
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+      .date-display {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.5rem 1rem;
+        display: inline-block;
+        /* font-size: 1.2rem; */
+        color: #495057;
+      }
+      /* 自定义 Tooltip 样式 */
+      .tooltip-inner {
+        background-color: #333; /* 背景色 */
+        color: #fff; /* 文字颜色 */
+        /* font-size: 1.1rem; 文字大小 */
+        font-weight: bold; /* 文字粗细 */
+        padding: 10px; /* 内边距 */
+        /* text-align: left; 文字对齐 */
+      }
+      .tooltip-arrow {
+        color: #333; /* 箭头颜色与背景色一致 */
+      }
+      .dropzone {
+        min-height: 200px;
+        border: 2px dashed #ccc;
+        margin-top: 20px;
+        padding: 10px;
+      }
+      .drag-icon {
+        display: none;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        cursor: grab;
+        width: 24px; /* 調整圖標寬度 */
+        height: 24px; /* 調整圖標高度 */
+        font-size: 24px; /* 調整圖標大小 */
+      }
+      .card:hover .drag-icon {
+        display: block;
+      }
+      .card {
+        position: relative;
+      }
+    </style>
+  </head>
+  {% extends "main_base.html" %} {% block content %}
+  <body>
+    <div class="container mt-5">
+      <h2>Readwise筆記查詢</h2>
+
+      <span class="date-display font-weight-bold"
+        >最新筆記日期：{{lastest_article_date}}</span
+      >
+      <a
+        type="submit"
+        class="btn btn-dark"
+        href="{{url_for('main.note_reload')}}"
+        data-bs-toggle="tooltip"
+        title="若在已收錄進readwise的文章添加標籤（tag）或新增highlight，請點擊此按鈕重新加載筆記。（目前僅支援重新加載近30日內的筆記）"
+        >重新加載</a
+      >
+
+      <form id="tag_form">
+        <br />
+        <strong
+          ><label for="daysRange"
+            >查詢近<output id="daysOutput">7</output>日的筆記</label
+          ></strong
+        >
+        <div class="form-group">
+          <input
+            type="range"
+            class="form-control-range"
+            id="daysRange"
+            min="1"
+            max="30"
+            value="7"
+            oninput="document.getElementById('daysOutput').value = this.value"
+          />
+        </div>
+        <div class="form-group">
+          <br />
+          <div id="tickerButtons">
+            <p><strong>查詢以下標籤的筆記</strong></p>
+            {% for tag in recent_tag_list %}
+            <button
+              type="button"
+              class="btn btn-outline-secondary ticker-btn"
+              data-ticker="{{ tag }}"
+            >
+              {{ tag }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-dark">提交</button>
+      </form>
+    </div>
+    <div class="container mt-5">
+      <div class="dropzone" id="dropzone">
+        <strong><p>將要整理的卡片拖放到此處</p></strong>
+      </div>
+      <!-- <button id="organizeBtn" class="btn btn-dark mt-4">整理</button> -->
+      <a
+        id="copyButton"
+        class="btn btn-dark mt-4"
+        href="https://chatgpt.com/"
+        target="_blank"
+        >複製卡片並前往GPT</a
+      >
+    </div>
+    <div class="container"><div id="cardsContainer" class="mt-4"></div></div>
+
+    <!-- 隱藏表單 -->
+    <form
+      id="hiddenForm"
+      action="#"
+      method="POST"
+      style="display: none"
+      enctype="application/json"
+    >
+      <input type="hidden" name="cards" id="hiddenCardsInput" />
+    </form>
+
+    <!-- 引入 Bootstrap JS 和 Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.js"></script>
+    <script>
+      // 初始化工具提示
+      $(document).ready(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+      });
+
+      $(document).ready(function () {
+        // 切換選中狀態
+        $("#tickerButtons").on("click", ".ticker-btn", function () {
+          $(this).toggleClass("btn-secondary btn-outline-secondary");
+        });
+
+        $("#tag_form").submit(function (event) {
+          event.preventDefault();
+
+          // 获取 daysRange 的值
+          var days = parseInt($("#daysRange").val());
+
+          // 获取选中的 tags
+          var tag_list = [];
+          $("#tickerButtons .btn-secondary").each(function () {
+            tag_list.push($(this).data("ticker"));
+          });
+
+          // 发送 AJAX 请求
+          $.ajax({
+            url: "{{ url_for('main.note_search') }}",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+              days: days,
+              tag_list: tag_list,
+            }),
+
+            success: function (response) {
+              var cardsContainer = $("#cardsContainer");
+              cardsContainer.empty(); // 清空现有的卡片
+
+              // 解析返回的数据并显示在卡片中
+              response.forEach(function (item) {
+                var highlightsHtml = item.highlights
+                  .map(function (highlight) {
+                    return `<p>${highlight.highlight_text}</p>`;
+                  })
+                  .join("");
+
+                var card = `
+                            <div class="card mb-3 draggable" draggable="true">
+                                <div class="card-body">
+                                    <h5 class="card-title">${
+                                      item.article_title
+                                    }</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">${new Date(
+                                      item.date
+                                    ).toISOString()}</h6>
+                                    <div>${highlightsHtml}</div>
+                                    <span class="drag-icon">&#x2630;</span>
+                                </div>
+                            </div>
+                        `;
+                cardsContainer.append(card);
+              });
+
+              // 添加拖拽功能
+              $(".draggable")
+                .on("dragstart", function (event) {
+                  event.originalEvent.dataTransfer.setData(
+                    "text/plain",
+                    $(this).html()
+                  );
+                  $(this).addClass("dragging");
+                })
+                .on("dragend", function (event) {
+                  $(this).removeClass("dragging");
+                });
+
+              $(".drag-icon")
+                .on("mousedown", function (event) {
+                  $(this).closest(".draggable").attr("draggable", "true");
+                })
+                .on("mouseup", function (event) {
+                  $(this).closest(".draggable").attr("draggable", "false");
+                });
+            },
+            error: function (error) {
+              console.log("Error:", error);
+            },
+          });
+        });
+
+        // 设置 dropzone 接收拖动元素
+        $("#dropzone")
+          .on("dragover", function (event) {
+            event.preventDefault();
+            $(this).addClass("dragover");
+          })
+          .on("dragleave", function (event) {
+            $(this).removeClass("dragover");
+          })
+          .on("drop", function (event) {
+            event.preventDefault();
+            $(this).removeClass("dragover");
+
+            var data = event.originalEvent.dataTransfer.getData("text/plain");
+            $(this).append('<div class="card mb-3">' + data + "</div>");
+
+            // 移除拖动的卡片
+            $(".dragging").remove();
+          });
+
+        $("#copyButton").click(function () {
+          var textToCopy = `是請根據以下的內容，彙整出5個大綱，僅列出大綱標題即可，
+          並在每個大綱前面加上「請找出與這個大綱相關的內容，彙整成一篇短文」這段文字，
+          範例：1. 請以這個大綱整理以上的內容，寫成一篇研究分析短文「大綱1」、2. 請以這個大綱整理以上的內容，寫成一篇研究分析短文「大綱2」`;
+          
+          $("#dropzone .card").each(function () {
+            textToCopy += $(this).find(".card-body").text() + "\n";
+          });
+          
+          var tempTextArea = $("<textarea>");
+          $("body").append(tempTextArea);
+          tempTextArea.val(textToCopy).select();
+          document.execCommand("copy");
+          tempTextArea.remove();
+
+          alert("已複製預設prompt以及卡片內容，請前往GPT網站貼上文字。");
+        });
+        // 整理按钮点击事件
+        // $("#organizeBtn").click(function () {
+        //   var organizedCards = [];
+        //   $("#dropzone .card").each(function () {
+        //     organizedCards.push($(this).find(".card-body").html());
+        //   });
+
+        //   // 将整理后的卡片数据添加到隐藏表单并提交表单
+        //   $("#hiddenCardsInput").val(JSON.stringify(organizedCards));
+
+        //   // Use AJAX to send the form data
+        //   $.ajax({
+        //     url: $("#hiddenForm").attr("action"),
+        //     method: "POST",
+        //     contentType: "application/json",
+        //     data: JSON.stringify({ cards: organizedCards }),
+        //     success: function (response) {
+        //       console.log("Cards organized successfully");
+        //       // Handle success response
+        //     },
+        //     error: function (error) {
+        //       console.log("Error:", error);
+        //     },
+        //   });
+        // });
+      });
+    </script>
+  </body>
+  {% endblock %}
+</html>

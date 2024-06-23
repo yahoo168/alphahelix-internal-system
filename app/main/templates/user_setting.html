@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% extends "main_base.html" %}
+    <meta charset="utf-8" />
+    <title>User Profile</title>
+  </head>
+  {% block content %}
+  <body>
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+          {% endwith %}
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title"><strong>User Profile</strong></h5>
+              <p class="card-text">
+                <strong>Username</strong>: {{ current_user.username }}
+              </p>
+              <div class="row align-items-center mb-3">
+                <div class="col-auto">
+                  <p class="card-text mb-0">
+                    <strong>Email</strong>: {{ current_user.email }}
+                  </p>
+                </div>
+                <div class="col-auto">
+                  <div class="form-group form-check mb-0">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="send_report_to_email"
+                      name="send_report_to_email"
+                      value="yes"
+                      {% if send_report_to_email %} checked {% endif %}
+                    />
+                    <label class="form-check-label" for="send_report_to_email">
+                      將定期報告寄到此信箱
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <p class="card-text">
+                <strong>Roles</strong>: {{ current_user.roles }}
+              </p>
+              <form
+                action="{{ url_for('main.set_user_setting') }}"
+                method="post"
+                enctype="multipart/form-data"
+                onsubmit="setHiddenFieldValue()"
+              >
+                <div class="form-group">
+                  <label for="readwise_token">
+                    <strong>Readwise Token:</strong>
+                    <a href="https://readwise.io/access_token" target="_blank">(取得方式)</a>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="readwise_token"
+                    name="readwise_token"
+                    value="{{ readwise_token }}"
+                  />
+                </div>
+                <!-- 用於覆蓋真實的send_report_to_email -->
+                <input type="hidden" id="hidden_send_report_to_email" name="send_report_to_email" value="no">
+                <button type="submit" class="btn btn-dark">更新設定</button>
+                <a
+                  href="{{ url_for('main.render_static_html', page='change_password') }}"
+                  class="btn btn-dark"
+                >修改密碼</a>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // 使用JavaScript在表单提交前设置隐藏字段的值，根據send_report_to_email設定hidden_send_report_to_email（因前者不在form中）
+      function setHiddenFieldValue() {
+        const checkbox = document.getElementById('send_report_to_email');
+        const hiddenField = document.getElementById('hidden_send_report_to_email');
+        if (checkbox.checked) {
+          hiddenField.value = 'yes';
+        } else {
+          hiddenField.value = 'no';
+        }
+      }
+    </script>
+  </body>
+  {% endblock %}
+</html>

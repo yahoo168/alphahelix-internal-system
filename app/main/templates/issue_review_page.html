@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Report Summary</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
+  {% extends "main_base.html" %}
+  <body>
+    {% block content %}
+    <container>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{issue_name}}</h5>
+          {{issue_review}}
+        </div>
+      </div>
+    </container>
+    {% endblock %}
+  </body>
+</html>

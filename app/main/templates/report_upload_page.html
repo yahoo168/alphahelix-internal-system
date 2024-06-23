@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% extends "main_base.html" %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Upload with Bootstrap</title>
+  </head>
+  {% block content %}
+  <body>
+    <div class="container mt-5">
+      <h1>個股研報上傳</h1>
+      <form action="{{url_for('main.upload_stock_report')}}" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="ticker">Ticker</label>
+          <input
+            type="text"
+            class="form-control"
+            id="ticker"
+            name="ticker"
+            placeholder="ex: AAPL(僅能填寫一個)"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="source">Source</label>
+          <select class="form-control" id="source" name="source" required>
+            <option value="" disabled selected>Select a source</option>
+            <option value="gs">GS</option>
+            <option value="jpm">JPM</option>
+            <option value="citi">Citi</option>
+            <option value="barclays">Barclays</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="files">Choose files to upload</label>
+          <input
+            type="file"
+            class="form-control"
+            id="files"
+            name="files"
+            multiple
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn-dark">Upload</button>
+      </form>
+    </div>
+  </body>
+  {% endblock %}
+</html>
