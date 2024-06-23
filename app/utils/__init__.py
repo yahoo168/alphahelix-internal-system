@@ -16,10 +16,8 @@ module_path = os.path.join("/Users/yahoo168/Desktop/資料庫_測試功能/alpha
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from external_tools import google_tools  #type: ignore
+from external_tools import google_tools #type: ignore
 from external_tools import readwise_tools  #type: ignore
-
-# import readwise # type: ignore
 
 # 导出 google_tools 模块
 __all__ = ['google_tools', 'readwise_tools']

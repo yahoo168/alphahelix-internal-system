@@ -13,6 +13,9 @@ from app.utils.utils import *
 
 from . import main
 
+# google_cloud_storage_tools = google_tools.GoogleCloudStorageTools("/Users/yahoo168/Desktop/GOOGLE_APPLICATION_CREDENTIALS.json")
+google_cloud_storage_tools = google_tools.GoogleCloudStorageTools()
+
 def _get_permissions():
     with app.app_context():
         return {
@@ -251,7 +254,7 @@ def stock_document_search():
 
 def _search_TW_stock_document(ticker, country="US", document_type="report", start_date=None, end_date=None):
     folder_name = f"{country}_stock_{document_type}/{ticker}"
-    blob_list = google_tools.get_blob_list_in_folder(bucket_name="investment_report", folder_name=folder_name)
+    blob_list = google_cloud_storage_tools.get_blob_list_in_folder(bucket_name="investment_report", folder_name=folder_name)
     document_meta_list = list()
     for blob in blob_list:
         upload_timestamp = datetime.fromtimestamp(int(blob.metadata["upload_timestamp"]))
@@ -272,7 +275,7 @@ def _search_TW_stock_document(ticker, country="US", document_type="report", star
 @main.route('/download_content/<path:blob_name>')
 def download_GCS_file(blob_name):
     # 下载 blob 内容到内存
-    blob = google_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
+    blob = google_cloud_storage_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
     blob_data = blob.download_as_bytes()
     # 创建一个内存中的文件对象
     file_obj = io.BytesIO(blob_data)
@@ -282,7 +285,7 @@ def download_GCS_file(blob_name):
 
 @main.route('/get_content/<path:blob_name>')
 def get_GCS_text_file_content(blob_name):
-    blob = google_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
+    blob = google_cloud_storage_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
     # 读取文件内容
     content = blob.download_as_text()
     return jsonify({"content": content})
