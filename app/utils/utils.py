@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from pymongo import ObjectId
+from bson import ObjectId
 
 def _is_valid_date(date_string):
     try:

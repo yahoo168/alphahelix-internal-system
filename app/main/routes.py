@@ -5,7 +5,7 @@ from flask_principal import PermissionDenied
 
 import os, io
 from datetime import datetime
-from pymongo import ObjectId
+from bson import ObjectId
 from app.utils import *
 from app.utils.mongodb_client import *
 from app.utils.utils import *

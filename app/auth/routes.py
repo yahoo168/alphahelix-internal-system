@@ -6,7 +6,7 @@ from app.utils.mongodb_client import MDB_client
 from app import bcrypt
 from .forms import RegistrationForm, LoginForm
 from .users_model import User
-from pymongo import ObjectId
+from bson import ObjectId
 
 from . import auth  # 从当前包中导入 main 蓝图
 
