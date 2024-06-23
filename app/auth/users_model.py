@@ -2,7 +2,7 @@
 from flask import current_app as app
 from flask_login import UserMixin
 from bson.objectid import ObjectId
-from app.external_tools.mongodb_tools import MDB_client
+from app.utils.mongodb_client import MDB_client
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 
 class User(UserMixin):

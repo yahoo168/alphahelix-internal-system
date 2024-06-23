@@ -3,28 +3,15 @@ from flask import current_app as app
 from flask_login import login_required, current_user
 from flask_principal import PermissionDenied
 
-import os, io, sys
+import os, io
 from datetime import datetime
 from bson.objectid import ObjectId
 
-from app.external_tools.mongodb_tools import *
-from app.external_tools.utils import *
+from app.utils import *
+from app.utils.mongodb_client import *
+from app.utils.utils import *
 
 from . import main
-
-# # 获取需要导入模块的路径
-# module_path = os.path.join("/Users/yahoo168/Desktop/資料庫_測試功能")
-
-# # 将模块路径添加到 sys.path
-# if module_path not in sys.path:
-#     sys.path.append(module_path)
-
-# # 现在可以导入 external_modules 目录下的模块
-# from self_finance_database_tool_cloud import google_tools # type: ignore
-# from self_finance_database_tool_cloud import readwise_tools # type: ignore
-
-import google_tools # type: ignore
-import readwise_tools # type: ignore
 
 def _get_permissions():
     with app.app_context():
@@ -223,7 +210,7 @@ def upload_stock_report():
         }
         blob_meta_list.append(blob_meta)
     # 將file meta上傳至google cloud storage
-    blob_url_dict = google_tools.upload_to_google_cloud_storage(bucket_name="investment_report", blob_meta_list=blob_meta_list) # type: ignore
+    blob_url_dict = upload_to_google_cloud_storage(bucket_name="investment_report", blob_meta_list=blob_meta_list) # type: ignore
     
    # 准备 MongoDB 数据
     mongo_db_data_list = []

@@ -30,9 +30,7 @@ def create_app():
     from app.main import main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
 
-    from app.external_tools import external_tools as external_tools_blueprint
-    
-    # from app.external_tools.mongodb_tools import MDB_client
+    from app.utils import utils as utils_blueprint
     from app.auth.users_model import User
     
     # load_user 是 Flask-Login 提供的一個回調函數，用於加載用戶的信息。就能夠在每個請求中管理和跟蹤當前用戶的狀態。

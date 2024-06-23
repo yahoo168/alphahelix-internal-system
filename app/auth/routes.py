@@ -2,7 +2,7 @@ from flask import Blueprint, request, redirect, url_for, flash, render_template
 from flask_login import login_user, current_user, logout_user
 from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 from flask import current_app as app
-from app.external_tools.mongodb_tools import MDB_client
+from app.utils.mongodb_client import MDB_client
 from app import bcrypt
 from .forms import RegistrationForm, LoginForm
 from .users_model import User
