@@ -5,16 +5,12 @@ import secrets
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 from flask_login import current_user
 
-import json
-from bson.objectid import ObjectId
-
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"  # 设置登录视图的端点
 login_manager.login_message_category = 'info'  # 设置闪现消息的类别
 
 def print_registered_routes(app, blueprint_name):
-    print(f"Registered routes for blueprint '{blueprint_name}':")
     for rule in app.url_map.iter_rules():
         if rule.endpoint.startswith(blueprint_name + "."):
             methods = ','.join(rule.methods)
