@@ -5,7 +5,7 @@ from flask import current_app as app
 from .forms import RegistrationForm, LoginForm
 from bson import ObjectId
 import logging
-
+import secrets
 from app.utils.mongodb_client import MDB_client
 from app import bcrypt
 from .users_model import User, check_username_exist, create_new_user
@@ -45,6 +45,7 @@ def login():
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
             user = User.get(user_data['_id'])
             login_user(user, remember=form.remember.data)
+            session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
