@@ -1,9 +1,13 @@
 from flask import Flask
 from flask_bcrypt import Bcrypt
+from flask_session import Session
 from flask_login import LoginManager
-import secrets
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 from flask_login import current_user
+
+import secrets
+import os
+import redis
 
 bcrypt = Bcrypt()
 login_manager = LoginManager()
@@ -20,6 +24,18 @@ def create_app():
     app = Flask(__name__)
     # 为了确保安全性，SECRET_KEY 应该是随机生成的并且足够复杂。你可以使用 Python 的 secrets
     app.config["SECRET_KEY"] = secrets.token_hex(16)
+    
+        # 配置Session存儲到Redis
+    app.config['SESSION_TYPE'] = 'redis'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_KEY_PREFIX'] = 'session:'
+    default_redis_url = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
+    app.config['SESSION_REDIS'] = redis.from_url(os.environ.get('REDIS_URL', default_redis_url))
+    
+    # 初始化Session
+    Session(app)
+    
     bcrypt.init_app(app)
     login_manager.init_app(app)
     principals = Principal(app)
@@ -56,7 +72,7 @@ def create_app():
         if hasattr(current_user, 'roles'):
             # 把用戶權限（roloes）加載到用戶資訊中
             identity.provides.add(RoleNeed(current_user.roles))
-    
+        
     return app
         
     # 打印所有路由信息到控制台
