@@ -1,6 +1,6 @@
 from flask import request, redirect, url_for, flash, render_template, session
 from flask_login import login_required, login_user, current_user, logout_user
-from flask_principal import Identity, identity_changed
+from flask_principal import Identity, identity_changed, AnonymousIdentity
 from flask import current_app as app
 from .forms import RegistrationForm, LoginForm
 from bson import ObjectId
@@ -50,7 +50,7 @@ def login():
             logger.info(f'User {user.username} logged in successfully')
             return redirect(url_for('main.dashboard'))
         else:
-            logger.info(f'User {user.username} logged in successfully')
+            logger.info(f'logging fail')
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('login.html', form=form)
 
@@ -84,7 +84,12 @@ def change_password():
             {"_id": ObjectId(current_user_id)},
             {"$set": {"password_hash": news_hashed_password}},
         )
-        flash('密碼修改成功！', 'success')
-        return redirect(url_for('main.render_static_html', page='change_password'))
+        flash('密碼修改成功，請重新登入！', 'success')
+        # 清理當前session並登出用戶
+        logout_user()
+        session.clear()
+        # 通知 Flask-Principal 系統用戶的身份已經變更。具體來說，這行代碼會將當前用戶的身份設置為匿名身份
+        identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
+        return redirect(url_for('auth.login'))
     
     return redirect(url_for('main.render_static_html', page='change_password'))
