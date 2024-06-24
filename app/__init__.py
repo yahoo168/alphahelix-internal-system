@@ -24,14 +24,18 @@ def create_app():
     app = Flask(__name__)
     # 为了确保安全性，SECRET_KEY 应该是随机生成的并且足够复杂。你可以使用 Python 的 secrets
     app.config["SECRET_KEY"] = secrets.token_hex(16)
-    
-        # 配置Session存儲到Redis
+    # 配置Session存儲到Redis
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
     app.config['SESSION_KEY_PREFIX'] = 'session:'
     default_redis_url = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
     app.config['SESSION_REDIS'] = redis.from_url(os.environ.get('REDIS_URL', default_redis_url))
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1小時
+    #針對Session的安全性設定
+    app.config["SESSION_COOKIE_SECURE"] = True  # 確保在HTTPS下傳輸
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = 'Lax'
     
     # 初始化Session
     Session(app)

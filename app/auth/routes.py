@@ -7,8 +7,12 @@ from app import bcrypt
 from .forms import RegistrationForm, LoginForm
 from .users_model import User
 from bson import ObjectId
+import logging
 
 from . import auth  # 从当前包中导入 main 蓝图
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @auth.route("/register", methods=['GET', 'POST'])
 def register():
@@ -40,8 +44,10 @@ def login():
             login_user(user, remember=form.remember.data)
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
+            logger.info(f'User {user.username} logged in successfully')
             return redirect(url_for('main.dashboard'))
         else:
+            logger.info(f'User {user.username} logged in successfully')
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('login.html', form=form)
 
