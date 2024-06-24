@@ -16,6 +16,7 @@ Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
 Flask-Principal==0.4.0
 Flask-WTF==1.2.1
+Flask-Session==0.8.0
 google-api-core==2.19.0
 google-api-python-client==2.134.0
 google-auth==2.30.0
@@ -52,6 +53,7 @@ PyMuPDFb==1.24.3
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 pytz==2024.1
+redis==5.0.6
 regex==2024.5.15
 requests==2.32.3
 requests-oauthlib==2.0.0
