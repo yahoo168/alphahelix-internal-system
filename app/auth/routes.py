@@ -2,6 +2,7 @@ from flask import Blueprint, request, redirect, url_for, flash, render_template
 from flask_login import login_user, current_user, logout_user
 from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 from flask import current_app as app
+from flask_session import Session
 from app.utils.mongodb_client import MDB_client
 from app import bcrypt
 from .forms import RegistrationForm, LoginForm
@@ -9,6 +10,7 @@ from .users_model import User
 from bson import ObjectId
 import logging
 
+from flask_login import login_required, current_user
 from . import auth  # 从当前包中导入 main 蓝图
 
 logging.basicConfig(level=logging.INFO)
@@ -52,8 +54,10 @@ def login():
     return render_template('login.html', form=form)
 
 @auth.route("/logout")
+@login_required
 def logout():
     logout_user()
+    # session.clear()  # 清理session
     return redirect(url_for('auth.login'))
 
 @auth.route('/change_password', methods=['POST'])

@@ -23,7 +23,7 @@ def print_registered_routes(app, blueprint_name):
 def create_app():
     app = Flask(__name__)
     # 为了确保安全性，SECRET_KEY 应该是随机生成的并且足够复杂。你可以使用 Python 的 secrets
-    app.config["SECRET_KEY"] = secrets.token_hex(16)
+    app.config["SECRET_KEY"] = os.environ.get('SECRET_KEY', secrets.token_hex(16))
     # 配置Session存儲到Redis
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = False
@@ -42,6 +42,7 @@ def create_app():
     
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    login_manager.session_protection = "basic"
     principals = Principal(app)
 
     from app.auth import auth as auth_blueprint
