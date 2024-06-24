@@ -12,17 +12,18 @@ from app.utils.utils import *
 
 from . import main
 
-#google_cloud_storage_tools = google_tools.GoogleCloudStorageTools("/Users/yahoo168/Desktop/GOOGLE_APPLICATION_CREDENTIALS.json")
-google_cloud_storage_tools = google_tools.GoogleCloudStorageTools()
+# 後者用於本地調適，前者用於部署至Heroku
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/yahoo168/Desktop/GOOGLE_APPLICATION_CREDENTIALS.json") 
+google_cloud_storage_tools = google_tools.GoogleCloudStorageTools(GOOGLE_APPLICATION_CREDENTIALS)
 
 def _get_permissions():
     with app.app_context():
         return {
-            'admin_permission': app.config['ADMIN_PERMISSION'],
-            'sales_permission': app.config['DIRECTOR_PERMISSION'],
-            'fundamental_permission': app.config['FUNDAMENTAL_PERMISSION'],
-            'quant_permission': app.config['QUANT_PERMISSION'],
-            'trial_account_permission': app.config['TRIAL_ACCOUNT_PERMISSION'],
+            # 'admin_permission': app.config['ADMIN_PERMISSION'],
+            # 'sales_permission': app.config['DIRECTOR_PERMISSION'],
+            # 'fundamental_permission': app.config['FUNDAMENTAL_PERMISSION'],
+            # 'quant_permission': app.config['QUANT_PERMISSION'],
+            # 'trial_account_permission': app.config['TRIAL_ACCOUNT_PERMISSION'],
         }
 
 permissions = None

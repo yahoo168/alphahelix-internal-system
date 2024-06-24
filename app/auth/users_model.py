@@ -26,18 +26,18 @@ class User(UserMixin):
     # 在 Flask-Login 中，用户模型必须实现get_id以便在框架中自動調用，例如user_loader以及current_user
     def get_id(self):
         return str(self._id)
-    
-    @staticmethod
-    def check_username_exist(username):
-        if MDB_client["users"]["user_basic_info"].find_one({"username": username}):
-            return True
-        else:
-            return False
-    
-    def create(self):
-        user_basic_info = {
-            "username": self.username,
-            "email": self.email,
-            "password_hash": self.password_hash
-        }
-        self._id = MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)
+
+def check_username_exist(username):
+    if MDB_client["users"]["user_basic_info"].find_one({"username": username}):
+        return True
+    else:
+        return False
+
+def create_new_user(email, username, password_hash):
+    user_basic_info = {
+        "email": email,
+        "username": username,
+        "password_hash": password_hash,
+    }
+    MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)
+    # self._id = MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)

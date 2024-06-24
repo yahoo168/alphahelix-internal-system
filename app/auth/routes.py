@@ -1,18 +1,18 @@
-from flask import Blueprint, request, redirect, url_for, flash, render_template
-from flask_login import login_user, current_user, logout_user
-from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
+from flask import request, redirect, url_for, flash, render_template, session
+from flask_login import login_required, login_user, current_user, logout_user
+from flask_principal import Identity, identity_changed
 from flask import current_app as app
-from flask_session import Session
-from app.utils.mongodb_client import MDB_client
-from app import bcrypt
 from .forms import RegistrationForm, LoginForm
-from .users_model import User
 from bson import ObjectId
 import logging
 
-from flask_login import login_required, current_user
-from . import auth  # 从当前包中导入 main 蓝图
+from app.utils.mongodb_client import MDB_client
+from app import bcrypt
+from .users_model import User, check_username_exist, create_new_user
 
+from . import auth  # 从当前包中导入 auth blueprint
+
+# setting logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -22,20 +22,21 @@ def register():
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        if User.check_username_exist(form.username.data):
+        if check_username_exist(form.username.data):
             flash('Your username already exist!', 'danger')
             return redirect(url_for('auth.register'))
         
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password)
-        user.create()
-        flash('Your account has been created!', 'success')
+        create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password)
+        # user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password)
+        flash('New account has been created!', 'success')
         return redirect(url_for('auth.login'))
     
     return render_template('register.html', title='Register', form=form)
-                     
+              
 @auth.route("/login", methods=['GET', 'POST'])
 def login():
+    # 如果用戶已經登錄，則重定向到主頁
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     form = LoginForm()
@@ -57,10 +58,11 @@ def login():
 @login_required
 def logout():
     logout_user()
-    # session.clear()  # 清理session
+    session.clear()  # 清理session
     return redirect(url_for('auth.login'))
 
 @auth.route('/change_password', methods=['POST'])
+@login_required
 def change_password():
     if request.method == 'POST':
         current_user_id = current_user.get_id()
@@ -81,8 +83,6 @@ def change_password():
         MDB_client["users"]["user_basic_info"].update_one(
             {"_id": ObjectId(current_user_id)},
             {"$set": {"password_hash": news_hashed_password}},
-            # {"$set": {"test": news_hashed_password}},
-            # upsert=True
         )
         flash('密碼修改成功！', 'success')
         return redirect(url_for('main.render_static_html', page='change_password'))
