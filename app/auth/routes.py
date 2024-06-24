@@ -28,7 +28,6 @@ def register():
         
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password)
-        # user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password)
         flash('New account has been created!', 'success')
         return redirect(url_for('auth.login'))
     
@@ -44,6 +43,8 @@ def login():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
             user = User.get(user_data['_id'])
+            # 清理舊的session
+            session.clear()
             login_user(user, remember=form.remember.data)
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             # 取得用戶的權限設置
@@ -88,7 +89,9 @@ def change_password():
         flash('密碼修改成功，請重新登入！', 'success')
         # 清理當前session並登出用戶
         logout_user()
+        # 清理並重新生成session ID，避免之前session可能導致的問題。
         session.clear()
+        session['session_id'] = secrets.token_hex(16)
         # 通知 Flask-Principal 系統用戶的身份已經變更。具體來說，這行代碼會將當前用戶的身份設置為匿名身份
         identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
         return redirect(url_for('auth.login'))
