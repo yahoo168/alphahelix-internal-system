@@ -1,6 +1,7 @@
 from flask import request, redirect, url_for, flash, render_template, session
 from flask_login import login_required, login_user, current_user, logout_user
 from flask_principal import Identity, identity_changed, AnonymousIdentity
+from flask_wtf.csrf import generate_csrf
 from flask import current_app as app
 from .forms import RegistrationForm, LoginForm
 from bson import ObjectId
@@ -15,6 +16,33 @@ from . import auth  # 从当前包中导入 auth blueprint
 # setting logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def _get_permissions():
+    with app.app_context():
+        return {
+            # 'admin_permission': app.config['ADMIN_PERMISSION'],
+            # 'sales_permission': app.config['DIRECTOR_PERMISSION'],
+            # 'fundamental_permission': app.config['FUNDAMENTAL_PERMISSION'],
+            # 'quant_permission': app.config['QUANT_PERMISSION'],
+            # 'trial_account_permission': app.config['TRIAL_ACCOUNT_PERMISSION'],
+        }
+        
+permissions = None
+
+# 通过一个函数来初始化权限，以确保在应用上下文内调用
+def initialize_permissions():
+    global permissions
+    permissions = _get_permissions()
+
+# 使用 before_app_request 在应用第一次请求之前初始化权限。
+@auth.before_app_request
+def before_request():
+    if permissions is None: 
+        initialize_permissions()
+        print("Permissions initialized:", permissions)
+    # 为每个请求设置一个CSRF令牌（目前关闭CSRF保护）
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = generate_csrf()
 
 @auth.route("/register", methods=['GET', 'POST'])
 def register():
@@ -43,7 +71,7 @@ def login():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
             user = User.get(user_data['_id'])
-            # 清理舊的session
+            # 清理舊的session，以避免數據錯誤
             session.clear()
             login_user(user, remember=form.remember.data)
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
@@ -87,11 +115,7 @@ def change_password():
             {"$set": {"password_hash": news_hashed_password}},
         )
         flash('密碼修改成功，請重新登入！', 'success')
-        # 清理當前session並登出用戶
         logout_user()
-        # 清理並重新生成session ID，避免之前session可能導致的問題。
-        session.clear()
-        session['session_id'] = secrets.token_hex(16)
         # 通知 Flask-Principal 系統用戶的身份已經變更。具體來說，這行代碼會將當前用戶的身份設置為匿名身份
         identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
         return redirect(url_for('auth.login'))

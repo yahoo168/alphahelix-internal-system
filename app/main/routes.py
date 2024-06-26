@@ -1,4 +1,4 @@
-from flask import request, jsonify, render_template, redirect, url_for, flash, send_file
+from flask import request, jsonify, render_template, redirect, url_for, flash, send_file, session
 from flask import current_app as app
 from flask_login import login_required, current_user
 from flask_principal import PermissionDenied
@@ -9,37 +9,12 @@ from bson import ObjectId
 from app.utils import *
 from app.utils.mongodb_client import *
 from app.utils.utils import *
-
 from . import main
 
 # 後者用於本地調適，前者用於部署至Heroku
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/yahoo168/Desktop/GOOGLE_APPLICATION_CREDENTIALS.json") 
 google_cloud_storage_tools = google_tools.GoogleCloudStorageTools(GOOGLE_APPLICATION_CREDENTIALS)
-
-def _get_permissions():
-    with app.app_context():
-        return {
-            # 'admin_permission': app.config['ADMIN_PERMISSION'],
-            # 'sales_permission': app.config['DIRECTOR_PERMISSION'],
-            # 'fundamental_permission': app.config['FUNDAMENTAL_PERMISSION'],
-            # 'quant_permission': app.config['QUANT_PERMISSION'],
-            # 'trial_account_permission': app.config['TRIAL_ACCOUNT_PERMISSION'],
-        }
-
-permissions = None
-
-# 通过一个函数来初始化权限，以确保在应用上下文内调用
-def initialize_permissions():
-    global permissions
-    permissions = _get_permissions()
-
-# 使用 before_app_request 在应用第一次请求之前初始化权限。
-@main.before_app_request
-def before_request():
-    if permissions is None: 
-        initialize_permissions()
-        print("Permissions initialized:", permissions)
-
+            
 @main.route('/')
 @main.route("/dashboard")
 @login_required

@@ -4,6 +4,7 @@ from flask_session import Session
 from flask_login import LoginManager
 from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 from flask_login import current_user
+from flask_wtf import CSRFProtect
 
 import secrets
 import os
@@ -13,6 +14,8 @@ import redis
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 principals = Principal()
+#產生CSRF token
+csrf = CSRFProtect()
 
 def print_registered_routes(app, blueprint_name):
     for rule in app.url_map.iter_rules():
@@ -37,9 +40,11 @@ def create_app():
     app.config["SESSION_COOKIE_SECURE"] = True  # 確保在HTTPS下傳輸
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = 'Lax'
+    app.config['WTF_CSRF_ENABLED'] = False  # 關閉CSRF保護
     # 初始化Session
     Session(app)
     # 初始化擴展
+    csrf.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
     login_manager.session_protection = "strong"
