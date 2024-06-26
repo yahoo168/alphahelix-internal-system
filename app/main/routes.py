@@ -12,7 +12,7 @@ from app.utils.utils import *
 from . import main
 
 # 後者用於本地調適，前者用於部署至Heroku
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/yahoo168/Desktop/GOOGLE_APPLICATION_CREDENTIALS.json") 
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 google_cloud_storage_tools = google_tools.GoogleCloudStorageTools(GOOGLE_APPLICATION_CREDENTIALS)
             
 @main.route('/')
@@ -188,7 +188,7 @@ def upload_stock_report():
         }
         blob_meta_list.append(blob_meta)
     # 將file meta上傳至google cloud storage
-    blob_url_dict = upload_to_google_cloud_storage(bucket_name="investment_report", blob_meta_list=blob_meta_list) # type: ignore
+    blob_url_dict = google_cloud_storage_tools.upload_to_google_cloud_storage(bucket_name="investment_report", blob_meta_list=blob_meta_list) # type: ignore
     
    # 准备 MongoDB 数据
     mongo_db_data_list = []
