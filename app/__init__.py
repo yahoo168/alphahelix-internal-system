@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, session
+from flask import Flask, request, render_template, redirect, url_for, session
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 from flask_login import LoginManager
@@ -85,9 +85,10 @@ def create_app():
         session_user_id = session.get('user_id')
         current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
         logger.info(f"Before request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
-        if session_id is None or session_user_id!=current_user_id:
+        # 避免无限重定向循环
+        if request.endpoint != 'auth.logout' and (session_id is None or session_user_id!=current_user_id):
             if current_user.is_authenticated:
-                return redirect(url_for('auth.logout'))    
+                return redirect(url_for('auth.logout'))
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
