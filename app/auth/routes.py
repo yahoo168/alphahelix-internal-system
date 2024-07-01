@@ -21,19 +21,25 @@ from . import auth  # 从当前包中导入 auth blueprint
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 使用 before_app_request 在应用第一次请求之前初始化权限。
-@auth.before_app_request
-def before_request():        
-    # 为每个请求设置一个CSRF令牌（目前关闭CSRF保护）
-    if '_csrf_token' not in session:
-        session['_csrf_token'] = generate_csrf()
-    
-    # if 'user_id' in session:
-    #     user = load_user(session['user_id'])
-    #     if user:
-    #         login_user(user)
-    #     else:
-    #         session.clear()
+# # 使用 before_app_request 在应用第一次请求之前初始化权限。
+# @auth.before_app_request
+# def before_request():        
+#     # 为每个请求设置一个CSRF令牌（目前关闭CSRF保护）
+#     if '_csrf_token' not in session:
+#         session['_csrf_token'] = generate_csrf()
+
+@app.before_request
+def before_request():
+    session_id = session.get('session_id')
+    user_id = session.get('user_id')
+    logger.info(f"Before request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
+
+@app.after_request
+def after_request(response):
+    session_id = session.get('session_id')
+    user_id = session.get('user_id')
+    logger.info(f"After request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
+    return response
 
 @auth.route("/user_register", methods=['GET', 'POST'])
 def user_register():
