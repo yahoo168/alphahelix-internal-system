@@ -101,7 +101,7 @@ def create_app():
         if session_user_id != current_user.get_id():
             logger.warning(f'Session user ID mismatch: {session_user_id} != {current_user.get_id()}')
             session.clear()  # 清理会话并强制用户重新登录
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth.logout'))
         
         roles_permission_dict = get_roles_permission_dict()
         if hasattr(current_user, 'roles'):
