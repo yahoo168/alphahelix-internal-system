@@ -28,12 +28,12 @@ def before_request():
     if '_csrf_token' not in session:
         session['_csrf_token'] = generate_csrf()
     
-    if 'user_id' in session:
-        user = load_user(session['user_id'])
-        if user:
-            login_user(user)
-        else:
-            session.clear()
+    # if 'user_id' in session:
+    #     user = load_user(session['user_id'])
+    #     if user:
+    #         login_user(user)
+    #     else:
+    #         session.clear()
 
 @auth.route("/user_register", methods=['GET', 'POST'])
 def user_register():
@@ -56,6 +56,7 @@ def login():
     if current_user.is_authenticated:
         logging.info(f'User {current_user.username} already logged in')
         return redirect(url_for('main.dashboard'))
+    
     form = LoginForm()
     if form.validate_on_submit():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})

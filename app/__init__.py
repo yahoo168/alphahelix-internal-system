@@ -108,8 +108,7 @@ def create_app():
             for role in current_user.roles:
                 for perm in roles_permission_dict.get(role, []):
                     identity.provides.add(perm)
-    
-        logger.info(f'Identity loaded for user: {current_user.username} with roles: {current_user.roles}')
+            logging.info(f'User {current_user.username} has roles: {current_user.roles}')
         
     # 權限錯誤處理，當用戶沒有權限時，返回403錯誤並顯示permission_denied.html
     @app.errorhandler(403)
