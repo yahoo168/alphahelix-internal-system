@@ -79,17 +79,15 @@ def create_app():
     login_manager.login_message_category = 'info'  # 設置flash的類別
     principals.init_app(app)
 
-    # @app.before_request
-    # @app.after_request
-    # def make_sure_session_is_not_lost():
-    #     session_id = session.get('session_id')
-    #     session_user_id = session.get('user_id')
-    #     if current_user.is_authenticated:
-    #         current_user_id = current_user.get_id()
-    #     else:
-    #         current_user_id = 'Anonymous'
-    #     logger.info(f"Before/After request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
-    #     return redirect(url_for('auth.logout'))
+    @app.before_request
+    def before_request_ensure_session():
+        session_id = session.get('session_id')
+        session_user_id = session.get('user_id')
+        current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
+        logger.info(f"Before request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
+        if session_id is None or session_user_id!=current_user_id:
+            if current_user.is_authenticated:
+                return redirect(url_for('auth.logout'))    
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
