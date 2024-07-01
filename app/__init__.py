@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for, session
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 from flask_login import LoginManager
@@ -42,12 +42,6 @@ administation_data_edit_perm = Permission(RoleNeed('administation_data_edit'))
 
 system_edit_perm = Permission(RoleNeed('system_edit'))
 
-def print_registered_routes(app, blueprint_name):
-    for rule in app.url_map.iter_rules():
-        if rule.endpoint.startswith(blueprint_name + "."):
-            methods = ','.join(rule.methods)
-            print(f"{rule.endpoint}: {methods} {rule}")
-
 def create_app():
     app = Flask(__name__)
     # 從環境變數中讀取Session的安全密鑰，如果沒有則使用隨機生成的16進位字符串（本地測試用）
@@ -56,7 +50,7 @@ def create_app():
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_KEY_PREFIX'] = 'session:'
+    app.config['SESSION_KEY_PREFIX'] = 'session:' # 设置会话键的前綴（範例：session:2f3e1b2c4d5e6f7890a1b2c3d4e5f6a7）
     
     # 從環境變數中讀取REDIS_URL，如果沒有則使用預設值（本地測試用）
     DEFAULT_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
@@ -91,24 +85,31 @@ def create_app():
     from app.main import main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
 
-    from app.utils import utils as utils_blueprint
-    from app.auth.users_model import User
+    # from app.utils import utils as utils_blueprint
     
     # load_user 是 Flask-Login 提供的一個回調函數，用於加載用戶的信息。就能夠在每個請求中管理和跟蹤當前用戶的狀態。
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.get(user_id)
+    from app.auth.users_model import load_user
+    login_manager.user_loader(load_user)
     
-    # 設置身份加載時的角色處理程序
     @identity_loaded.connect_via(app)
     def on_identity_loaded(sender, identity):
-        roles_permission_dict = get_roles_permission_dict()
         identity.user = current_user
         identity.provides.add(UserNeed(current_user.get_id()))
+
+        # 确保会话中的用户 ID 和当前用户 ID 一致
+        session_user_id = session.get('user_id')
+        if session_user_id != current_user.get_id():
+            logger.warning(f'Session user ID mismatch: {session_user_id} != {current_user.get_id()}')
+            session.clear()  # 清理会话并强制用户重新登录
+            return redirect(url_for('auth.login'))
+        
+        roles_permission_dict = get_roles_permission_dict()
         if hasattr(current_user, 'roles'):
             for role in current_user.roles:
                 for perm in roles_permission_dict.get(role, []):
                     identity.provides.add(perm)
+    
+        logger.info(f'Identity loaded for user: {current_user.username} with roles: {current_user.roles}')
         
     # 權限錯誤處理，當用戶沒有權限時，返回403錯誤並顯示permission_denied.html
     @app.errorhandler(403)

@@ -7,9 +7,11 @@ from .forms import RegistrationForm, LoginForm
 from bson import ObjectId
 import logging
 import secrets
+
 from app.utils.mongodb_tools import MDB_client
 from app import bcrypt
-from .users_model import User, check_username_exist, create_new_user
+
+from .users_model import User, check_username_exist, create_new_user, load_user
 
 from flask import jsonify
 
@@ -25,6 +27,13 @@ def before_request():
     # 为每个请求设置一个CSRF令牌（目前关闭CSRF保护）
     if '_csrf_token' not in session:
         session['_csrf_token'] = generate_csrf()
+    
+    if 'user_id' in session:
+        user = load_user(session['user_id'])
+        if user:
+            login_user(user)
+        else:
+            session.clear()
 
 @auth.route("/user_register", methods=['GET', 'POST'])
 def user_register():
@@ -45,6 +54,7 @@ def user_register():
 def login():
     # 如果用戶已經登錄，則重定向到主頁
     if current_user.is_authenticated:
+        logging.info(f'User {current_user.username} already logged in')
         return redirect(url_for('main.dashboard'))
     form = LoginForm()
     if form.validate_on_submit():

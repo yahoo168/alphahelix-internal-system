@@ -3,7 +3,10 @@ from flask import current_app as app
 from flask_login import UserMixin
 from bson import ObjectId
 from app.utils.mongodb_tools import MDB_client
-from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
+#from flask_principal import RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
+
+def load_user(user_id):
+    return User.get(user_id)
 
 class User(UserMixin):
     def __init__(self, username, email, password_hash, roles, _id=None):
