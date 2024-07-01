@@ -48,7 +48,7 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get('SECRET_KEY', secrets.token_hex(16))
     # 配置Session，並存儲到Redis
     app.config['SESSION_TYPE'] = 'redis'
-    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_PERMANENT'] = True
     app.config['SESSION_USE_SIGNER'] = True
     app.config['SESSION_KEY_PREFIX'] = 'session:' # 设置会话键的前綴（範例：session:2f3e1b2c4d5e6f7890a1b2c3d4e5f6a7）
     
@@ -79,18 +79,17 @@ def create_app():
     login_manager.login_message_category = 'info'  # 設置flash的類別
     principals.init_app(app)
 
-    @app.before_request
-    def before_request():
-        session_id = session.get('session_id')
-        user_id = session.get('user_id')
-        logger.info(f"Before request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
-
-    @app.after_request
-    def after_request(response):
-        session_id = session.get('session_id')
-        user_id = session.get('user_id')
-        logger.info(f"After request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
-        return response
+    # @app.before_request
+    # @app.after_request
+    # def make_sure_session_is_not_lost():
+    #     session_id = session.get('session_id')
+    #     session_user_id = session.get('user_id')
+    #     if current_user.is_authenticated:
+    #         current_user_id = current_user.get_id()
+    #     else:
+    #         current_user_id = 'Anonymous'
+    #     logger.info(f"Before/After request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
+    #     return redirect(url_for('auth.logout'))
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
@@ -108,13 +107,6 @@ def create_app():
     def on_identity_loaded(sender, identity):
         identity.user = current_user
         identity.provides.add(UserNeed(current_user.get_id()))
-
-        # 确保会话中的用户 ID 和当前用户 ID 一致
-        session_user_id = session.get('user_id')
-        if session_user_id != current_user.get_id():
-            logger.warning(f'Session user ID mismatch: {session_user_id} != {current_user.get_id()}')
-            session.clear()  # 清理会话并强制用户重新登录
-            return redirect(url_for('auth.logout'))
         
         roles_permission_dict = get_roles_permission_dict()
         if hasattr(current_user, 'roles'):
