@@ -61,11 +61,14 @@ def user_register():
               
 @auth.route("/login", methods=['GET', 'POST'])
 def login():
-    # 如果用戶已經登錄，則重定向到主頁
     if current_user.is_authenticated:
-        flash("You have logined.", category="info")
-        logging.info(f'User {current_user.username} already logged in')
-        return redirect(url_for('main.dashboard'))
+        identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
+        session.clear()  # 清理session
+    # 如果用戶已經登錄，則重定向到主頁
+    # if current_user.is_authenticated:
+    #     flash("You have logined.", category="info")
+    #     logging.info(f'User {current_user.username} already logged in')
+    #     return redirect(url_for('main.dashboard'))
     
     form = LoginForm()
     if form.validate_on_submit():
