@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 #         session['_csrf_token'] = generate_csrf()
 
 # 在每个应用程序上下文结束时标记会话为已修改，从而确保会话数据在请求处理结束后被正确保存。
-@auth.teardown_appcontext
+@auth.teardown_app_request
 def teardown(exception):
     try:
         session.modified = True
