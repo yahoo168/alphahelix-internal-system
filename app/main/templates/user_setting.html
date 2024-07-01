@@ -46,7 +46,7 @@
                 </div>
               </div>
               <p class="card-text">
-                <strong>Roles</strong>: {{ current_user.roles }}
+                <strong>Permissions</strong>: {{ current_user.roles }}
               </p>
               <form
                 action="{{ url_for('main.set_user_setting') }}"

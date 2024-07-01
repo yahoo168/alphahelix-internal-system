@@ -1,14 +1,18 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 from flask_login import LoginManager
-from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
+from flask_principal import Principal, identity_changed, identity_loaded, AnonymousIdentity, Permission, RoleNeed, UserNeed, PermissionDenied
 from flask_login import current_user
 from flask_wtf import CSRFProtect
-
+from flask_caching import Cache
+import logging
 import secrets
 import os
 import redis
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # 創建擴展實例
 bcrypt = Bcrypt()
@@ -16,6 +20,27 @@ login_manager = LoginManager()
 principals = Principal()
 #產生CSRF token
 csrf = CSRFProtect()
+# 用於緩存的全局變數
+cache = Cache()
+
+# 定義功能權限
+us_data_view_perm = Permission(RoleNeed('us_data_view'))
+us_data_upload_perm = Permission(RoleNeed('us_data_upload'))
+us_data_edit_perm = Permission(RoleNeed('us_data_edit'))
+
+tw_data_view_perm = Permission(RoleNeed('tw_data_view'))
+tw_data_upload_perm = Permission(RoleNeed('tw_data_upload'))
+tw_data_edit_perm = Permission(RoleNeed('tw_data_edit'))
+
+quant_data_view_perm = Permission(RoleNeed('quant_data_view'))
+quant_data_upload_perm = Permission(RoleNeed('quant_data_upload'))
+quant_data_edit_perm = Permission(RoleNeed('quant_data_edit'))
+
+administation_data_view_perm = Permission(RoleNeed('administation_data_view'))
+administation_data_upload_perm = Permission(RoleNeed('administation_data_upload'))
+administation_data_edit_perm = Permission(RoleNeed('administation_data_edit'))
+
+system_edit_perm = Permission(RoleNeed('system_edit'))
 
 def print_registered_routes(app, blueprint_name):
     for rule in app.url_map.iter_rules():
@@ -32,8 +57,9 @@ def create_app():
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
     app.config['SESSION_KEY_PREFIX'] = 'session:'
-    DEFAULT_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
+    
     # 從環境變數中讀取REDIS_URL，如果沒有則使用預設值（本地測試用）
+    DEFAULT_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
     app.config['SESSION_REDIS'] = redis.from_url(os.environ.get('REDIS_URL', DEFAULT_REDIS_URL))
     app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # seesion有效時間設定為1小時
     #針對Session的安全性設定
@@ -41,6 +67,13 @@ def create_app():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = 'Lax'
     app.config['WTF_CSRF_ENABLED'] = False  # 關閉CSRF保護
+    
+    # 配置緩存
+    app.config['CACHE_TYPE'] = 'RedisCache'
+    app.config['CACHE_REDIS_URL'] = os.environ.get('REDIS_URL', DEFAULT_REDIS_URL)
+    # 初始化緩存
+    cache.init_app(app)
+    
     # 初始化Session
     Session(app)
     # 初始化擴展
@@ -66,25 +99,57 @@ def create_app():
     def load_user(user_id):
         return User.get(user_id)
     
-    # 定義角色權限並儲存到app.config中
-    app.config['ADMIN_PERMISSION'] = Permission(RoleNeed('admin'))
-    # 可以訪問除了 admin_permission 以外的所有路由
-    app.config['DIRECTOR_PERMISSION'] = Permission(RoleNeed('user_director'))
-    # 可以訪問基本面研究相關頁面
-    app.config['FUND_MANAGER_PERMISSION'] = Permission(RoleNeed('user_fundamental'))
-    # 可以訪問量化研究相關頁面
-    app.config['QUANT_ANALYST_PERMISSION'] = Permission(RoleNeed('user_quant'))
-    app.config['INVESTMENT_ANALYST_PERMISSION'] = Permission(RoleNeed('user_quant'))
-    app.config['INVESTMENT_CONSULTANT_PERMISSIO'] = Permission(RoleNeed('user_quant'))
-    # 只能訪問限定的試用頁面
-    app.config['INVESTMENT_INTERN_PERMISSION'] = Permission(RoleNeed('user_trial_account'))
-    
     # 設置身份加載時的角色處理程序
     @identity_loaded.connect_via(app)
     def on_identity_loaded(sender, identity):
+        roles_permission_dict = get_roles_permission_dict()
         identity.user = current_user
+        identity.provides.add(UserNeed(current_user.get_id()))
         if hasattr(current_user, 'roles'):
-            # 把用戶權限（roloes）加載到用戶資訊中
-            identity.provides.add(RoleNeed(current_user.roles))
+            for role in current_user.roles:
+                for perm in roles_permission_dict.get(role, []):
+                    identity.provides.add(perm)
         
+    # 權限錯誤處理，當用戶沒有權限時，返回403錯誤並顯示permission_denied.html
+    @app.errorhandler(403)
+    def handle_permission_denied(error):
+        return render_template('permission_denied.html'), 403
+    
     return app
+
+def get_roles_permission_dict():    
+    # 為角色分配功能權限
+    role_permissions_dict = {
+        "general_manager": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
+                            RoleNeed("tw_data_view"), RoleNeed("tw_data_upload"), 
+                            RoleNeed("quant_data_view"), RoleNeed("quant_data_upload"),
+                            RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        
+        "investment_manager": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
+                               RoleNeed("tw_data_view"), RoleNeed("tw_data_upload"), 
+                               RoleNeed("quant_data_view"), RoleNeed("quant_data_upload"),
+                               RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        
+        "investment_consultant": [RoleNeed("us_data_view"), RoleNeed("tw_data_view")],
+        
+        "investment_researcher": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
+                                  RoleNeed("tw_data_view"), RoleNeed("tw_data_upload")],
+        
+        "quant_researcher": [RoleNeed("quant_data_view"), RoleNeed("quant_data_upload")],
+        
+        "administration_staff": [RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        
+        "investment_intern": ["us_data_view", "us_data_upload", "tw_data_view", "tw_data_upload"],
+        
+        "remote_investment_intern": [RoleNeed('us_data_view'), RoleNeed('us_data_upload'), RoleNeed('us_data_edit'),
+                                     RoleNeed('tw_data_view'), RoleNeed('tw_data_upload'), RoleNeed('tw_data_edit')],
+        
+        "tw_data_subscriber": [RoleNeed('tw_data_view')],
+        
+        "admin": [RoleNeed('us_data_view'), RoleNeed('us_data_upload'), RoleNeed('us_data_edit'),
+                RoleNeed('tw_data_view'), RoleNeed('tw_data_upload'), RoleNeed('tw_data_edit'),
+                RoleNeed('quant_data_view'), RoleNeed('quant_data_upload'), RoleNeed('quant_data_edit'),
+                RoleNeed('admin_data_view'), RoleNeed('admin_data_upload'), RoleNeed('admin_data_edit'),
+                RoleNeed('system_edit')],
+    }
+    return role_permissions_dict

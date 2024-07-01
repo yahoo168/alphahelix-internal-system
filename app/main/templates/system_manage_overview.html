@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {% extends "main_base.html" %}
+    <meta charset="utf-8" />
+    <title>Marked in the browser</title>
+  </head>
+  {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">後台管理</h1>
+      <hr class="my-4" />
+    </div>
+    <br />
+
+    <div class=".container mt-5 mb-5 mx-4">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <a
+            href="{{url_for('main.new_user_register')}}"
+            class="btn btn-light custom-high-button btn-block"
+            >建立新用戶
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a
+            href="#"
+            class="btn btn-secondary custom-high-button btn-block"
+            >用戶權限設定
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a
+            href="#"
+            class="btn btn-light custom-high-button btn-block"
+            >待開發
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

@@ -1,19 +1,21 @@
 from flask import request, jsonify, render_template, redirect, url_for, flash, send_file, session
 from flask import current_app as app
 from flask_login import login_required, current_user
-from flask_principal import PermissionDenied
-
 import os, io
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
-from app.utils import *
-from app.utils.mongodb_client import *
-from app.utils.utils import *
-from . import main
 
-# 後者用於本地調適，前者用於部署至Heroku
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-google_cloud_storage_tools = google_tools.GoogleCloudStorageTools(GOOGLE_APPLICATION_CREDENTIALS)
+from app.utils.readwise_tools import readwise_client
+from app.utils.google_tools import google_cloud_storage_tools, search_investment_gcs_document, search_recent_investment_gcs_document
+from app.utils.mongodb_tools import MDB_client
+from app.utils.utils import TODAY_DATE_STR, datetime2str, str2datetime, unix_timestamp2datetime, is_valid_report_name, convert_objectid_to_str
+
+#cache在app/__init.py的creat_app中定義，這裡引入cache，避免重複創建
+from app import cache
+# 引入權限設定
+from app import us_data_view_perm, us_data_upload_perm, us_data_edit_perm, tw_data_view_perm, tw_data_upload_perm, tw_data_edit_perm, quant_data_view_perm, quant_data_upload_perm, quant_data_edit_perm, administation_data_view_perm, administation_data_upload_perm, administation_data_edit_perm, system_edit_perm
+
+from . import main
             
 @main.route('/')
 @main.route("/dashboard")
@@ -47,8 +49,8 @@ def set_user_setting():
 def show_user_setting():
     user_info = MDB_client["users"]["user_basic_info"].find_one({"_id" : ObjectId(current_user.get_id())})
     readwise_token = user_info.get("readwise_token", '')
-    
     send_report_to_email = user_info["send_report_to_email"]
+    
     context = {
         "readwise_token": readwise_token,
         "send_report_to_email": send_report_to_email
@@ -57,6 +59,7 @@ def show_user_setting():
 
 @main.route("/ticker_select")
 @login_required
+@us_data_view_perm.require(http_exception=403)
 def ticker_select():
     stock_ticker_list = ["AAPL", "GOOG", "MSFT", "OXY", "LAZR", "NVTS", "QCOM", "TSLA", "NET", "ON", "OXY", "TSM"]
     bond_ticker_list = ['OXY', 'RITM', 'CXW', 'F', 'MO', 'BA']
@@ -67,6 +70,7 @@ def ticker_select():
 
 @main.route('/company/<ticker>')
 @login_required
+@cache.cached(timeout=60)  #緩存60秒
 def company_page(ticker):
     # 初始化變量，避免未定義錯誤
     stock_report_review_date = ''
@@ -146,10 +150,8 @@ def report_summary_page(report_id):
     url = stock_report_meta["url"]
     summary =  stock_report_meta["summary"]
     
-    # 格式美觀：
-    # 原title有許多'_'，將其拆解後重組
+    # 格式美觀：原title有許多'_'，將其拆解後重組
     title = " ".join(title.split("_"))
-    # 原title有許多'_'，將其拆解後重組
     source_trans_dict = {"gs": "Goldman Sachs", "jpm":"J.P. Morgan", "citi":"Citi", "barclays":"Barclays"}
     if source in source_trans_dict.keys():
         source = source_trans_dict[source]
@@ -157,7 +159,7 @@ def report_summary_page(report_id):
     return render_template('report_summary_page.html', title=title, date=date, source=source, url=url,summary=summary)
 
 @main.route('/upload_stock_report', methods=['POST'])
-# @login_required
+@login_required
 def upload_stock_report():
     ticker, source, file_list = request.form["ticker"], request.form["source"], request.files.getlist('files')
     file_name_list = [file.filename for file in file_list]
@@ -173,30 +175,38 @@ def upload_stock_report():
     blob_meta_list = []
     for file in file_list:
         blob_name = os.path.join(GCS_folder_name, ticker, file.filename)
+        # 檔案名前10碼為日期（2024-01-01)，轉為unix timestamp，加int是為了去除小數點，否則在後續處理可能會報錯
+        data_timestamp = int(str2datetime(file.filename[:10]).timestamp())
         blob_meta = {
             "blob_name": blob_name,
-            "file": file,
             "file_type": "file",
+            "file": file,
             "metadata": {
-                "date": file.filename[:10],  # 前10码为日期（ex: 2024-01-01
+                "data_timestamp": data_timestamp,  
                 "upload_timestamp": upload_timestamp,
-                "title":  file.filename[11:],
+                "title":  file.filename[11:], # 檔案名前10碼為日期，第10碼為'_'，故從第11碼開始為檔案名
                 "ticker": ticker,
                 "uploader": current_user.get_id(),
                 "source": source,
             }
         }
         blob_meta_list.append(blob_meta)
-    # 將file meta上傳至google cloud storage
-    blob_url_dict = google_cloud_storage_tools.upload_to_google_cloud_storage(bucket_name="investment_report", blob_meta_list=blob_meta_list) # type: ignore
     
-   # 准备 MongoDB 数据
+    # 將file meta上傳至google cloud storage
+    blob_url_dict = google_cloud_storage_tools.upload_to_google_cloud_storage(
+        bucket_name="investment_report", 
+        blob_meta_list=blob_meta_list
+    )
+
+   # 上傳成功後，準備MongoDB元數據（因需要url，故2個for loop不能合併）
     mongo_db_data_list = []
     for file in file_list:
         blob_name = os.path.join(GCS_folder_name, ticker, file.filename)
         mongo_db_data_meta = {
             "blob_name": blob_name,
             "date": str2datetime(file.filename[:10]), # 前10码为日期（ex: 2024-01-01）
+            # 待改：用於取代date欄位
+            "data_timestamp": str2datetime(file.filename[:10]), # 前10码为日期（ex: 2024-01-01）
             "upload_timestamp": unix_timestamp2datetime(upload_timestamp),
             "title": file.filename[11:],  # 去除日期后的文件名
             "ticker": ticker,
@@ -209,53 +219,88 @@ def upload_stock_report():
     MDB_client["raw_content"]["raw_stock_report_non_auto"].insert_many(mongo_db_data_list)
     return render_template('report_upload_result.html', file_name_list=file_name_list, upload_success=True)
 
-@main.route("stock_document_search", methods=['POST'])
-# @login_required
-def stock_document_search():
+@main.route("investment_document_search", methods=['POST'])
+@login_required
+def investment_document_search():
     document_meta_list = list()
-    print(request.form)
     country = request.form["country"]
     ticker_list = [ticker.strip() for ticker in request.form["ticker"].split(",")]
-    document_type = request.form["document_type"]
+    if country == "TW":
+        ticker_list = [ticker+"_TT" for ticker in ticker_list if ticker != '']
+    # equity_type: stock/industry; document_type: memo/report
+    equity_type, document_type = request.form["document_type"].split("_")
+    # 若用戶未填寫日期，表單值為空字串''
+    start_date = request.form["start_date"] or None
+    end_date = request.form["end_date"] or None
+    # 若有日期範圍，則轉換為datetime格式
+    start_date = str2datetime(start_date) if start_date else None
+    # 若有結束日期，則加一天，以包含結束日
+    end_date = str2datetime(end_date) + timedelta(days=1) if end_date else None
     
-    for ticker in ticker_list:
-        if country == "TW":
-            ticker += "_TT"
-        document_meta_list.extend(_search_TW_stock_document(ticker, country, document_type))
-
+    if ticker_list:
+        for ticker in ticker_list:
+            document_meta_list.extend(search_investment_gcs_document(country, equity_type, document_type, ticker, start_date, end_date))
+    
+    # 若未填寫ticker，代表用戶搜尋行業文件，因此不用給定ticker
+    else:
+        document_meta_list.extend(search_investment_gcs_document(country=country, equity_type=equity_type, document_type=document_type, 
+                                                                 start_date=start_date, end_date=end_date))
     # 根据上传时间排序（最新的在前面）
-    document_meta_list = sorted(document_meta_list, key=lambda x: x["upload_timestamp"], reverse=True)
+    document_meta_list = sorted(document_meta_list, key=lambda x: x["data_timestamp"], reverse=True)
     return render_template('stock_document_search.html', document_meta_list=document_meta_list)
 
-def _search_TW_stock_document(ticker, country="US", document_type="report", start_date=None, end_date=None):
-    folder_name = f"{country}_stock_{document_type}/{ticker}"
-    blob_list = google_cloud_storage_tools.get_blob_list_in_folder(bucket_name="investment_report", folder_name=folder_name)
-    document_meta_list = list()
-    for blob in blob_list:
-        upload_timestamp = datetime.fromtimestamp(int(blob.metadata["upload_timestamp"]))
-        # 检查开始日期和结束日期
-        if (start_date is not None and upload_timestamp < start_date) or \
-           (end_date is not None and upload_timestamp > end_date):
-            continue
-            
-        document_meta_list.append({"upload_timestamp": upload_timestamp, 
-                                    "source": blob.metadata["source"],
-                                    #去除folder路徑和副檔名，用於頁面呈現（最多70個字，避免影響頁面）
-                                    "file_name": blob.name.split("/")[-1].split(".")[0][:70], 
-                                    "url": blob.public_url,
-                                    "blob_name": blob.name,
-                                    "document_type": document_type})
-    return document_meta_list
+@main.route('/quick_search_investment_document/<int:days>/<string:folder_name>')
+# @login_required
+def quick_search_investment_document(days, folder_name):
+    document_meta_list = search_recent_investment_gcs_document(days, [folder_name])
+    document_meta_list = sorted(document_meta_list, key=lambda x: x["data_timestamp"], reverse=True)
+    return render_template('stock_document_search.html', document_meta_list=document_meta_list)
+
+@main.route("edit_gcs_stock_document_metadata", methods=['POST'])
+@login_required
+@us_data_edit_perm.require(http_exception=403)
+@tw_data_edit_perm.require(http_exception=403)
+def edit_gcs_stock_document_metadata():
+    edit_metadata = request.get_json()
+    blob_name = edit_metadata["blob_name"]
+    # 转换为 datetime 对象
+    datetime_obj = datetime.strptime(edit_metadata["datetime_str"], '%Y-%m-%d %H:%M:%S')
+    # 转换为 Unix timestamp
+    unix_timestamp = int(datetime_obj.timestamp())
+    data_source = edit_metadata["data_source"]
+    
+    new_metadata = {
+        "data_timestamp": unix_timestamp,
+        "source": data_source
+    }
+    try:
+        google_cloud_storage_tools.set_blob_metadata(bucket_name='investment_report', blob_name=blob_name, metadata=new_metadata)
+        return jsonify({'status': 'success', 'message': 'updated seccessfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+@main.route("delete_gcs_document", methods=['POST'])
+@login_required
+@us_data_edit_perm.require(http_exception=403)
+@tw_data_edit_perm.require(http_exception=403)
+def delete_gcs_document():
+    edit_metadata = request.get_json()
+    blob_name = edit_metadata["blob_name"]
+    print(blob_name, "deleted")
+    try:
+        # google_cloud_storage_tools.set_blob_metadata(bucket_name='investment_report', blob_name=blob_name, metadata=new_metadata)
+        return jsonify({'status': 'success', 'message': 'Delete seccessfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
 
 @main.route('/download_content/<path:blob_name>')
 def download_GCS_file(blob_name):
-    # 下载 blob 内容到内存
     blob = google_cloud_storage_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
-    blob_data = blob.download_as_bytes()
-    # 创建一个内存中的文件对象
-    file_obj = io.BytesIO(blob_data)
+    # 建立一个内存中的文件對象，並下載blob内容到内存
+    file_obj = io.BytesIO(blob.download_as_bytes())
+    # 將文件指標移至文件開頭（否者會導致讀取不到文件）
     file_obj.seek(0)
-    # 返回文件给用户，并设置默认下载名
+    # 傳送下載文件给用户，并設置檔案名稱（取blob_name的最後一部分作為檔案名稱）
     return send_file(file_obj, as_attachment=True, download_name=blob_name.split("/")[-1])
 
 @main.route('/get_content/<path:blob_name>')
@@ -275,13 +320,13 @@ def note_search_page(tag_show_days=30):
         flash("Please set Readwise token first!", "danger")
         return redirect(url_for("main.show_user_setting"))
     # 建立ReadwiseTool實例
-    readwise_tool = readwise_tools.ReadwiseTool(MDB_client, token=readwise_token)
     # 將用戶的筆記上傳至mongodb
-    readwise_tool.upload_articles_to_MDB(user_id=user_id)
-    lastest_article_date = datetime2str(readwise_tool.get_lastest_article_date(user_id=user_id))
+    readwise_client.token = readwise_token
+    readwise_client.upload_articles_to_MDB(user_id=user_id)
+    lastest_article_date = datetime2str(readwise_client.get_lastest_article_date(user_id=user_id))
     # 取得最近（預設為30日）的tag list，以供用戶選擇
-    article_meta_list = readwise_tool.get_article_meta_list(user_id=user_id, days=tag_show_days)
-    recent_tag_list = readwise_tool.get_recent_tag_list(article_meta_list)
+    article_meta_list = readwise_client.get_article_meta_list(user_id=user_id, days=tag_show_days)
+    recent_tag_list = readwise_client.get_recent_tag_list(article_meta_list)
     
     # 回傳時，如何辨別出哪些是topic tag，哪些是stock tag？
     # stock_tag_list = sorted([tag.upper() for tag in recent_tag_list if len(tag.split("_")) == 1])
@@ -301,10 +346,8 @@ def note_search_page(tag_show_days=30):
 @login_required
 def note_reload(reload_days=30):
     user_id = current_user.get_id()
-    user_info = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)}, {"readwise_token": 1, "_id": 0})
-    readwise_token = user_info.get("readwise_token", '')
-    readwise_tool = readwise_tools.ReadwiseTool(MDB_client, token=readwise_token)
-    readwise_tool.upload_articles_to_MDB(user_id=ObjectId(user_id), days=reload_days)
+    # user_info = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)}, {"readwise_token": 1, "_id": 0})
+    readwise_client.upload_articles_to_MDB(user_id=ObjectId(user_id), days=reload_days)
     return note_search_page()
 
 @main.route("/note_search", methods=['POST'])
@@ -312,16 +355,15 @@ def note_search():
     data = request.json
     days = data.get("days")
     tag_list = data.get("tag_list")
-    readwise_tool = readwise_tools.ReadwiseTool(MDB_client)
-    article_meta_list = readwise_tool.get_article_meta_list(days=days)
-    selected_article_meta_list = readwise_tool.search_highlights_by_tags(article_meta_list, tag_list)
+    article_meta_list = readwise_client.get_article_meta_list(days=days)
+    selected_article_meta_list = readwise_client.search_highlights_by_tags(article_meta_list, tag_list)
     selected_article_meta_list = convert_objectid_to_str(selected_article_meta_list)
     return jsonify(selected_article_meta_list)
 
-@main.route("/summarize_articles", methods=['GET'])
-@login_required
-def summarize_articles():
-    return render_template("summary_display.html")
+# @main.route("/summarize_articles", methods=['GET'])
+# @login_required
+# def summarize_articles():
+#     return render_template("summary_display.html")
 
 @main.route('/upload_issue', methods=['POST'])
 @login_required
@@ -338,6 +380,13 @@ def upload_issue():
     MDB_client["users"]["following_issues"].insert_one(issue_meta)
     flash("Issue uploaded successfully!", "success")
     return render_template("issue_register.html")
+
+@main.route('/new_user_register')
+@login_required
+@system_edit_perm.require(http_exception=403)
+def new_user_register():
+    print("test")
+    return redirect(url_for("auth.user_register"))
 
 @main.route('/<page>')
 @login_required

@@ -7,9 +7,11 @@ from .forms import RegistrationForm, LoginForm
 from bson import ObjectId
 import logging
 import secrets
-from app.utils.mongodb_client import MDB_client
+from app.utils.mongodb_tools import MDB_client
 from app import bcrypt
 from .users_model import User, check_username_exist, create_new_user
+
+from flask import jsonify
 
 from . import auth  # 从当前包中导入 auth blueprint
 
@@ -17,49 +19,27 @@ from . import auth  # 从当前包中导入 auth blueprint
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def _get_permissions():
-    with app.app_context():
-        return {
-            # 'admin_permission': app.config['ADMIN_PERMISSION'],
-            # 'sales_permission': app.config['DIRECTOR_PERMISSION'],
-            # 'fundamental_permission': app.config['FUNDAMENTAL_PERMISSION'],
-            # 'quant_permission': app.config['QUANT_PERMISSION'],
-            # 'trial_account_permission': app.config['TRIAL_ACCOUNT_PERMISSION'],
-        }
-        
-permissions = None
-
-# 通过一个函数来初始化权限，以确保在应用上下文内调用
-def initialize_permissions():
-    global permissions
-    permissions = _get_permissions()
-
 # 使用 before_app_request 在应用第一次请求之前初始化权限。
 @auth.before_app_request
-def before_request():
-    if permissions is None: 
-        initialize_permissions()
-        print("Permissions initialized:", permissions)
+def before_request():        
     # 为每个请求设置一个CSRF令牌（目前关闭CSRF保护）
     if '_csrf_token' not in session:
         session['_csrf_token'] = generate_csrf()
 
-@auth.route("/register", methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+@auth.route("/user_register", methods=['GET', 'POST'])
+def user_register():
     form = RegistrationForm()
     if form.validate_on_submit():
         if check_username_exist(form.username.data):
-            flash('Your username already exist!', 'danger')
+            flash('Username already exist!', 'danger')
             return redirect(url_for('auth.register'))
         
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password)
+        create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password, roles=form.roles.data)
         flash('New account has been created!', 'success')
         return redirect(url_for('auth.login'))
     
-    return render_template('register.html', title='Register', form=form)
+    return render_template('user_register.html', title='Register', form=form)
               
 @auth.route("/login", methods=['GET', 'POST'])
 def login():
@@ -88,6 +68,8 @@ def login():
 @login_required
 def logout():
     logout_user()
+    # 通知 Flask-Principal 系統用戶的身份已經變更，將當前用戶的身份設置為匿名身份
+    identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
     session.clear()  # 清理session
     return redirect(url_for('auth.login'))
 

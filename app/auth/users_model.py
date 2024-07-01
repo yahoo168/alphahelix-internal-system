@@ -2,11 +2,11 @@
 from flask import current_app as app
 from flask_login import UserMixin
 from bson import ObjectId
-from app.utils.mongodb_client import MDB_client
+from app.utils.mongodb_tools import MDB_client
 from flask_principal import Principal, Permission, RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 
 class User(UserMixin):
-    def __init__(self, username, email, password_hash, roles=None, _id=None):
+    def __init__(self, username, email, password_hash, roles, _id=None):
         self.username = username
         self.email = email
         self.password_hash = password_hash
@@ -33,11 +33,12 @@ def check_username_exist(username):
     else:
         return False
 
-def create_new_user(email, username, password_hash):
+def create_new_user(email, username, password_hash, roles):
     user_basic_info = {
         "email": email,
         "username": username,
         "password_hash": password_hash,
+        "roles": roles,
+        "send_report_to_email": True,
     }
     MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)
-    # self._id = MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)

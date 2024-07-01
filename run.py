@@ -10,6 +10,7 @@ encoded_key = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_BASE64', google_credenti
 # 解碼 base64 字串
 decoded_key = base64.b64decode(encoded_key)
 # 將解碼後的內容寫入臨時檔案
+
 temp_gcp_key_path = '/tmp/gcp_key.json'
 with open(temp_gcp_key_path, 'wb') as temp_file:
     temp_file.write(decoded_key)
