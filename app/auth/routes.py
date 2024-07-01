@@ -28,19 +28,6 @@ logger = logging.getLogger(__name__)
 #     if '_csrf_token' not in session:
 #         session['_csrf_token'] = generate_csrf()
 
-@app.before_request
-def before_request():
-    session_id = session.get('session_id')
-    user_id = session.get('user_id')
-    logger.info(f"Before request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
-
-@app.after_request
-def after_request(response):
-    session_id = session.get('session_id')
-    user_id = session.get('user_id')
-    logger.info(f"After request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
-    return response
-
 @auth.route("/user_register", methods=['GET', 'POST'])
 def user_register():
     form = RegistrationForm()
@@ -60,6 +47,7 @@ def user_register():
 def login():
     # 如果用戶已經登錄，則重定向到主頁
     if current_user.is_authenticated:
+        flash("You have logined.", category="info")
         logging.info(f'User {current_user.username} already logged in')
         return redirect(url_for('main.dashboard'))
     
@@ -70,9 +58,11 @@ def login():
             user = User.get(user_data['_id'])
             # 清理舊的session，以避免數據錯誤
             session.clear()
+            # 如果值为 True，那么会在用户浏览器中写入一个长期有效的 cookie，使用这个 cookie 可以复现用户会话。cookie 默认记住一年
             login_user(user, remember=form.remember.data)
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             session['user_id'] = user.get_id() # 保存用戶ID
+            
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')

@@ -79,6 +79,19 @@ def create_app():
     login_manager.login_message_category = 'info'  # 設置flash的類別
     principals.init_app(app)
 
+    @app.before_request
+    def before_request():
+        session_id = session.get('session_id')
+        user_id = session.get('user_id')
+        logger.info(f"Before request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
+
+    @app.after_request
+    def after_request(response):
+        session_id = session.get('session_id')
+        user_id = session.get('user_id')
+        logger.info(f"After request: session_id={session_id}, user_id={user_id}, current_user={current_user.get_id() if current_user.is_authenticated else 'Anonymous'}")
+        return response
+
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
