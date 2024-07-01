@@ -55,6 +55,7 @@ def login():
             session.clear()
             login_user(user, remember=form.remember.data)
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
+            session['user_id'] = user.get_id() # 保存用戶ID
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
