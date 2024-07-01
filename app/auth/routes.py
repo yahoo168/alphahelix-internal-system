@@ -60,16 +60,7 @@ def user_register():
     return render_template('user_register.html', title='Register', form=form)
               
 @auth.route("/login", methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
-        session.clear()  # 清理session
-    # 如果用戶已經登錄，則重定向到主頁
-    # if current_user.is_authenticated:
-    #     flash("You have logined.", category="info")
-    #     logging.info(f'User {current_user.username} already logged in')
-    #     return redirect(url_for('main.dashboard'))
-    
+def login():    
     form = LoginForm()
     if form.validate_on_submit():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})
