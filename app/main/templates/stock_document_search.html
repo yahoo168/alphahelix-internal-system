@@ -88,10 +88,10 @@
           </div>
         </div>
         <button type="submit" class="btn btn-dark">Search</button>
-        <a href="{{ url_for('main.quick_search_investment_document', days=3, folder_name='US_stock_report') }}" class="btn btn-dark">近3日美股個股</a>
-        <a href="{{ url_for('main.quick_search_investment_document', days=3, folder_name='TW_stock_report') }}" class="btn btn-dark">近3日台股個股</a>
-        <a href="{{ url_for('main.quick_search_investment_document', days=3, folder_name='TW_stock_memo') }}" class="btn btn-dark">近3日台股Memo</a>
-        <a href="{{ url_for('main.quick_search_investment_document', days=3, folder_name='TW_industry_report') }}" class="btn btn-dark">近3日台股行業</a>
+        <a href="{{ url_for('main.quick_search_investment_document', days=7, folder_name='US_stock_report') }}" class="btn btn-dark">近7日美股個股</a>
+        <a href="{{ url_for('main.quick_search_investment_document', days=7, folder_name='TW_stock_report') }}" class="btn btn-dark">近7日台股個股</a>
+        <a href="{{ url_for('main.quick_search_investment_document', days=7, folder_name='TW_stock_memo') }}" class="btn btn-dark">近7日台股Memo</a>
+        <a href="{{ url_for('main.quick_search_investment_document', days=7, folder_name='TW_industry_report') }}" class="btn btn-dark">近7日台股行業</a>
       </form>
     </div>
     <br />
