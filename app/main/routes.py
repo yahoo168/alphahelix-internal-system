@@ -385,7 +385,6 @@ def upload_issue():
 @login_required
 @system_edit_perm.require(http_exception=403)
 def new_user_register():
-    print("test")
     return redirect(url_for("auth.user_register"))
 
 @main.route('/<page>')

@@ -11,9 +11,7 @@ import secrets
 from app.utils.mongodb_tools import MDB_client
 from app import bcrypt
 
-from .users_model import User, check_username_exist, create_new_user, load_user
-
-from flask import jsonify
+from .users_model import User, check_username_exist, create_new_user
 
 from . import auth  # 从当前包中导入 auth blueprint
 
@@ -36,9 +34,9 @@ def teardown(exception):
     except Exception as e:
         logger.error(f"Error during session teardown: {e}")
 
-# 确保浏览器不缓存页面，保证每次访问页面时都从服务器获取最新的内容。
+# 确保浏览器不缓存页面，保证每次访问页面时都从服务器获取最新的内容。（實際有沒有作用，待確認）
 @auth.after_request
-def add_header(response):
+def make_sure_browser_non_cache(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
@@ -55,7 +53,8 @@ def user_register():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password, roles=form.roles.data)
         flash('New account has been created!', 'success')
-        return redirect(url_for('auth.login'))
+    else:
+        flash('New account creating Fail!', 'danger')
     
     return render_template('user_register.html', title='Register', form=form)
               
