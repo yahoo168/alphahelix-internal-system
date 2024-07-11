@@ -79,6 +79,8 @@ def login():
                 session_data = convert_session_data(dict(session))  # 转换会话数据(将布尔值转换为0或1)
                 redis_instance.hset(f'session:{session["session_id"]}', mapping=session_data)
                 redis_instance.expire(f'session:{session["session_id"]}', app.config['PERMANENT_SESSION_LIFETIME'])
+                logger.info(f'Session saved to Redis: {session_data}')
+                
             except Exception as e:
                 logger.error(f'Failed to save session to Redis: {e}')
                 flash('Login Unsuccessful. Please try again later.', 'danger')
@@ -98,10 +100,23 @@ def login():
 @auth.route("/logout")
 @login_required
 def logout():
+    user_id = session.get('user_id')
+    session_id = session.get('session_id')
+    if user_id and session_id:
+        try:
+            redis_instance.delete(f'session:{session_id}')
+            logger.info(f'Session deleted from Redis: session_id={session_id}')
+        except Exception as e:
+            logger.error(f'Failed to delete session from Redis: {e}')
+    # 清理session
+    session.clear()
+    logger.info(f'User {user_id} logged out')
+    
+    # 注销用户
     logout_user()
-    # 通知 Flask-Principal 系統用戶的身份已經變更，將當前用戶的身份設置為匿名身份
+    # 通知 Flask-Principal 系统用户的身份已经变更，将当前用户的身份设置为匿名身份
     identity_changed.send(app._get_current_object(), identity=AnonymousIdentity())
-    session.clear()  # 清理session
+    
     return redirect(url_for('auth.login'))
 
 @auth.route('/change_password', methods=['POST'])

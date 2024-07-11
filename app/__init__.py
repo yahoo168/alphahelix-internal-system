@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # 從環境變數中讀取REDIS_URL，如果沒有則使用預設值（本地測試用）
 LOCAL_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
 REDIS_URL = os.environ.get('REDIS_URL', LOCAL_REDIS_URL)
-redis_pool = ConnectionPool.from_url(REDIS_URL, max_connections=20, socket_timeout=3, retry_on_timeout=True)
+redis_pool = ConnectionPool.from_url(REDIS_URL, max_connections=50, socket_timeout=3, retry_on_timeout=True)
 redis_instance = Redis(connection_pool=redis_pool)
 
 # 創建擴展實例
