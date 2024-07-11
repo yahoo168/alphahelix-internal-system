@@ -95,9 +95,9 @@ def company_page(ticker):
         bearish_outlook_diff = stock_report_review.get("bearish_outlook_diff", '')
 
     # 取得近期新聞摘要(stock_info_daily)
-    shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker}, sort=[("date", -1)])
+    shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker}, sort=[("data_timestamp", -1)])
     if shorts_summary_meta:
-        stock_info_date = datetime2str(shorts_summary_meta["date"])
+        stock_info_date = datetime2str(shorts_summary_meta["data_timestamp"])
         stock_info_daily = shorts_summary_meta.get("shorts_summary", '')
 
     # 取得近期報告列表（近10篇）
