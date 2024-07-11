@@ -177,7 +177,8 @@ def get_roles_permission_dict():
         
         "administration_staff": [RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
         
-        "investment_intern": ["us_data_view", "us_data_upload", "tw_data_view", "tw_data_upload"],
+        "investment_intern": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
+                                  RoleNeed("tw_data_view"), RoleNeed("tw_data_upload")],
         
         "remote_investment_intern": [RoleNeed('us_data_view'), RoleNeed('us_data_upload'), RoleNeed('us_data_edit'),
                                      RoleNeed('tw_data_view'), RoleNeed('tw_data_upload'), RoleNeed('tw_data_edit')],

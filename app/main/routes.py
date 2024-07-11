@@ -61,8 +61,8 @@ def show_user_setting():
 @login_required
 @us_data_view_perm.require(http_exception=403)
 def ticker_select():
-    stock_ticker_list = ["AAPL", "GOOG", "MSFT", "OXY", "LAZR", "NVTS", "QCOM", "TSLA", "NET", "ON", "OXY", "TSM"]
-    bond_ticker_list = ['OXY', 'RITM', 'CXW', 'F', 'MO', 'BA']
+    stock_ticker_list = ["AAPL", "GOOG", "MSFT", "LAZR", "NVTS", "QCOM", "TSLA", "NET", "ON", "OXY", "TSM"]
+    bond_ticker_list = ["RITM", "CXW", "F", "MO", "BA"]
     ticker_list = stock_ticker_list + bond_ticker_list
     ticker_list.sort()
     ticker_list = [ticker for ticker in ticker_list if ticker not in ["TLT", "LQD"]]
