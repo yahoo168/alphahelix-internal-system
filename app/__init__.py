@@ -6,10 +6,11 @@ from flask_principal import Principal, identity_changed, identity_loaded, Anonym
 from flask_login import current_user
 from flask_wtf import CSRFProtect
 from flask_caching import Cache
-import logging
+import os, logging
 import secrets
-import os
-import redis
+from redis import Redis
+from redis.connection import ConnectionPool
+from datetime import timedelta
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -49,13 +50,16 @@ def create_app():
     # 配置Session，並存儲到Redis
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = True
-    app.config['SESSION_USE_SIGNER'] = True
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session 7天后过期
+    app.config['SESSION_USE_SIGNER'] = True  # 確保Session不會被竄改
     app.config['SESSION_KEY_PREFIX'] = 'session:' # 设置会话键的前綴（範例：session:2f3e1b2c4d5e6f7890a1b2c3d4e5f6a7）
     
     # 從環境變數中讀取REDIS_URL，如果沒有則使用預設值（本地測試用）
-    DEFAULT_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
-    app.config['SESSION_REDIS'] = redis.from_url(os.environ.get('REDIS_URL', DEFAULT_REDIS_URL))
-    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # seesion有效時間設定為1小時
+    LOCAL_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
+    REDIS_URL = os.environ.get('REDIS_URL', LOCAL_REDIS_URL)
+    redis_pool = ConnectionPool.from_url(REDIS_URL, max_connections=20, socket_timeout=3, retry_on_timeout=True)
+    app.config['SESSION_REDIS'] = Redis(connection_pool=redis_pool)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)  # seesion有效時間設定為1小時
     #針對Session的安全性設定
     app.config["SESSION_COOKIE_SECURE"] = True  # 確保在HTTPS下傳輸
     app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -64,7 +68,7 @@ def create_app():
     
     # 配置緩存
     app.config['CACHE_TYPE'] = 'RedisCache'
-    app.config['CACHE_REDIS_URL'] = os.environ.get('REDIS_URL', DEFAULT_REDIS_URL)
+    app.config['CACHE_REDIS_URL'] = REDIS_URL
     # 初始化緩存
     cache.init_app(app)
     

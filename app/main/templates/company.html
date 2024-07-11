@@ -126,7 +126,8 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Title</th>
-                <th scope="col">Date</th>
+                <th scope="col">Report Date</th>
+                <th scope="col">Upload Date</th>
                 <th scope="col">Source</th>
                 <th scope="col">
                   <a
@@ -148,7 +149,8 @@
                     >{{ stock_report_meta['title'] }}</a
                   >
                 </td>
-                <td>{{stock_report_meta['date']}}</td>
+                <td>{{stock_report_meta['data_timestamp']}}</td>
+                <td>{{stock_report_meta['upload_timestamp']}}</td>
                 <td>{{stock_report_meta['source']}}</td>
                 <td>
                   <a

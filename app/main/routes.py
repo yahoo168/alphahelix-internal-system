@@ -69,8 +69,9 @@ def ticker_select():
     return render_template('ticker_select.html', ticker_list=ticker_list)
 
 @main.route('/company/<ticker>')
-@login_required
-@cache.cached(timeout=60)  #緩存60秒
+# @login_required
+# @cache.cached(timeout=60)  #緩存60秒
+# @us_data_view_perm.require(http_exception=403)
 def company_page(ticker):
     # 初始化變量，避免未定義錯誤
     stock_report_review_date = ''
@@ -100,12 +101,14 @@ def company_page(ticker):
         stock_info_daily = shorts_summary_meta.get("shorts_summary", '')
 
     # 取得近期報告列表（近10篇）
-    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"ticker": ticker}, sort=[("date", -1)], limit=10))
+    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"ticker": ticker}, sort=[("data_timestamp", -1)], limit=10))
     for stock_report_meta in stock_report_meta_list:
         stock_report_meta["title"] = stock_report_meta["title"].replace("_", " ")[:-4][:80]
-        stock_report_meta["date"] = datetime2str(stock_report_meta["date"])
+        stock_report_meta["data_timestamp"] = datetime2str(stock_report_meta["data_timestamp"])
+        stock_report_meta["upload_timestamp"] = datetime2str(stock_report_meta["upload_timestamp"])
+        
         source_trans_dict = {"gs": "Goldman Sachs", "jpm": "J.P. Morgan", "citi": "Citi", "barclays": "Barclays"}
-        stock_report_meta["source"] = source_trans_dict[stock_report_meta["source"]]
+        stock_report_meta["source"] = source_trans_dict.get(stock_report_meta["source"], stock_report_meta["source"])
         stock_report_meta["_id"] = str(stock_report_meta["_id"])
 
     # 取得用戶上傳的追蹤問題列表（近10個）
@@ -142,10 +145,11 @@ def company_page(ticker):
 
 @main.route("/report_summary_page/<report_id>")
 @login_required
+@us_data_view_perm.require(http_exception=403)
 def report_summary_page(report_id):
     stock_report_meta = MDB_client["preprocessed_content"]["stock_report"].find_one({"_id": ObjectId(report_id)})
     title = stock_report_meta["title"][:-4]
-    date = datetime2str(stock_report_meta["date"])
+    report_date = datetime2str(stock_report_meta["data_timestamp"])
     source = stock_report_meta["source"]
     url = stock_report_meta["url"]
     summary =  stock_report_meta["summary"]
@@ -156,10 +160,11 @@ def report_summary_page(report_id):
     if source in source_trans_dict.keys():
         source = source_trans_dict[source]
 
-    return render_template('report_summary_page.html', title=title, date=date, source=source, url=url,summary=summary)
+    return render_template('report_summary_page.html', title=title, report_date=report_date, source=source, url=url,summary=summary)
 
 @main.route('/upload_stock_report', methods=['POST'])
 @login_required
+@us_data_upload_perm.require(http_exception=403)
 def upload_stock_report():
     ticker, source, file_list = request.form["ticker"], request.form["source"], request.files.getlist('files')
     file_name_list = [file.filename for file in file_list]
@@ -204,8 +209,6 @@ def upload_stock_report():
         blob_name = os.path.join(GCS_folder_name, ticker, file.filename)
         mongo_db_data_meta = {
             "blob_name": blob_name,
-            "date": str2datetime(file.filename[:10]), # 前10码为日期（ex: 2024-01-01）
-            # 待改：用於取代date欄位
             "data_timestamp": str2datetime(file.filename[:10]), # 前10码为日期（ex: 2024-01-01）
             "upload_timestamp": unix_timestamp2datetime(upload_timestamp),
             "title": file.filename[11:],  # 去除日期后的文件名
@@ -221,6 +224,8 @@ def upload_stock_report():
 
 @main.route("investment_document_search", methods=['POST'])
 @login_required
+@us_data_view_perm.require(http_exception=403)
+@tw_data_view_perm.require(http_exception=403)
 def investment_document_search():
     document_meta_list = list()
     country = request.form["country"]
@@ -250,7 +255,9 @@ def investment_document_search():
     return render_template('stock_document_search.html', document_meta_list=document_meta_list)
 
 @main.route('/quick_search_investment_document/<int:days>/<string:folder_name>')
-# @login_required
+@login_required
+@us_data_view_perm.require(http_exception=403)
+@tw_data_view_perm.require(http_exception=403)
 def quick_search_investment_document(days, folder_name):
     document_meta_list = search_recent_investment_gcs_document(days, [folder_name])
     document_meta_list = sorted(document_meta_list, key=lambda x: x["data_timestamp"], reverse=True)
@@ -367,6 +374,7 @@ def note_search():
 
 @main.route('/upload_issue', methods=['POST'])
 @login_required
+@us_data_upload_perm.require(http_exception=403)
 def upload_issue():
     issue, tickers = request.form["issue"], request.form["tickers"]
     ticker_list = tickers.split(",")
