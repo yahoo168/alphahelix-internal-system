@@ -8,8 +8,10 @@ from bson import ObjectId
 import logging
 import secrets
 
+
 from app.utils.mongodb_tools import MDB_client
-from app import bcrypt
+from app.utils.utils import convert_session_data
+from app import bcrypt, redis_instance
 
 from .users_model import User, check_username_exist, create_new_user
 
@@ -72,6 +74,16 @@ def login():
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             session['user_id'] = user.get_id() # 保存用戶ID
             
+            # 保存Session到Redis
+            try:
+                session_data = convert_session_data(dict(session))  # 转换会话数据(将布尔值转换为0或1)
+                redis_instance.hset(f'session:{session["session_id"]}', mapping=session_data)
+                redis_instance.expire(f'session:{session["session_id"]}', app.config['PERMANENT_SESSION_LIFETIME'])
+            except Exception as e:
+                logger.error(f'Failed to save session to Redis: {e}')
+                flash('Login Unsuccessful. Please try again later.', 'danger')
+                return redirect(url_for('auth.login'))
+            
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
@@ -79,6 +91,8 @@ def login():
         else:
             logger.info(f'logging fail')
             flash('Login Unsuccessful. Please check email and password', 'danger')
+            return redirect(url_for('auth.login'))
+        
     return render_template('login.html', form=form)
 
 @auth.route("/logout")

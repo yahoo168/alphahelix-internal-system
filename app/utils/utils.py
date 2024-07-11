@@ -46,3 +46,14 @@ def convert_objectid_to_str(data):
 
 # 將本日的日期以字串形式表達，方便調用
 TODAY_DATE_STR = datetime2str(datetime.today())
+
+# Redis的哈希结构只支持存储字符串、整数和浮点数等基本数据类型，而不支持布尔值。将会话数据存储到Redis之前，将布尔值转换为字符串或整数。
+def convert_session_data(session_data):
+    """Convert session data to Redis compatible format."""
+    converted = {}
+    for key, value in session_data.items():
+        if isinstance(value, bool):
+            converted[key] = int(value)  # 将布尔值转换为整数（0或1）
+        else:
+            converted[key] = value
+    return converted
