@@ -4,5 +4,6 @@ test.py
 .ipynb_checkpoints/
 .vscode/
 temp_store/
-__pycache__/
+# Ignore all __pycache__ folders
+**/__pycache__/
 venv/
