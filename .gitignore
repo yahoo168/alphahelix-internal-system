@@ -4,5 +4,5 @@ test.py
 .ipynb_checkpoints/
 .vscode/
 temp_store/
-_pycache__/
+__pycache__/
 venv/
