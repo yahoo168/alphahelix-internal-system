@@ -1,3 +1,6 @@
 from alphahelix_database_tools.cloud_database.CloudPoolListDatabase import CloudPoolListDatabase 
+import os
 
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 pool_list_db = CloudPoolListDatabase()
+pool_list_db.set_google_drive_client(GOOGLE_APPLICATION_CREDENTIALS)
