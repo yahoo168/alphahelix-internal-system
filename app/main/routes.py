@@ -1,7 +1,11 @@
 from flask import request, jsonify, render_template, redirect, url_for, flash, send_file, session
 from flask import current_app as app
 from flask_login import login_required, current_user
+
+from collections import Counter
 import os, io
+import pandas as pd
+
 from datetime import datetime, timedelta
 from bson import ObjectId
 
@@ -10,6 +14,7 @@ from app.utils.google_tools import google_cloud_storage_tools, search_investment
 from app.utils.mongodb_tools import MDB_client
 from app.utils.utils import TODAY_DATE_STR, datetime2str, str2datetime, unix_timestamp2datetime, is_valid_report_name, convert_objectid_to_str
 
+from app.utils.alphahelix_database_tools import pool_list_db
 #cache在app/__init.py的creat_app中定義，這裡引入cache，避免重複創建
 from app import cache
 # 引入權限設定
@@ -47,15 +52,38 @@ def set_user_setting():
 @main.route('/show_user_setting')
 @login_required
 def show_user_setting():
-    user_info = MDB_client["users"]["user_basic_info"].find_one({"_id" : ObjectId(current_user.get_id())})
-    readwise_token = user_info.get("readwise_token", '')
-    send_report_to_email = user_info["send_report_to_email"]
+    user_info_dict = MDB_client["users"]["user_basic_info"].find_one({"_id" : ObjectId(current_user.get_id())})
+    readwise_token = user_info_dict.get("readwise_token", '')
+    send_report_to_email = user_info_dict.get("send_report_to_email", '')
+    employee_id = user_info_dict.get("employee_id", '')
     
     context = {
         "readwise_token": readwise_token,
-        "send_report_to_email": send_report_to_email
+        "send_report_to_email": send_report_to_email,
+        "employee_id": employee_id,
     }
     return render_template("user_setting.html", **context)
+
+@main.route("/pool_list_review")
+# @login_required
+def pool_list_review():
+    pool_list_df = pool_list_db.get_pool_list_data_df()
+    pool_list_df = pool_list_df.loc[:, ["researcher", "holding_status", "tracking_status", "last_publication_timestamp"]]
+    
+    pool_list_meta_list = (
+        pool_list_db.get_pool_list_data_df()
+        .loc[:, ["researcher", "holding_status", "tracking_status", "last_publication_timestamp"]]
+        # 將部位資訊轉換為字串，以逗號分割，便於前端顯示
+        .assign(holding_status=lambda df: df["holding_status"].fillna('').apply(lambda x: ','.join(x) if x else ''))
+        .astype({"last_publication_timestamp": str, "tracking_status": int})
+        .replace('NaT', '')
+        .fillna('')
+        .reset_index()
+        .rename(columns={"index": "ticker"})
+        .to_dict(orient="records")
+    )
+        
+    return render_template('pool_list_review.html', pool_list_meta_list=pool_list_meta_list)
 
 @main.route("/ticker_select")
 @login_required
@@ -68,10 +96,48 @@ def ticker_select():
     ticker_list = [ticker for ticker in ticker_list if ticker not in ["TLT", "LQD"]]
     return render_template('ticker_select.html', ticker_list=ticker_list)
 
+@main.route('/internal_report/<ticker>')
+def internal_report(ticker):
+    publication_type_list = []
+    publication_count_list = []
+    publications_meta_list = []
+    
+    # 製作username與employee_id的對應表
+    user_info_meta_list = list(MDB_client["users"]["user_basic_info"].find())
+    mapping_df = pd.DataFrame(user_info_meta_list).loc[:, ["username", "employee_id"]].set_index("employee_id")
+    id_mapping_dict = mapping_df.to_dict(orient='index')
+    
+    # 取得個股內部報告
+    research_status_dict = MDB_client["pool_list"]["research_status"].find_one({"ticker": ticker})
+    updated_timestamp = datetime2str(research_status_dict["updated_timestamp"])
+    publications_meta_list = research_status_dict["publications"]
+    for publication_meta in publications_meta_list:
+        # 將data_timestamp轉換為字串
+        publication_meta["data_timestamp"] = datetime2str(publication_meta["data_timestamp"])
+        # 將author_id轉換為username
+        publication_meta["author"] = id_mapping_dict[publication_meta["author_id"]]["username"]
+            
+    if publications_meta_list:
+        # 提取 publication type 并统计数量
+        publication_counts_series = (pd.Series(Counter(item['type'] for item in publications_meta_list))
+                                    .rename(index={"Preliminary": "初步研究", "Comprehensive": "深入研究", "Initial": "初次推薦", "Supplemental": "補充研究", "Model": "財務模型"}))
+
+        publication_type_list = publication_counts_series.index.tolist()
+        publication_count_list = publication_counts_series.values.astype(int).tolist()
+    
+    context = {
+        "ticker": ticker,
+        "updated_timestamp": updated_timestamp,
+        'publication_type_list': publication_type_list,
+        'publication_count_list': publication_count_list,
+        'publications_meta_list': publications_meta_list,
+    }
+    return render_template('internal_report.html', **context)
+
 @main.route('/company/<ticker>')
 # @login_required
 # @cache.cached(timeout=60)  #緩存60秒
-# @us_data_view_perm.require(http_exception=403)
+@us_data_view_perm.require(http_exception=403)
 def company_page(ticker):
     # 初始化變量，避免未定義錯誤
     stock_report_review_date = ''
@@ -84,6 +150,11 @@ def company_page(ticker):
     stock_report_meta_list = []
     issue_meta_list = []
 
+    # 取得個股內部觀點(使用pool_list_db物件)
+    conclustion_meta = pool_list_db.get_conclustion_meta_list(ticker=ticker)
+    if conclustion_meta:
+        conclustion_meta["data_timestamp"] = datetime2str(conclustion_meta["data_timestamp"])
+    
     # 取得近期報告的多空觀點彙整（stock_report_review）
     stock_report_review_meta = MDB_client["published_content"]["stock_report_review"].find_one({"ticker": ticker}, sort=[("date", -1)])
     if stock_report_review_meta:
@@ -131,13 +202,18 @@ def company_page(ticker):
     
     context = {
         'company_ticker': ticker,
+        'conclustion_meta': conclustion_meta,
         'stock_report_review_date': stock_report_review_date,
+        
         'bullish_argument_list': bullish_argument_list,
         'bearish_argument_list': bearish_argument_list,
+        
         'bullish_outlook_diff': bullish_outlook_diff,
         'bearish_outlook_diff': bearish_outlook_diff,
+        
         'stock_info_date': stock_info_date,
         'stock_info_daily': stock_info_daily,
+        
         'stock_report_meta_list': stock_report_meta_list,
         'issue_meta_list': issue_meta_list,
     }
@@ -191,7 +267,7 @@ def upload_stock_report():
                 "upload_timestamp": upload_timestamp,
                 "title":  file.filename[11:], # 檔案名前10碼為日期，第10碼為'_'，故從第11碼開始為檔案名
                 "ticker": ticker,
-                "uploader": current_user.get_id(),
+                "uploader_id": current_user.get_id(),
                 "source": source,
             }
         }

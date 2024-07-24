@@ -28,21 +28,14 @@ logger = logging.getLogger(__name__)
 #     if '_csrf_token' not in session:
 #         session['_csrf_token'] = generate_csrf()
 
-# 在每个应用程序上下文结束时标记会话为已修改，从而确保会话数据在请求处理结束后被正确保存。
-@auth.teardown_app_request
-def teardown(exception):
-    try:
-        session.modified = True
-    except Exception as e:
-        logger.error(f"Error during session teardown: {e}")
 
 # 确保浏览器不缓存页面，保证每次访问页面时都从服务器获取最新的内容。（實際有沒有作用，待確認）
-@auth.after_request
-def make_sure_browser_non_cache(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
-    return response
+# @auth.after_request
+# def make_sure_browser_non_cache(response):
+#     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+#     response.headers['Pragma'] = 'no-cache'
+#     response.headers['Expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
+#     return response
 
 @auth.route("/user_register", methods=['GET', 'POST'])
 def user_register():
@@ -65,6 +58,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})
+        # 如果用戶存在且密碼正確
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
             user = User.get(user_data['_id'])
             # 清理舊的session，以避免數據錯誤
@@ -90,6 +84,8 @@ def login():
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
             return redirect(url_for('main.dashboard'))
+        
+        # 如果用戶不存在或密碼錯誤，顯示錯誤信息
         else:
             logger.info(f'logging fail')
             flash('Login Unsuccessful. Please check email and password', 'danger')

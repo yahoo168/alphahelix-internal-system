@@ -1,3 +1,6 @@
+# Ignore all Jupyter Notebook files
+*.ipynb
+test.py
 .ipynb_checkpoints/
 .vscode/
 temp_store/

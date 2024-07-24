@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {% extends "main_base.html" %}
+    <meta charset="utf-8" />
+    <title>Marked in the browser</title>
+  </head>
+  {% block content %}
+  <body>
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">研究進度</h1>
+      <div class="alert alert-secondary" role="alert">
+        <a class="btn btn-secondary btn-sm" href="">更新</a>
+        <strong>更新日期：{{updated_timestamp}}</strong>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                {% for publication_type in publication_type_list %}
+                <th scope="col">{{publication_type}}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>研究數量</strong></td>
+                {% for publication_count in publication_count_list %}
+                <td>{{ publication_count }}</td>
+                {% endfor %}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">內部報告</h1>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Report Date</th>
+                <th scope="col">Author</th>
+                <th scope="col">Report Type</th>
+                <th scope="col">Description</th>
+                <th scope="col">System Review</th>
+                <th scope="col">Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for publication_meta in publications_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>{{ publication_meta['data_timestamp'] }}</td>
+                <td>{{ publication_meta['author'] }}</td>
+                <td>{{ publication_meta['type'] }}</td>
+                <td>{{ publication_meta['description'] }}</td>
+                <!-- <td><a class="btn btn-secondary btn-sm" href='/' target="_blank">Read</a></td> -->
+                <td><a class="btn btn-secondary btn-sm" href="">Read</a></td>
+                <td>
+                  <a
+                    class="btn btn-secondary btn-sm"
+                    href="{{ publication_meta['view_url'] }}"
+                    target="_blank"
+                    >Read</a
+                  >
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

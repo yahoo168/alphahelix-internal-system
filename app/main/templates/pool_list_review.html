@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% extends "main_base.html" %} {% block content %}
+    <meta charset="UTF-8" />
+    <!-- Load CSS file for DataTables  -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
+      integrity="sha512-1k7mWiTNoyx2XtmI96o+hdjP8nn0f3Z2N4oF/9ZZRgijyV4omsKOXEnqL1gKQNPy2MTSP9rIEWGcH/CInulptA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- load jQuery -->
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- load DataTables -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"
+      integrity="sha512-BkpSL20WETFylMrcirBahHfSnY++H2O1W+UnEEO4yNIl+jI2+zowyoGJpbtk6bx97fBXf++WJHSSK2MV4ghPcg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <style>
+      th,
+      td {
+        text-align: center;
+      }
+      table {
+        width: 100%;
+        table-layout: auto; /* 表头根据内容调整宽度 */
+      }
+      .tag {
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Pool List Management</h1>
+      <hr class="my-4" />
+      <p class="lead">
+        <a href="" class="btn btn-dark">建立個股</a>
+        <a href="" class="btn btn-dark">調整分工</a>
+        <a href="" class="btn btn-dark">調整追蹤等級</a>
+        <a
+          href="https://finance-jeff.notion.site/8f97220a0df544a297626d203755dd0c?pvs=4"
+          target="_blank"
+          class="btn btn-dark"
+          >說明文件</a
+        >
+      </p>
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <!-- Table with hoverable rows -->
+          <table id="poolListTable" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Ticker</th>
+                <th scope="col">Researcher</th>
+                <th scope="col">Holding Status</th>
+                <th scope="col">Tracking Status</th>
+                <th scope="col">Last Update Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pool_list_meta in pool_list_meta_list %}
+              <tr>
+                <td>
+                  <a
+                    href="{{ url_for('main.company_page', ticker=pool_list_meta['ticker']) }}"
+                    >{{ pool_list_meta['ticker'] }}</a
+                  >
+                </td>
+                <td>{{ pool_list_meta['researcher'] }}</td>
+                <td>
+                  {% if pool_list_meta['holding_status']%} {% for status in
+                  pool_list_meta['holding_status'].split(',') %}
+                  <span class="tag">{{ status }}</span>
+                  {% endfor %} {% endif %}
+                </td>
+                <td>{{ pool_list_meta['tracking_status'] }}</td>
+                <td>{{ pool_list_meta['last_publication_timestamp'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        // 初始化 DataTable，设置每页显示 50 条记录
+        $("#poolListTable").DataTable({
+          paging: true, // 启用分页
+          ordering: true, // 启用排序
+          info: true, // 启用表格信息
+          searching: true, // 启用搜索
+          pageLength: 50, // 设置每页显示 50 条记录
+        });
+      });
+    </script>
+  </body>
+  {% endblock %}
+</html>

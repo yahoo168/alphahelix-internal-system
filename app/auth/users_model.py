@@ -9,7 +9,8 @@ def load_user(user_id):
     return User.get(user_id)
 
 class User(UserMixin):
-    def __init__(self, username, email, password_hash, roles, _id=None):
+    def __init__(self, employee_id, username, email, password_hash, roles, _id=None):
+        self.employee_id = employee_id
         self.username = username
         self.email = email
         self.password_hash = password_hash
@@ -20,9 +21,10 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         try:
-            user_data = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)})
-            return User(username=user_data['username'], email=user_data['email'], 
-                        password_hash=user_data['password_hash'], _id=user_data['_id'], roles=user_data['roles'])
+            user_data_dict = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)})
+            return User(employee_id=user_data_dict["employee_id"], username=user_data_dict['username'], 
+                        email=user_data_dict['email'], password_hash=user_data_dict['password_hash'],
+                        _id=user_data_dict['_id'], roles=user_data_dict['roles'],)
         except:
             return None
 
@@ -43,5 +45,8 @@ def create_new_user(email, username, password_hash, roles):
         "password_hash": password_hash,
         "roles": roles,
         "send_report_to_email": True,
+        "is_active": True,
+        # 待改
+        "employee_id": None,
     }
     MDB_client["users"]["user_basic_info"].insert_one(user_basic_info)

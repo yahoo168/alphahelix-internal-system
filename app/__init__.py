@@ -6,26 +6,37 @@ from flask_principal import Principal, identity_changed, identity_loaded, Anonym
 from flask_login import current_user
 from flask_wtf import CSRFProtect
 from flask_caching import Cache
+import redis
+
 import os, logging
 import secrets
-from redis import Redis
-from redis.connection import ConnectionPool
 from datetime import timedelta
+from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# 從環境變數中讀取REDIS_URL，如果沒有則使用預設值（本地測試用）
-LOCAL_REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-230-78-25.compute-1.amazonaws.com:9239"
-REDIS_URL = os.environ.get('REDIS_URL', LOCAL_REDIS_URL)
-redis_pool = ConnectionPool.from_url(REDIS_URL, max_connections=50, socket_timeout=3, retry_on_timeout=True)
-redis_instance = Redis(connection_pool=redis_pool)
+REDIS_URL = "rediss://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-214-29-16.compute-1.amazonaws.com:9029"
+url = urlparse(REDIS_URL)
+
+# 使用 ConnectionPool 建立连接池
+pool = redis.ConnectionPool(
+    host=url.hostname,
+    port=url.port,
+    password=url.password,
+    connection_class=redis.SSLConnection,
+    # 禁用 SSL 證書驗證，避免錯誤
+    ssl_cert_reqs=None
+)
+
+# 使用连接池建立 Redis 连接
+redis_instance = redis.Redis(connection_pool=pool)
 
 # 創建擴展實例
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 principals = Principal()
-#產生CSRF token
+# 產生CSRF token
 csrf = CSRFProtect()
 # 用於緩存的全局變數
 cache = Cache()
@@ -56,7 +67,6 @@ def create_app():
     # 配置Session，並存儲到Redis
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = True
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session 7天后过期
     app.config['SESSION_USE_SIGNER'] = True  # 確保Session不會被竄改
     app.config['SESSION_KEY_PREFIX'] = 'session:' # 设置会话键的前綴（範例：session:2f3e1b2c4d5e6f7890a1b2c3d4e5f6a7）
     
@@ -84,53 +94,64 @@ def create_app():
     login_manager.login_view = "auth.login"  # 設置登入時的endpoint
     login_manager.login_message_category = 'info'  # 設置flash的類別
     principals.init_app(app)
-
+    
+    # 在每个应用程序上下文结束时标记会话为已修改，从而确保会话数据在请求处理结束后被正确保存。
+    @app.after_request
+    def after_request(response):
+        try:
+            session.modified = True
+        except Exception as e:
+            logger.error(f"Error during session teardown: {e}")
+        return response
+    
     @app.before_request
     def before_request_ensure_session():
-        session_id = session.get('session_id')
-        session_user_id = session.get('user_id')
+        session_id, session_user_id = session.get('session_id'), session.get('user_id')
         current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
-        
         logger.info(f"Before request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
 
-        # 检查是否访问登录页面或登出页面，避免重定向循环
         if request.endpoint in ['auth.login', 'auth.logout']:
-            return 
-        
+            return
+
         if session_id is None or session_user_id != current_user_id:
             logger.warning("Session data is missing or invalid. Trying to restore from Redis.")
             if current_user.is_authenticated:
-                try:
-                    # 查找与用户ID相关的会话数据（假设以user_id作为key的一部分存储）
-                    redis_keys = redis_instance.keys(f'session:*')
-                    session_restored = False
-                    for redis_key in redis_keys:
-                        session_data = redis_instance.hgetall(redis_key)
-                        if session_data and session_data.get(b'user_id') == current_user_id.encode():
-                            for key, value in session_data.items():
-                                session[key.decode('utf-8')] = value.decode('utf-8') if isinstance(value, bytes) else value
-                            logger.info(f"Session data restored from Redis: {session_data}")
-                            session['session_id'] = redis_key.decode('utf-8').split(':')[1]  # 确保session_id在session中被正确设置
-                            session_restored = True
-                            break
-                    
-                    if not session_restored:
-                        logger.warning(f"No session data found in Redis for user_id: {current_user_id}")
-                        return redirect(url_for('auth.logout'))
-                except Exception as e:
-                    logger.error(f"Failed to restore session from Redis: {e}")
-                    return redirect(url_for('auth.logout'))
+                return redirect(url_for('auth.logout'))
             else:
-                logger.info("User not authenticated and session data is missing.")
                 return redirect(url_for('auth.login'))
+        
+        # if session_id is None or session_user_id != current_user_id:
+        #     logger.warning("Session data is missing or invalid. Trying to restore from Redis.")
+        #     if current_user.is_authenticated:
+        #         try:
+        #             redis_keys = redis_instance.keys(f'session:*')
+        #             session_restored = False
+        #             for redis_key in redis_keys:
+        #                 if redis_instance.type(redis_key) != b'hash':
+        #                     continue
+        #                 session_data = redis_instance.hgetall(redis_key)
+        #                 if session_data and session_data.get(b'user_id') == current_user_id.encode():
+        #                     for key, value in session_data.items():
+        #                         session[key.decode('utf-8')] = value.decode('utf-8') if isinstance(value, bytes) else value
+        #                     logger.info(f"Session data restored from Redis: {session_data}")
+        #                     session['session_id'] = redis_key.decode('utf-8').split(':')[1]
+        #                     session_restored = True
+        #                     break
+        #             if not session_restored:
+        #                 logger.warning(f"No session data found in Redis for user_id: {current_user_id}")
+        #                 return redirect(url_for('auth.logout'))
+        #         except Exception as e:
+        #             logger.error(f"Failed to restore session from Redis: {e}")
+        #             return redirect(url_for('auth.logout'))
+        #     else:
+        #         logger.info("User not authenticated and session data is missing.")
+        #         return redirect(url_for('auth.login'))
 
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
     from app.main import main as main_blueprint
     app.register_blueprint(main_blueprint, url_prefix='/main')
-
-    # from app.utils import utils as utils_blueprint
     
     # load_user 是 Flask-Login 提供的一個回調函數，用於加載用戶的信息。就能夠在每個請求中管理和跟蹤當前用戶的狀態。
     from app.auth.users_model import load_user
