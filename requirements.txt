@@ -1,4 +1,5 @@
-git+https://github.com/yahoo168/alphahelix_database_tools.git
+# 指定alphahelix_database_tools的特定版本
+git+https://github.com/yahoo168/alphahelix_database_tools.git@v1.0.0#egg=alphahelix_database_tools
 gunicorn
 annotated-types==0.7.0
 anyio==4.4.0
