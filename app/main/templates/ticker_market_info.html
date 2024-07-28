@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<!-- <div class="container mt-2 mx-6">
+      <h1 class="display-6">營收組成</h1>
+      <img src="{{ url_for('static', filename='images/AAPL_IS.png') }}" class="card-img-top" alt="Example Image" />
+    </div> -->
+<html lang="en">
+  {% extends "main_base.html" %} {% block content %}
+  <head>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"
+    />
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script>
+    <style>
+      /* 使用 Flexbox 布局，使标题和按钮在同一行显示 */
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      #timeline {
+        margin: 20px 0;
+        position: relative;
+      }
+      .ui-slider-tick {
+        width: 1px;
+        height: 10px;
+        background: black;
+        position: absolute;
+        top: 20px;
+      }
+      .ui-slider-tick-label {
+        position: absolute;
+        top: 30px;
+        font-size: 15px;
+        transform: translateX(-50%);
+        white-space: nowrap; /* 防止文本換行 */
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">{{ticker}}</h1>
+      <hr class="my-4" />
+      <a
+        class="btn btn-secondary btn"
+        href="{{url_for('main.ticker_internal_info', ticker=ticker)}}"
+        >內部報告</a
+      >
+    </div>
+
+    <div class="container mt-4">
+      <div class="container">
+        <h2>新聞內容 <span id="current-date"></span></h2>
+        <div id="timeline" class="container"></div>
+        <br /><br />
+        <p id="stock_news_daily"></p>
+      </div>
+    </div>
+
+    <div class="container mt-4">
+      <h1 class="display-6">市場觀點</h1>
+      <div class="alert alert-secondary" role="alert">
+        以下觀點來自於{{ticker}}的近十篇研究報告，經AI彙整生成
+        <strong>（更新日期：{{stock_report_review_date}}）</strong>
+      </div>
+      <div class="row">
+        <div class="col-md-6 left-container">
+          <h2>Bullish Outlook</h2>
+          <ol class="list-group">
+            {% for argument in bullish_argument_list %}
+            <li class="list-group-item">
+              <strong>{{loop.index}}.</strong> {{argument}}
+            </li>
+            {% endfor %}
+          </ol>
+          <br />
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-toggle="collapse"
+            data-target="#bullish_outlook_diff"
+            aria-expanded="false"
+            aria-controls="bullish_outlook_diff"
+          >
+            觀點變化
+          </button>
+          <br />
+          <div class="collapse" id="bullish_outlook_diff">
+            <div
+              class="card card-body"
+              id="bullish_outlook_diff_markdown"
+            ></div>
+            <textarea id="bullish_outlook_diff_content" style="display: none">
+{{bullish_outlook_diff}}</textarea
+            >
+          </div>
+        </div>
+        <div class="col-md-6 right-container">
+          <h2>Bearish Outlook</h2>
+          <ol class="list-group">
+            {% for argument in bearish_argument_list %}
+            <li class="list-group-item">
+              <strong>{{loop.index}}.</strong> {{argument}}
+            </li>
+            {% endfor %}
+          </ol>
+          <br />
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-toggle="collapse"
+            data-target="#bearish_outlook_diff"
+            aria-expanded="false"
+            aria-controls="bearish_outlook_diff"
+          >
+            觀點變化
+          </button>
+          <br />
+          <div class="collapse" id="bearish_outlook_diff">
+            <div
+              class="card card-body"
+              id="bearish_outlook_diff_markdown"
+            ></div>
+            <textarea id="bearish_outlook_diff_content" style="display: none">
+{{bearish_outlook_diff}}</textarea
+            >
+          </div>
+        </div>
+      </div>
+      <br />
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title header-title">追蹤面向</h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Following Issue</th>
+                <th>Uploaded Date</th>
+                <th>Uploader</th>
+                <th>
+                  <a
+                    href="{{url_for('main.render_static_html', page='issue_register')}}"
+                    class="btn btn-dark btn-sm"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <!-- 使用 Font Awesome 的 + 號圖標 -->
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue_meta in issue_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>{{issue_meta["issue"]}}</td>
+                <td>{{issue_meta["upload_timestamp"]}}</td>
+                <td>{{issue_meta["username"]}}</td>
+                <td>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    data-toggle="collapse"
+                    data-target="#summary{{loop.index}}"
+                    aria-expanded="false"
+                    aria-controls="summary{{loop.index}}"
+                  >
+                    查看
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="5">
+                  <div id="summary{{loop.index}}" class="collapse">
+                    <div class="alert alert-secondary" role="alert">
+                      以下內容由AI自近10篇研究報告彙整<strong
+                        >（更新日期：{{issue_meta['issue_review_date']}}）</strong
+                      >
+                    </div>
+                    <textarea
+                      id="issue_review_diff_content_{{loop.index}}"
+                      style="display: none"
+                    >
+  {{issue_meta["issue_review_diff"]}}</textarea
+                    >
+                    <div
+                      class="alert alert-light"
+                      role="alert"
+                      id="issue_review_diff_markdown_{{loop.index}}"
+                    ></div>
+                    <h3>報告觀點總結</h3>
+                    <!-- 將換行符 \n 替換為 HTML 的換行標籤 <br>。 | safe 用來確保 replace('\n', '<br>') 操作產生的 <br> 標籤會被解釋為 HTML 換行標籤，而不是顯示為普通文本。 -->
+                    <p>
+                      {{ issue_meta["issue_review"].replace('\n', '<br />') |
+                      safe }}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <br />
+
+    <!-- <div class="container mt-2 mx-6">
+      <h1 class="display-6">即時新聞 {{stock_info_date}}</h1>
+      <div class="alert alert-secondary" role="alert">
+        以下內容來源於Bloomberg News，經AI彙整生成
+      </div>
+      <div id="stock-info-daily-markdown" class="markdown-body"></div>
+      <textarea id="stock-info-daily" style="display: none">
+{{stock_info_daily}}</textarea
+      >
+    </div> -->
+
+    <br />
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">市場報告</h1>
+      <div class="alert alert-secondary" role="alert">
+        點擊報告標題可自動下載報告；點擊摘要鍵將進入報告重點摘要頁面
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">報告列表</h5>
+          <!-- Table with hoverable rows -->
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Title</th>
+                <th scope="col">Report Date</th>
+                <th scope="col">Upload Date</th>
+                <th scope="col">Source</th>
+                <th scope="col">
+                  <a
+                    href="{{url_for('main.render_static_html', page='report_upload_page')}}"
+                    class="btn btn-dark btn-sm"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <!-- 使用 Font Awesome 的 + 號圖標 -->
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stock_report_meta in stock_report_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>
+                  <a href="{{ stock_report_meta['url'] }}"
+                    >{{ stock_report_meta['title'] }}</a
+                  >
+                </td>
+                <td>{{stock_report_meta['data_timestamp']}}</td>
+                <td>{{stock_report_meta['upload_timestamp']}}</td>
+                <td>{{stock_report_meta['source']}}</td>
+                <td>
+                  <a
+                    class="btn btn-secondary"
+                    href="{{ url_for('main.report_summary_page', report_id=stock_report_meta['_id']) }}"
+                    >摘要</a
+                  >
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <!-- End Table with hoverable rows -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        // Process the stock info daily content
+        
+        // Process the bullish and bearish outlook diff content
+        $("#bullish_outlook_diff_markdown").html(
+          marked.parse($("#bullish_outlook_diff_content").val())
+        );
+        $("#bearish_outlook_diff_markdown").html(
+          marked.parse($("#bearish_outlook_diff_content").val())
+        );
+
+        // Process each issue review diff content
+        $('textarea[id^="issue_review_diff_content_"]').each(function () {
+          var index = $(this).attr("id").split("_").pop();
+          $("#issue_review_diff_markdown_" + index).html(
+            marked.parse($(this).val())
+          );
+        });
+      });
+
+      $(document).ready(function () {
+        var today = new Date();
+        var startDate = new Date();
+        startDate.setMonth(today.getMonth() - 3);
+
+        var debounceTimer;
+
+        $("#timeline").slider({
+          min: startDate.getTime() / 1000,
+          max: today.getTime() / 1000,
+          step: 86400, // 一天的秒數
+          value: today.getTime() / 1000, // 設置滑塊的初始值為今天
+          slide: function (event, ui) {
+            var date = new Date(ui.value * 1000);
+            var dateStr = date.toISOString().split("T")[0];
+            $("#current-date").text(dateStr);
+
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+              fetchNews(dateStr);
+            }, 250); // 250毫秒延遲
+          },
+          change: function (event, ui) {
+            var date = new Date(ui.value * 1000);
+            var dateStr = date.toISOString().split("T")[0];
+            $("#current-date").text(dateStr);
+          },
+          create: function (event, ui) {
+            addTicks(this);
+          },
+        });
+
+        // 初始化時設置當前日期
+        var initialDate = today.toISOString().split("T")[0];
+        $("#current-date").text(initialDate);
+        fetchNews(initialDate);
+
+        function addTicks(slider) {
+          // 將傳入的 slider 轉換為 jQuery 對象
+          var $slider = $(slider);
+
+          // 獲取 slider 的最小值（起始時間）和最大值（當前時間）
+          var min = $slider.slider("option", "min");
+          var max = $slider.slider("option", "max");
+
+          // 創建起始和結束時間的 Date 對象
+          var start = new Date(min * 1000);
+          var end = new Date(max * 1000);
+
+          // 從起始時間開始，每次增加一個月，直到結束時間
+          for (
+            var d = new Date(start);
+            d <= end;
+            d.setMonth(d.getMonth() + 1)
+          ) {
+            // 計算 tick 的位置，作為百分比
+            var position = ((d.getTime() / 1000 - min) / (max - min)) * 100;
+
+            // 創建 tick 標記並設置其位置
+            var tick = $('<div class="ui-slider-tick"></div>').css(
+              "left",
+              position + "%"
+            );
+
+            // 創建標籤並設置其位置和文本內容（年份-月份-日期）
+            var label = $('<div class="ui-slider-tick-label"></div>')
+              .css("left", position + "%")
+              .text(
+                d.getFullYear() +
+                  "-" +
+                  String(d.getMonth() + 1).padStart(2, "0") +
+                  "-" +
+                  String(start.getDate()).padStart(2, "0")
+              );
+
+            // 對最後一個標籤進行特殊處理，避免排列超出 slider
+            if (d.getTime() === end.getTime()) {
+              label.css({
+                right: "1",
+              });
+            }
+
+            // 將 tick 和標籤添加到 slider 中
+            $slider.append(tick).append(label);
+          }
+        }
+      });
+
+      // 前端緩存
+      var newsCache = {};
+
+      function fetchNews(date) {
+        if (newsCache[date]) {
+          console.log("[Frontend Cache][Stock News] successful: " + date);
+          $("#stock_news_daily").html(marked(newsCache[date]));
+        } else {
+          console.log(
+            "[Frontend Cache][Stock News] Fail. Call Backend: " + date
+          );
+          $.get(
+            "{{ url_for('main.get_stock_shorts_summary') }}",
+            { date: date, ticker: "{{ticker}}" },
+            function (data) {
+              newsCache[date] = data.stock_news_daily;
+              $("#stock_news_daily").html(marked(data.stock_news_daily));
+            }
+          );
+        }
+      }
+    </script>
+  </body>
+  {% endblock %}
+</html>

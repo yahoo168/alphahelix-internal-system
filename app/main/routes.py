@@ -3,7 +3,7 @@ from flask import current_app as app
 from flask_login import login_required, current_user
 
 from collections import Counter
-import os, io
+import os, io, logging
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -16,12 +16,41 @@ from app.utils.utils import TODAY_DATE_STR, datetime2str, str2datetime, unix_tim
 
 from app.utils.alphahelix_database_tools import pool_list_db
 #cache在app/__init.py的creat_app中定義，這裡引入cache，避免重複創建
-from app import cache
+from app import cache, redis_instance
 # 引入權限設定
 from app import us_data_view_perm, us_data_upload_perm, us_data_edit_perm, tw_data_view_perm, tw_data_upload_perm, tw_data_edit_perm, quant_data_view_perm, quant_data_upload_perm, quant_data_edit_perm, administation_data_view_perm, administation_data_upload_perm, administation_data_edit_perm, system_edit_perm
 
 from . import main
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+@main.route('/get_stock_shorts_summary', methods=['GET'])
+def get_stock_shorts_summary():
+    ticker, date_str = request.args.get('ticker'), request.args.get('date')
+    redis_key = f"stock_news_daily {ticker} {date_str}"
+    redis_value = redis_instance.get(redis_key)
+    # 若redis中無此日期的新聞，則從mongodb中取得
+    if redis_value is None:
+        date_datetime = str2datetime(date_str)
+        shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker,
+                                                                                             "data_timestamp": date_datetime},
+                                                                                            sort=[("data_timestamp", -1)])
+        if shorts_summary_meta:
+            stock_news_daily = shorts_summary_meta.get("shorts_summary", '')
             
+        else:
+            stock_news_daily = ''
+        # 將新聞存入redis中，並設置過期時間為60秒
+        redis_instance.set(redis_key, stock_news_daily, ex=60)
+        
+    # 若redis中有此日期的新聞，則直接取得（redis中的資料為bytes，需轉為utf-8）
+    else:
+        logging.info("redis_value is not None")
+        stock_news_daily = redis_value.decode('utf-8')
+    
+    return jsonify({"date": date_str, "stock_news_daily": stock_news_daily})
+
 @main.route('/')
 @main.route("/dashboard")
 @login_required
@@ -85,22 +114,16 @@ def pool_list_review():
         
     return render_template('pool_list_review.html', pool_list_meta_list=pool_list_meta_list)
 
-@main.route("/ticker_select")
-@login_required
-@us_data_view_perm.require(http_exception=403)
-def ticker_select():
-    stock_ticker_list = ["AAPL", "GOOG", "MSFT", "LAZR", "NVTS", "QCOM", "TSLA", "NET", "ON", "OXY", "TSM"]
-    bond_ticker_list = ["RITM", "CXW", "F", "MO", "BA"]
-    ticker_list = stock_ticker_list + bond_ticker_list
-    ticker_list.sort()
-    ticker_list = [ticker for ticker in ticker_list if ticker not in ["TLT", "LQD"]]
-    return render_template('ticker_select.html', ticker_list=ticker_list)
-
-@main.route('/internal_report/<ticker>')
-def internal_report(ticker):
+@main.route('/ticker_internal_info/<ticker>')
+def ticker_internal_info(ticker):
     publication_type_list = []
     publication_count_list = []
     publications_meta_list = []
+    
+    # 取得個股內部觀點(使用pool_list_db物件)
+    conclustion_meta = pool_list_db.get_conclustion_meta_list(ticker=ticker)
+    if conclustion_meta:
+        conclustion_meta["data_timestamp"] = datetime2str(conclustion_meta["data_timestamp"])
     
     # 製作username與employee_id的對應表
     user_info_meta_list = list(MDB_client["users"]["user_basic_info"].find())
@@ -128,17 +151,18 @@ def internal_report(ticker):
     context = {
         "ticker": ticker,
         "updated_timestamp": updated_timestamp,
+        'conclustion_meta': conclustion_meta,
         'publication_type_list': publication_type_list,
         'publication_count_list': publication_count_list,
         'publications_meta_list': publications_meta_list,
     }
-    return render_template('internal_report.html', **context)
+    return render_template('ticker_internal_info.html', **context)
 
-@main.route('/company/<ticker>')
-# @login_required
+@main.route('/ticker_market_info/<ticker>')
+@login_required
 # @cache.cached(timeout=60)  #緩存60秒
 @us_data_view_perm.require(http_exception=403)
-def company_page(ticker):
+def ticker_market_info(ticker):
     # 初始化變量，避免未定義錯誤
     stock_report_review_date = ''
     bullish_argument_list = []
@@ -149,12 +173,7 @@ def company_page(ticker):
     stock_info_daily = ''
     stock_report_meta_list = []
     issue_meta_list = []
-
-    # 取得個股內部觀點(使用pool_list_db物件)
-    conclustion_meta = pool_list_db.get_conclustion_meta_list(ticker=ticker)
-    if conclustion_meta:
-        conclustion_meta["data_timestamp"] = datetime2str(conclustion_meta["data_timestamp"])
-    
+        
     # 取得近期報告的多空觀點彙整（stock_report_review）
     stock_report_review_meta = MDB_client["published_content"]["stock_report_review"].find_one({"ticker": ticker}, sort=[("date", -1)])
     if stock_report_review_meta:
@@ -178,7 +197,12 @@ def company_page(ticker):
         stock_report_meta["data_timestamp"] = datetime2str(stock_report_meta["data_timestamp"])
         stock_report_meta["upload_timestamp"] = datetime2str(stock_report_meta["upload_timestamp"])
         
-        source_trans_dict = {"gs": "Goldman Sachs", "jpm": "J.P. Morgan", "citi": "Citi", "barclays": "Barclays"}
+        source_trans_dict = {"gs": "Goldman Sachs", 
+                             "jpm": "J.P. Morgan", 
+                             "citi": "Citi", 
+                             "barclays": "Barclays",
+                             "seeking_alpha": "Seeking Alpha",}
+        
         stock_report_meta["source"] = source_trans_dict.get(stock_report_meta["source"], stock_report_meta["source"])
         stock_report_meta["_id"] = str(stock_report_meta["_id"])
 
@@ -201,8 +225,7 @@ def company_page(ticker):
     # 在 render_template 中使用 **context 將字典展開為關鍵字參數
     
     context = {
-        'company_ticker': ticker,
-        'conclustion_meta': conclustion_meta,
+        'ticker': ticker,
         'stock_report_review_date': stock_report_review_date,
         
         'bullish_argument_list': bullish_argument_list,
@@ -217,7 +240,7 @@ def company_page(ticker):
         'stock_report_meta_list': stock_report_meta_list,
         'issue_meta_list': issue_meta_list,
     }
-    return render_template('company.html', **context)
+    return render_template('ticker_market_info.html', **context)
 
 @main.route("/report_summary_page/<report_id>")
 @login_required
@@ -229,14 +252,26 @@ def report_summary_page(report_id):
     source = stock_report_meta["source"]
     url = stock_report_meta["url"]
     summary =  stock_report_meta["summary"]
+    issue_meta_list =  stock_report_meta["issue_summary"]
     
+    issue_summary = {} 
+    for issue_meta in issue_meta_list:
+        issue = issue_meta["issue"]
+        issue_content = issue_meta["issue_content"]
+        issue_summary[issue] = issue_content
+        
     # 格式美觀：原title有許多'_'，將其拆解後重組
     title = " ".join(title.split("_"))
     source_trans_dict = {"gs": "Goldman Sachs", "jpm":"J.P. Morgan", "citi":"Citi", "barclays":"Barclays"}
     if source in source_trans_dict.keys():
         source = source_trans_dict[source]
 
-    return render_template('report_summary_page.html', title=title, report_date=report_date, source=source, url=url,summary=summary)
+    return render_template('report_summary_page.html', 
+                           title=title, 
+                           report_date=report_date,
+                           source=source,
+                           url=url, summary=summary,
+                           issue_summary=issue_summary)
 
 @main.route('/upload_stock_report', methods=['POST'])
 @login_required
@@ -291,7 +326,8 @@ def upload_stock_report():
             "ticker": ticker,
             "uploader": ObjectId(current_user.get_id()),
             "source": source,
-            "url": blob_url_dict[blob_name]
+            "url": blob_url_dict[blob_name],
+            "if_processed": False # 標註為尚未進行預處理
         }
         mongo_db_data_list.append(mongo_db_data_meta)
     
@@ -369,7 +405,7 @@ def edit_gcs_stock_document_metadata():
 def delete_gcs_document():
     edit_metadata = request.get_json()
     blob_name = edit_metadata["blob_name"]
-    print(blob_name, "deleted")
+    logging.info(blob_name, "deleted")
     try:
         # google_cloud_storage_tools.set_blob_metadata(bucket_name='investment_report', blob_name=blob_name, metadata=new_metadata)
         return jsonify({'status': 'success', 'message': 'Delete seccessfully'})

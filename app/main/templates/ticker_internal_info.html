@@ -2,11 +2,61 @@
 <html>
   <head>
     {% extends "main_base.html" %}
-    <meta charset="utf-8" />
-    <title>Marked in the browser</title>
   </head>
   {% block content %}
+  <style>
+    .category-group-1 {
+      background-color: #f0f0f0; /* 浅灰色 */
+      border-color: #d6d8db;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <body>
+    <div class="jumbotron">
+      <h1 class="display-4">{{ticker}}</h1>
+      <hr class="my-4" />
+      <a
+        class="btn btn-secondary btn"
+        href="{{url_for('main.ticker_market_info', ticker=ticker)}}"
+        >市場資訊</a
+      >
+    </div>
+    <div class="container mt-2 mx-6">
+      <h1 class="display-6">內部觀點</h1>
+      <div class="alert alert-secondary" role="alert">
+        以下觀點來自於公司內部研究總結<strong
+          >（更新日期：{{conclustion_meta["data_timestamp"]}}）</strong
+        >
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <table id="conclusion_table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Category</th>
+                <th scope="col">Question</th>
+                <th scope="col">Conclusion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for conclustion in conclustion_meta["10_QA"] %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td><strong>{{ conclustion['category'] }}</strong></td>
+                <td>
+                  <strong>{{ conclustion['research_question'] }}</strong>
+                </td>
+                <td>{{ conclustion['research_conclusion'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div class="container mt-2 mx-6">
       <h1 class="display-6">研究進度</h1>
       <div class="alert alert-secondary" role="alert">
@@ -39,7 +89,7 @@
     </div>
 
     <div class="container mt-2 mx-6">
-      <h1 class="display-6">內部報告</h1>
+      <h1 class="display-6">研究報告</h1>
       <div class="card">
         <div class="card-body">
           <h5 class="card-title"></h5>
@@ -81,5 +131,17 @@
       </div>
     </div>
   </body>
+
+  <script>
+    $(document).ready(function () {
+      // 动态分配行颜色
+      $("#conclusion_table tbody tr").each(function (index) {
+        if (index % 2 === 1) {
+          $(this).addClass("category-group-1");
+        }
+        // 奇数行不添加任何类
+      });
+    });
+  </script>
   {% endblock %}
 </html>

@@ -2,8 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Report Summary</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        margin-bottom: 16px;
+        background-color: #fff;
+      }
+      .footer-spacing {
+        margin-bottom: 100px; /* Adjust the value as needed */
+      }
+    </style>
   </head>
   {% extends "main_base.html" %}
   <body>
@@ -12,22 +24,39 @@
       <h1 class="display-4"><strong>研報摘要</strong></h1>
       <hr class="my-4" />
     </div>
+
     <div class="container mt-4">
       <br />
       <!-- 僅顯示標題的前50個字元 -->
       <h2 class="display-6">標題: {{ title[:50] }} ({{report_date}})</h2>
       <div class="alert alert-secondary" role="alert">
-        以下內容來源於{{source}}，經AI摘要生成，內容僅供研究團隊參考
+        以下內容來源於{{source}}研究團隊，經AI摘要生成，內容僅供研究團隊參考
         <a href="{{url}}" target="_blank">(報告下載)</a>
       </div>
- 
-      <div id="$m" class="markdown-body"></div>
-      <textarea id="$t" style="display: none">
+
+      <!-- 顯示全文/多/空摘要（markdown） -->
+      <div class="card">
+        <div id="$summary_markdown" class="markdown-body"></div>
+      </div>
+      <textarea id="$summary_text" style="display: none">
 {{summary}}
       </textarea>
+
+      <!-- 顯示issue_summary（dict） -->
+      {% for key, value in issue_summary.items() %}
+      <div class="card">
+        <h3>{{ key }}</h3>
+        <p>{{ value }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 在頁尾添加額外的間距 -->
+    <div class="footer-spacing"></div>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        $m.innerHTML = marked.parse($t.value);
+        document.getElementById('$summary_markdown').innerHTML = marked.parse(document.getElementById('$summary_text').value);
       });
     </script>
     {% endblock %}

@@ -63,7 +63,7 @@ def login():
             user = User.get(user_data['_id'])
             # 清理舊的session，以避免數據錯誤
             session.clear()
-            # 如果值为 True，那么会在用户浏览器中写入一个长期有效的 cookie，使用这个 cookie 可以复现用户会话。cookie 默认记住一年
+            # 如果remember值为True，那么会在用户浏览器中写入一个长期有效的 cookie，使用这个 cookie 可以复现用户会话。cookie 默认记住一年
             login_user(user, remember=form.remember.data)
             session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             session['user_id'] = user.get_id() # 保存用戶ID
