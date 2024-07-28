@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template, redirect, url_for, session
 from flask_bcrypt import Bcrypt
-from flask_session import Session
+# from flask_session import Session
 from flask_login import LoginManager
 from flask_principal import Principal, identity_changed, identity_loaded, AnonymousIdentity, Permission, RoleNeed, UserNeed, PermissionDenied
 from flask_login import current_user
@@ -69,7 +69,7 @@ def create_app():
     # app.config['SESSION_TYPE'] = 'redis'
     
     # 配置Session，並使用簽名的Cookie儲存
-    app.config['SESSION_TYPE'] = 'filesystem'
+    # app.config['SESSION_TYPE'] = 'filesystem'
     
     app.config['SESSION_PERMANENT'] = True
     app.config['SESSION_USE_SIGNER'] = True  # 確保Session不會被竄改
@@ -91,8 +91,10 @@ def create_app():
     # 初始化緩存
     cache.init_app(app)
     
+    # server side session
     # 初始化Session
-    Session(app)
+    # Session(app)
+    
     # 初始化擴展
     csrf.init_app(app)
     bcrypt.init_app(app)
