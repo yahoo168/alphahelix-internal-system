@@ -1,9 +1,8 @@
 # app/models.py
 from flask import current_app as app
-from flask_login import UserMixin
+from flask_login import UserMixin, login_user
 from bson import ObjectId
 from app.utils.mongodb_tools import MDB_client
-#from flask_principal import RoleNeed, UserNeed, Identity, identity_changed, identity_loaded, AnonymousIdentity
 
 def load_user(user_id):
     return User.get(user_id)

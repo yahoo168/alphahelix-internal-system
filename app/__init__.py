@@ -114,11 +114,11 @@ def create_app():
         return response
     
     @app.before_request
-    def before_request_ensure_session():
-        session_id, session_user_id = session.get('session_id'), session.get('user_id')
+    def ensure_session_persist():
+        user_id = session.get('user_id')
         current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
-        logger.info(f"Before request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
-
+        logger.info(f"Before request: user_id={user_id}, current_user_id={current_user_id}")
+        
         # if request.endpoint in ['auth.login', 'auth.logout']:
         #     return
 
