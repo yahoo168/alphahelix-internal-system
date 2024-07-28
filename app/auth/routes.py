@@ -62,24 +62,12 @@ def login():
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
             user = User.get(user_data['_id'])
             # 清理舊的session，以避免數據錯誤
-            session.clear()
+            # session.clear()
             # 如果remember值为True，那么会在用户浏览器中写入一个长期有效的 cookie，使用这个 cookie 可以复现用户会话。cookie 默认记住一年
             login_user(user, remember=form.remember.data)
-            session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
+            # session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             session['user_id'] = user.get_id() # 保存用戶ID
-            
-            # 保存Session到Redis
-            try:
-                session_data = convert_session_data(dict(session))  # 转换会话数据(将布尔值转换为0或1)
-                redis_instance.hset(f'session:{session["session_id"]}', mapping=session_data)
-                redis_instance.expire(f'session:{session["session_id"]}', app.config['PERMANENT_SESSION_LIFETIME'])
-                logger.info(f'Session saved to Redis: {session_data}')
-                
-            except Exception as e:
-                logger.error(f'Failed to save session to Redis: {e}')
-                flash('Login Unsuccessful. Please try again later.', 'danger')
-                return redirect(url_for('auth.login'))
-            
+                        
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
@@ -98,12 +86,6 @@ def login():
 def logout():
     user_id = session.get('user_id')
     session_id = session.get('session_id')
-    if user_id and session_id:
-        try:
-            redis_instance.delete(f'session:{session_id}')
-            logger.info(f'Session deleted from Redis: session_id={session_id}')
-        except Exception as e:
-            logger.error(f'Failed to delete session from Redis: {e}')
     # 清理session
     session.clear()
     logger.info(f'User {user_id} logged out')

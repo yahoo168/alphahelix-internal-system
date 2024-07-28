@@ -119,43 +119,16 @@ def create_app():
         current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
         logger.info(f"Before request: session_id={session_id}, session_user_id={session_user_id}, current_user_id={current_user_id}")
 
-        if request.endpoint in ['auth.login', 'auth.logout']:
-            return
+        # if request.endpoint in ['auth.login', 'auth.logout']:
+        #     return
 
-        if session_id is None or session_user_id != current_user_id:
-            logger.warning("Session data is missing or invalid. Trying to restore from Redis.")
-            if current_user.is_authenticated:
-                return redirect(url_for('auth.logout'))
-            else:
-                return redirect(url_for('auth.login'))
-        
         # if session_id is None or session_user_id != current_user_id:
-        #     logger.warning("Session data is missing or invalid. Trying to restore from Redis.")
+        #     logger.warning("Session data is missing or invalid.")
         #     if current_user.is_authenticated:
-        #         try:
-        #             redis_keys = redis_instance.keys(f'session:*')
-        #             session_restored = False
-        #             for redis_key in redis_keys:
-        #                 if redis_instance.type(redis_key) != b'hash':
-        #                     continue
-        #                 session_data = redis_instance.hgetall(redis_key)
-        #                 if session_data and session_data.get(b'user_id') == current_user_id.encode():
-        #                     for key, value in session_data.items():
-        #                         session[key.decode('utf-8')] = value.decode('utf-8') if isinstance(value, bytes) else value
-        #                     logger.info(f"Session data restored from Redis: {session_data}")
-        #                     session['session_id'] = redis_key.decode('utf-8').split(':')[1]
-        #                     session_restored = True
-        #                     break
-        #             if not session_restored:
-        #                 logger.warning(f"No session data found in Redis for user_id: {current_user_id}")
-        #                 return redirect(url_for('auth.logout'))
-        #         except Exception as e:
-        #             logger.error(f"Failed to restore session from Redis: {e}")
-        #             return redirect(url_for('auth.logout'))
+        #         return redirect(url_for('auth.logout'))
         #     else:
-        #         logger.info("User not authenticated and session data is missing.")
         #         return redirect(url_for('auth.login'))
-
+        
     from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
