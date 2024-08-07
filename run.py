@@ -19,9 +19,6 @@ with open(temp_gcp_key_path, 'wb') as temp_file:
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_gcp_key_path
 
 app = create_app()
-# 把app context推入stack中，擴張到整個應用
-# 暫時註釋，避免多線程下，current_user可能導致問題
-# app.app_context().push()
 
 if __name__ == '__main__':
     app.run(debug=True)

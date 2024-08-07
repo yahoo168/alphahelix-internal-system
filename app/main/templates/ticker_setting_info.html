@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {% extends "main_base.html" %}
+  </head>
+  {% block content %}
+  <body>
+    <br>
+    <div class="container">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title header-title">追蹤面向</h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Following Issue</th>
+                <th>Uploaded Date</th>
+                <th>Uploader</th>
+                <th>
+                  <a
+                    href="{{url_for('main.render_static_html', page='issue_register')}}"
+                    class="btn btn-dark btn-sm"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <!-- 使用 Font Awesome 的 + 號圖標 -->
+                  </a>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue_meta in issue_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>{{issue_meta["issue"]}}</td>
+                <td>{{issue_meta["upload_timestamp"]}}</td>
+                <td>{{issue_meta["username"]}}</td>
+                <td>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    data-toggle="collapse"
+                    data-target="#summary{{loop.index}}"
+                    aria-expanded="false"
+                    aria-controls="summary{{loop.index}}"
+                  >
+                    查看
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="5">
+                  <div id="summary{{loop.index}}" class="collapse">
+                    <div class="alert alert-secondary" role="alert">
+                      以下內容由AI自近10篇研究報告彙整<strong
+                        >（更新日期：{{issue_meta['issue_review_date']}}）</strong
+                      >
+                    </div>
+                    <textarea
+                      id="issue_review_diff_content_{{loop.index}}"
+                      style="display: none"
+                    >
+      {{issue_meta["issue_review_diff"]}}</textarea
+                    >
+                    <div
+                      class="alert alert-light"
+                      role="alert"
+                      id="issue_review_diff_markdown_{{loop.index}}"
+                    ></div>
+                    <h3>報告觀點總結</h3>
+                    <!-- 將換行符 \n 替換為 HTML 的換行標籤 <br>。 | safe 用來確保 replace('\n', '<br>') 操作產生的 <br> 標籤會被解釋為 HTML 換行標籤，而不是顯示為普通文本。 -->
+                    <p>
+                      {{ issue_meta["issue_review"].replace('\n', '<br />') |
+                      safe }}
+                    </p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

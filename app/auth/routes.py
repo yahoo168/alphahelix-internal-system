@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 #     return response
 
 @auth.route("/user_register", methods=['GET', 'POST'])
+@login_required
 def user_register():
     form = RegistrationForm()
     if form.validate_on_submit():
@@ -65,13 +66,15 @@ def login():
             session.clear()
             # 如果remember值为True，那么会在用户浏览器中写入一个长期有效的 cookie，使用这个 cookie 可以复现用户会话。cookie 默认记住一年
             login_user(user, remember=form.remember.data)
-            # session['session_id'] = secrets.token_hex(16)  # 生成唯一會話ID
             session['user_id'] = user.get_id() # 保存用戶ID
-                        
             # 取得用戶的權限設置
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
-            return redirect(url_for('main.dashboard'))
+            
+            # 获取 'next' 参数
+            next_page = request.args.get('next')
+            # 如果 'next' 存在则重定向，否则重定向到默认的 dashboard
+            return redirect(next_page or url_for('main.dashboard'))
         
         # 如果用戶不存在或密碼錯誤，顯示錯誤信息
         else:
@@ -85,11 +88,9 @@ def login():
 @login_required
 def logout():
     user_id = session.get('user_id')
-    session_id = session.get('session_id')
     # 清理session
     session.clear()
     logger.info(f'User {user_id} logged out')
-    
     # 注销用户
     logout_user()
     # 通知 Flask-Principal 系统用户的身份已经变更，将当前用户的身份设置为匿名身份

@@ -159,7 +159,7 @@ def ticker_internal_info(ticker):
     return render_template('ticker_internal_info.html', **context)
 
 @main.route('/ticker_market_info/<ticker>')
-@login_required
+# @login_required
 # @cache.cached(timeout=60)  #緩存60秒
 @us_data_view_perm.require(http_exception=403)
 def ticker_market_info(ticker):
@@ -207,23 +207,19 @@ def ticker_market_info(ticker):
         stock_report_meta["_id"] = str(stock_report_meta["_id"])
 
     # 取得用戶上傳的追蹤問題列表（近10個）
-    issue_meta_list = list(MDB_client["users"]["following_issues"].find({"tickers": ticker}, limit=10))
-    for issue_meta in issue_meta_list:
-        issue_meta["upload_timestamp"] = datetime2str(issue_meta["upload_timestamp"])
-        user_info_meta = MDB_client["users"]["user_basic_info"].find_one({"_id": issue_meta["uploader"]}, {"username": 1})
-        issue_meta["username"] = user_info_meta.get("username", "Unknown")
-        issue_review_meta = MDB_client["published_content"]["following_issue_review"].find_one({"issue_id": issue_meta["_id"]}, 
-                                                                                               sort=[("upload_timestamp", -1)])
-        issue_meta["issue_review_date"] = ''
-        issue_meta["issue_review"] = ''
-        issue_meta["issue_review_diff"] = ''
-        if issue_review_meta:
-            issue_meta["issue_review_date"] = datetime2str(issue_review_meta["upload_timestamp"])
-            issue_meta["issue_review"] = issue_review_meta.get("issue_review", '')
-            issue_meta["issue_review_diff"] = issue_review_meta.get("issue_review_diff", '')
-
-    # 在 render_template 中使用 **context 將字典展開為關鍵字參數
+    issue_id_list = [meta["_id"] for meta in MDB_client["users"]["following_issues"].find({"tickers": ticker}, {"_id": 1}).limit(10)]
     
+    for issue_id in issue_id_list:
+        issue_meta = MDB_client["published_content"]["issue_review"].find_one({"issue_id": issue_id}, 
+                                                                                sort=[("upload_timestamp", -1)])
+        if issue_meta:
+            issue_meta["data_timestamp"] = datetime2str(issue_meta["data_timestamp"])
+            issue_meta["upload_timestamp"] = datetime2str(issue_meta["upload_timestamp"])    
+            issue_meta["ref_report_num"] =  len(issue_meta.get("ref_report_id", []))
+            issue_meta["added_report_num"] =  len(issue_meta.get("added_report_id", []))
+            issue_meta_list.append(issue_meta)
+        
+    # 在 render_template 中使用 **context 將字典展開為關鍵字參數
     context = {
         'ticker': ticker,
         'stock_report_review_date': stock_report_review_date,
@@ -241,6 +237,14 @@ def ticker_market_info(ticker):
         'issue_meta_list': issue_meta_list,
     }
     return render_template('ticker_market_info.html', **context)
+
+@main.route('/ticker_setting_info/<ticker>')
+@us_data_view_perm.require(http_exception=403)
+def ticker_setting_info(ticker):
+    # 取得用戶上傳的追蹤問題列表（近10個）
+    issue_id_list = [meta["_id"] for meta in MDB_client["users"]["following_issues"].find({"tickers": ticker}, {"_id": 1}).limit(10)]
+    context = {}
+    return render_template('ticker_setting_info.html', **context)
 
 @main.route("/report_summary_page/<report_id>")
 @login_required

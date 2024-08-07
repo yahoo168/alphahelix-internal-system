@@ -45,6 +45,15 @@
         transform: translateX(-50%);
         white-space: nowrap; /* 防止文本換行 */
       }
+
+      .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        margin-bottom: 16px;
+        background-color: #fff;
+      }
     </style>
   </head>
 
@@ -57,21 +66,25 @@
         href="{{url_for('main.ticker_internal_info', ticker=ticker)}}"
         >內部報告</a
       >
+      <a
+        class="btn btn-secondary btn"
+        href="{{url_for('main.ticker_setting_info', ticker=ticker)}}"
+        >個股設定</a
+      >
     </div>
 
     <div class="container mt-4">
-      <div class="container">
-        <h2>新聞內容 <span id="current-date"></span></h2>
-        <div id="timeline" class="container"></div>
-        <br /><br />
-        <p id="stock_news_daily"></p>
-      </div>
+      <h1>新聞內容 (<span id="current-date"></span>)</h1>
+      <div id="timeline" class="container"></div>
+      <br /><br />
+      <p id="stock_news_daily"></p>
+      <hr class="my-4"/>
     </div>
 
     <div class="container mt-4">
       <h1 class="display-6">市場觀點</h1>
-      <div class="alert alert-secondary" role="alert">
-        以下觀點來自於{{ticker}}的近十篇研究報告，經AI彙整生成
+      <div class="alert alert-info" role="alert">
+        以下觀點涵蓋近10篇研究報告
         <strong>（更新日期：{{stock_report_review_date}}）</strong>
       </div>
       <div class="row">
@@ -139,93 +152,81 @@
         </div>
       </div>
       <br />
+
+      {% for issue_meta in issue_meta_list %}
+      <h2>{{issue_meta["issue"]}}</h2>
+      <div class="alert alert-info" role="alert">
+        以下觀點涵蓋近3個月，共{{issue_meta["ref_report_num"]}}篇研究報告<strong
+          >（更新日期: {{issue_meta["upload_timestamp"]}}）</strong
+        >
+      </div>
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title header-title">追蹤面向</h5>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Following Issue</th>
-                <th>Uploaded Date</th>
-                <th>Uploader</th>
-                <th>
-                  <a
-                    href="{{url_for('main.render_static_html', page='issue_register')}}"
-                    class="btn btn-dark btn-sm"
-                  >
-                    <i class="fas fa-plus"></i>
-                    <!-- 使用 Font Awesome 的 + 號圖標 -->
-                  </a>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for issue_meta in issue_meta_list %}
-              <tr>
-                <th scope="row">{{loop.index}}</th>
-                <td>{{issue_meta["issue"]}}</td>
-                <td>{{issue_meta["upload_timestamp"]}}</td>
-                <td>{{issue_meta["username"]}}</td>
-                <td>
-                  <button
-                    class="btn btn-secondary btn-sm"
-                    data-toggle="collapse"
-                    data-target="#summary{{loop.index}}"
-                    aria-expanded="false"
-                    aria-controls="summary{{loop.index}}"
-                  >
-                    查看
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td colspan="5">
-                  <div id="summary{{loop.index}}" class="collapse">
-                    <div class="alert alert-secondary" role="alert">
-                      以下內容由AI自近10篇研究報告彙整<strong
-                        >（更新日期：{{issue_meta['issue_review_date']}}）</strong
-                      >
-                    </div>
-                    <textarea
-                      id="issue_review_diff_content_{{loop.index}}"
-                      style="display: none"
-                    >
-  {{issue_meta["issue_review_diff"]}}</textarea
-                    >
-                    <div
-                      class="alert alert-light"
-                      role="alert"
-                      id="issue_review_diff_markdown_{{loop.index}}"
-                    ></div>
-                    <h3>報告觀點總結</h3>
-                    <!-- 將換行符 \n 替換為 HTML 的換行標籤 <br>。 | safe 用來確保 replace('\n', '<br>') 操作產生的 <br> 標籤會被解釋為 HTML 換行標籤，而不是顯示為普通文本。 -->
-                    <p>
-                      {{ issue_meta["issue_review"].replace('\n', '<br />') |
-                      safe }}
-                    </p>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+          <h3>市場共識與分歧</h3>
+          <p>
+            {{ issue_meta.get("market_issue_concensus_and_dissensus",
+            "").replace('\n', '<br />') | safe }}
+          </p>
+        </div>
+
+        <hr class="my-4" />
+
+        <button
+          class="btn btn-secondary"
+          type="button"
+          data-toggle="collapse"
+          data-target="#issue_{{ loop.index }}"
+          aria-expanded="false"
+        >
+          查看完整內容
+        </button>
+
+        <div class="collapse" id="issue_{{ loop.index }}">
+          <div class="card card-body">
+            <hr class="my-4" />
+            <h3>市場觀點彙整</h3>
+            <p>
+              {{ issue_meta.get("market_issue_review", "").replace('\n', '<br />')
+              | safe }}
+            </p>
+          </div>
+
+          <div class="card card-body">
+            <h3>新增市場觀點</h3>
+            <div class="alert alert-info" role="alert">
+              以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
+            </div>
+            <p>
+              {{ issue_meta.get("added_issue_review", "").replace('\n', '<br />')
+              | safe }}
+            </p>
+          </div>
+
+          <div class="card card-body">
+            <h3>市場觀點變化</h3>
+            <div class="alert alert-info" role="alert">
+              以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
+            </div>
+            <p>
+              {{ issue_meta.get("issue_review_change", "").replace('\n', '<br />')
+              | safe }}
+            </p>
+          </div>
+          <button
+            class="btn btn-secondary"
+            type="button"
+            data-toggle="collapse"
+            data-target="#issue_{{ loop.index }}"
+            aria-expanded="false"
+          >
+            收起內容
+          </button>
         </div>
       </div>
+      <br />
+      <br />
+      {% endfor %}
     </div>
-
-    <br />
-
-    <!-- <div class="container mt-2 mx-6">
-      <h1 class="display-6">即時新聞 {{stock_info_date}}</h1>
-      <div class="alert alert-secondary" role="alert">
-        以下內容來源於Bloomberg News，經AI彙整生成
-      </div>
-      <div id="stock-info-daily-markdown" class="markdown-body"></div>
-      <textarea id="stock-info-daily" style="display: none">
-{{stock_info_daily}}</textarea
-      >
-    </div> -->
 
     <br />
     <div class="container mt-2 mx-6">
@@ -288,7 +289,7 @@
     <script>
       $(document).ready(function () {
         // Process the stock info daily content
-        
+
         // Process the bullish and bearish outlook diff content
         $("#bullish_outlook_diff_markdown").html(
           marked.parse($("#bullish_outlook_diff_content").val())
