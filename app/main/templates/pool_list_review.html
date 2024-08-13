@@ -1,7 +1,7 @@
 <!DOCTYPE html>
+{% extends "_main_base.html" %} {% block content %}
 <html lang="en">
   <head>
-    {% extends "main_base.html" %} {% block content %}
     <meta charset="UTF-8" />
     <!-- Load CSS file for DataTables  -->
     <link
@@ -26,23 +26,6 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-
-    <style>
-      th,
-      td {
-        text-align: center;
-      }
-      table {
-        width: 100%;
-        table-layout: auto; /* 表头根据内容调整宽度 */
-      }
-      .tag {
-        background-color: #e0e0e0;
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 16px;
-      }
-    </style>
   </head>
   <body>
     <div class="jumbotron">
@@ -74,6 +57,9 @@
                 <th scope="col">Holding Status</th>
                 <th scope="col">Tracking Status</th>
                 <th scope="col">Last Update Date</th>
+                <th scope="col">Market Info</th>
+                <th scope="col">Internal Info</th>
+                <th scope="col">Setting</th>
               </tr>
             </thead>
             <tbody>
@@ -82,8 +68,9 @@
                 <td>
                   <a
                     href="{{ url_for('main.ticker_market_info', ticker=pool_list_meta['ticker']) }}"
-                    >{{ pool_list_meta['ticker'] }}</a
                   >
+                    {{ pool_list_meta['ticker'] }}
+                  </a>
                 </td>
                 <td>{{ pool_list_meta['researcher'] }}</td>
                 <td>
@@ -94,6 +81,24 @@
                 </td>
                 <td>{{ pool_list_meta['tracking_status'] }}</td>
                 <td>{{ pool_list_meta['last_publication_timestamp'] }}</td>
+                <td>
+                  <a
+                    href="{{ url_for('main.ticker_market_info', ticker=pool_list_meta['ticker']) }}"
+                    class="bi bi-graph-up button-like"
+                  ></a>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('main.ticker_internal_info', ticker=pool_list_meta['ticker']) }}"
+                    class="bi bi-terminal button-like"
+                  ></a>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('main.ticker_setting_info', ticker=pool_list_meta['ticker']) }}"
+                    class="bi bi-gear-fill button-like"
+                  ></a>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -115,5 +120,5 @@
       });
     </script>
   </body>
-  {% endblock %}
 </html>
+{% endblock %}

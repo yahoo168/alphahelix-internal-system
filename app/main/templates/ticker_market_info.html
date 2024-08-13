@@ -4,7 +4,7 @@
       <img src="{{ url_for('static', filename='images/AAPL_IS.png') }}" class="card-img-top" alt="Example Image" />
     </div> -->
 <html lang="en">
-  {% extends "main_base.html" %} {% block content %}
+  {% extends "_main_base.html" %} {% block content %}
   <head>
     <!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -->
     <link
@@ -78,7 +78,7 @@
       <div id="timeline" class="container"></div>
       <br /><br />
       <p id="stock_news_daily"></p>
-      <hr class="my-4"/>
+      <hr class="my-4" />
     </div>
 
     <div class="container mt-4">
@@ -152,139 +152,14 @@
         </div>
       </div>
       <br />
-
-      {% for issue_meta in issue_meta_list %}
-      <h2>{{issue_meta["issue"]}}</h2>
-      <div class="alert alert-info" role="alert">
-        以下觀點涵蓋近3個月，共{{issue_meta["ref_report_num"]}}篇研究報告<strong
-          >（更新日期: {{issue_meta["upload_timestamp"]}}）</strong
-        >
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <h3>市場共識與分歧</h3>
-          <p>
-            {{ issue_meta.get("market_issue_concensus_and_dissensus",
-            "").replace('\n', '<br />') | safe }}
-          </p>
-        </div>
-
-        <hr class="my-4" />
-
-        <button
-          class="btn btn-secondary"
-          type="button"
-          data-toggle="collapse"
-          data-target="#issue_{{ loop.index }}"
-          aria-expanded="false"
-        >
-          查看完整內容
-        </button>
-
-        <div class="collapse" id="issue_{{ loop.index }}">
-          <div class="card card-body">
-            <hr class="my-4" />
-            <h3>市場觀點彙整</h3>
-            <p>
-              {{ issue_meta.get("market_issue_review", "").replace('\n', '<br />')
-              | safe }}
-            </p>
-          </div>
-
-          <div class="card card-body">
-            <h3>新增市場觀點</h3>
-            <div class="alert alert-info" role="alert">
-              以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
-            </div>
-            <p>
-              {{ issue_meta.get("added_issue_review", "").replace('\n', '<br />')
-              | safe }}
-            </p>
-          </div>
-
-          <div class="card card-body">
-            <h3>市場觀點變化</h3>
-            <div class="alert alert-info" role="alert">
-              以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
-            </div>
-            <p>
-              {{ issue_meta.get("issue_review_change", "").replace('\n', '<br />')
-              | safe }}
-            </p>
-          </div>
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-toggle="collapse"
-            data-target="#issue_{{ loop.index }}"
-            aria-expanded="false"
-          >
-            收起內容
-          </button>
-        </div>
-      </div>
-      <br />
-      <br />
-      {% endfor %}
     </div>
 
-    <br />
-    <div class="container mt-2 mx-6">
-      <h1 class="display-6">市場報告</h1>
-      <div class="alert alert-secondary" role="alert">
-        點擊報告標題可自動下載報告；點擊摘要鍵將進入報告重點摘要頁面
-      </div>
-
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">報告列表</h5>
-          <!-- Table with hoverable rows -->
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Title</th>
-                <th scope="col">Report Date</th>
-                <th scope="col">Upload Date</th>
-                <th scope="col">Source</th>
-                <th scope="col">
-                  <a
-                    href="{{url_for('main.render_static_html', page='report_upload_page')}}"
-                    class="btn btn-dark btn-sm"
-                  >
-                    <i class="fas fa-plus"></i>
-                    <!-- 使用 Font Awesome 的 + 號圖標 -->
-                  </a>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for stock_report_meta in stock_report_meta_list %}
-              <tr>
-                <th scope="row">{{loop.index}}</th>
-                <td>
-                  <a href="{{ stock_report_meta['url'] }}"
-                    >{{ stock_report_meta['title'] }}</a
-                  >
-                </td>
-                <td>{{stock_report_meta['data_timestamp']}}</td>
-                <td>{{stock_report_meta['upload_timestamp']}}</td>
-                <td>{{stock_report_meta['source']}}</td>
-                <td>
-                  <a
-                    class="btn btn-secondary"
-                    href="{{ url_for('main.report_summary_page', report_id=stock_report_meta['_id']) }}"
-                    >摘要</a
-                  >
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          <!-- End Table with hoverable rows -->
-        </div>
-      </div>
-    </div>
+    <!-- 引入issue review模板 -->
+    {% include "_issue_review_model.html" %}
+    {% include "_stock_report_table_model.html" %}
+    
+    <!-- 在頁尾添加額外的間距 -->
+    <div class="footer-spacing"></div>
 
     <script>
       $(document).ready(function () {

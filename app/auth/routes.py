@@ -71,7 +71,7 @@ def login():
             identity_changed.send(app._get_current_object(), identity=Identity(user.get_id()))
             logger.info(f'User {user.username} logged in successfully')
             
-            # 获取 'next' 参数
+            # 获取 'next' 参数 (待改：似乎沒有作用)
             next_page = request.args.get('next')
             # 如果 'next' 存在则重定向，否则重定向到默认的 dashboard
             return redirect(next_page or url_for('main.dashboard'))

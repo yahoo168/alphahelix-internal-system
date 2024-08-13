@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %} {% block content %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Load CSS file for DataTables  -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
+      integrity="sha512-1k7mWiTNoyx2XtmI96o+hdjP8nn0f3Z2N4oF/9ZZRgijyV4omsKOXEnqL1gKQNPy2MTSP9rIEWGcH/CInulptA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- load jQuery -->
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- load DataTables -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"
+      integrity="sha512-BkpSL20WETFylMrcirBahHfSnY++H2O1W+UnEEO4yNIl+jI2+zowyoGJpbtk6bx97fBXf++WJHSSK2MV4ghPcg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <style>
+      /* 使用 CSS 設置特定列的最小寬度，確保Updated日期顯示在同一行*/
+      th:nth-child(5),
+      td:nth-child(5) {
+        min-width: 150px;
+        white-space: nowrap;
+      }
+
+      .tag {
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        padding: 1.5px 7px;
+        font-size: 14px;
+      }
+
+      .heart-red {
+        color: rgb(182, 72, 72);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Investment Issue Overview</h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <!-- Table with hoverable rows -->
+          <table id="poolListTable" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Active</th>
+                <th scope="col">Issue</th>
+                <th scope="col">Tickers</th>
+
+                <th scope="col">Updated</th>
+                <th scope="col">Uplodaer</th>
+                <th scope="col">Follow</th>
+                <th scope="col">Followers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue_meta in issue_meta_list %}
+              <tr>
+                <!-- Row number (using th for strong fontsize)-->
+                <th scope="row">{{loop.index}}</th>
+                {% if issue_meta['is_active'] == True %}
+
+                <!-- Active -->
+                <td data-sort="1">
+                  <i class="bi bi-check-circle"></i>
+                </td>
+                {% else %}
+                <td data-sort="0">
+                  <i class="bi bi-x-circle-fill"></i>
+                </td>
+                {% endif %}
+
+                <!-- issue (embeded link) -->
+                <td style="text-align: left">
+                  <a
+                    href="{{url_for('main.investment_issue_summary', issue_id=issue_meta['_id'])}}"
+                  >
+                    {{ issue_meta['issue'] }}</a
+                  >
+                </td>
+
+                <td>
+                  {% if issue_meta['tickers']%} {% for ticker in
+                  issue_meta['tickers']%}
+                  <span class="tag">{{ ticker }}</span>
+                  {% endfor %} {% endif %}
+                </td>
+
+                <td>{{ issue_meta['updated_timestamp'] }}</td>
+
+                <td>{{issue_meta["uploader"]}}</td>
+
+                <!-- Follow Issue-->
+                {% if issue_meta['is_following'] == True %}
+                <td data-sort="1">
+                  <i
+                    class="bi bi-suit-heart-fill heart-red button-like follow-issue"
+                    data-issue_id="{{issue_meta['_id']}}"
+                  ></i>
+                </td>
+                {% else %}
+                <td data-sort="0">
+                  <i
+                    class="bi bi-suit-heart button-like follow-issue"
+                    data-issue_id="{{issue_meta['_id']}}"
+                  ></i>
+                </td>
+                {% endif %}
+                <td id="follower_num_{{ issue_meta['_id'] }}">
+                  {{ issue_meta['followers_num'] }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script>
+  $(document).ready(function () {
+    // 初始化 DataTable，设置每页显示 50 条记录
+    var table = $("#poolListTable").DataTable({
+      paging: true, // 启用分页
+      ordering: true, // 启用排序
+      info: true, // 启用表格信息
+      searching: true, // 启用搜索
+      pageLength: 50, // 设置每页显示 50 条记录
+    });
+
+    // 使用事件委托为所有 .follow-issue 元素绑定点击事件
+    $(document).on("click", ".follow-issue", function () {
+      var issueId = $(this).data("issue_id"); // 获取 issue_id
+      var isFollowing = $(this).hasClass("bi-suit-heart-fill"); // 检查当前状态
+      var clickedIcon = $(this); // 显式获取被点击的元素
+
+      // 发送 AJAX 请求到后端
+      $.ajax({
+        url: "{{url_for('main.update_issue_following_status')}}",
+        type: "POST",
+        contentType: "application/json", // 指定内容类型为 JSON
+        data: JSON.stringify({
+          issue_id: issueId, // 将数据序列化为 JSON
+          follow_status: !isFollowing, // 传递相反的状态
+        }),
+        success: function (response) {
+          if (response.status === "success") {
+            // 切换 class
+            if (isFollowing) {
+              clickedIcon
+                .removeClass("bi-suit-heart-fill heart-red")
+                .addClass("bi-suit-heart");
+
+              // 更新 followers_num
+              var followerNumElem = $("#follower_num_" + issueId);
+              var currentFollowers = parseInt(followerNumElem.text());
+              followerNumElem.text(currentFollowers - 1);
+
+              // 更新 Follow 列的 data-sort 属性
+              clickedIcon.closest("td").attr("data-sort", "0");
+
+              // 更新 Followers 列的 data-sort 属性
+              followerNumElem
+                .closest("td")
+                .attr("data-sort", currentFollowers - 1);
+            } else {
+              clickedIcon
+                .removeClass("bi-suit-heart")
+                .addClass("bi-suit-heart-fill heart-red");
+
+              // 更新 followers_num
+              var followerNumElem = $("#follower_num_" + issueId);
+              var currentFollowers = parseInt(followerNumElem.text());
+              followerNumElem.text(currentFollowers + 1);
+
+              // 更新 Follow 列的 data-sort 属性
+              clickedIcon.closest("td").attr("data-sort", "1");
+
+              // 更新 Followers 列的 data-sort 属性
+              followerNumElem
+                .closest("td")
+                .attr("data-sort", currentFollowers + 1);
+            }
+
+            // 强制 DataTables 重新计算排序并刷新表格
+            var row = clickedIcon.closest("tr");
+            table.row(row).invalidate().draw(false); // 使该行无效并重新读取数据，保留当前分页
+          } else {
+            alert("状态更新失败");
+          }
+        },
+        error: function () {
+          alert("请求失败");
+        },
+      });
+    });
+  });
+</script>
+{% endblock %}

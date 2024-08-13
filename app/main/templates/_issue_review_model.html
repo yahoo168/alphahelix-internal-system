@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8" />
+  <style>
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 16px;
+      margin-bottom: 16px;
+      background-color: #fff;
+    }
+    .footer-spacing {
+      margin-bottom: 100px; /* Adjust the value as needed */
+    }
+  </style>
+</head>
+
+<div class="container mt-4">
+  {% for issue_meta in issue_meta_list %}
+  <h2>{{issue_meta["issue"]}}</h2>
+  <div class="alert alert-info" role="alert">
+    以下觀點涵蓋近3個月，共{{issue_meta["ref_report_num"]}}篇研究報告<strong
+      >（更新日期: {{issue_meta["upload_timestamp"]}}）</strong
+    >
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h3>市場共識與分歧</h3>
+      <p>
+        {{ issue_meta.get("market_issue_concensus_and_dissensus",
+        "").replace('\n', '<br />') | safe }}
+      </p>
+    </div>
+
+    <hr class="my-4" />
+
+    <button
+      class="btn btn-secondary"
+      type="button"
+      data-toggle="collapse"
+      data-target="#issue_{{ loop.index }}"
+      aria-expanded="false"
+    >
+      查看完整內容
+    </button>
+
+    <div class="collapse" id="issue_{{ loop.index }}">
+      <div class="card card-body">
+        <hr class="my-4" />
+        <h3>市場觀點彙整</h3>
+        <p>
+          {{ issue_meta.get("market_issue_review", "").replace('\n', '<br />') |
+          safe }}
+        </p>
+      </div>
+
+      <div class="card card-body">
+        <h3>新增市場觀點</h3>
+        <div class="alert alert-info" role="alert">
+          以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
+        </div>
+        <p>
+          {{ issue_meta.get("added_issue_review", "").replace('\n', '<br />') |
+          safe }}
+        </p>
+      </div>
+
+      <div class="card card-body">
+        <h3>市場觀點變化</h3>
+        <div class="alert alert-info" role="alert">
+          以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
+        </div>
+        <p>
+          {{ issue_meta.get("issue_review_change", "").replace('\n', '<br />') |
+          safe }}
+        </p>
+      </div>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        data-toggle="collapse"
+        data-target="#issue_{{ loop.index }}"
+        aria-expanded="false"
+      >
+        收起內容
+      </button>
+    </div>
+  </div>
+  <br />
+  <br />
+  {% endfor %}
+</div>

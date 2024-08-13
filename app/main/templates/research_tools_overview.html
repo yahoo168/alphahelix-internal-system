@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  {% extends "main_base.html" %} {% block content %}
+  {% extends "_main_base.html" %} {% block content %}
   <body>
     <div class="jumbotron">
       <h1 class="display-4">Internal System</h1>
@@ -14,44 +14,31 @@
       <div class="row">
         <div class="col-md-4 mb-3">
           <a
-            href="{{url_for('main.note_search_page')}}"
+            href="{{url_for('main.investment_issue_overview')}}"
             class="btn btn-light custom-high-button btn-block"
-            >研究筆記編輯
+            >投資議題追蹤
           </a>
         </div>
+
+        <div class="col-md-4 mb-3">
+          <a href="#" class="btn btn-secondary custom-high-button btn-block"
+            >投資假設追蹤
+          </a>
+        </div>
+
         <div class="col-md-4 mb-3">
           <a
             href="{{url_for('main.render_static_html', page='stock_document_search')}}"
-            class="btn btn-secondary custom-high-button btn-block"
+            class="btn btn-light custom-high-button btn-block"
             >研究文件查詢
           </a>
         </div>
-        <div class="col-md-4 mb-3">
-          <a
-            href="{{url_for('main.render_static_html', page='issue_register')}}"
-            class="btn btn-light custom-high-button btn-block"
-            >個股問題追蹤
-          </a>
-        </div>
-      </div>
 
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <a href="#" class="btn btn-secondary custom-high-button btn-block"
-            >待開發
-          </a>
-        </div>
         <div class="col-md-4 mb-3">
           <a
-            href="#"
-            class="btn btn-light custom-high-button btn-block"
-          >
-            待開發
-          </a>
-        </div>
-        <div class="col-md-4 mb-3">
-          <a href="#" class="btn btn-secondary custom-high-button btn-block"
-            >待開發
+            href="{{url_for('main.note_search_page')}}"
+            class="btn btn-secondary custom-high-button btn-block"
+            >研究筆記編輯
           </a>
         </div>
       </div>

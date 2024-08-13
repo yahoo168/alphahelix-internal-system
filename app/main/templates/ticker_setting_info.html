@@ -1,78 +1,186 @@
 <!DOCTYPE html>
 <html>
   <head>
-    {% extends "main_base.html" %}
+    {% extends "_main_base.html" %} {% block content %}
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <!-- 以下CSS全是針對rounded toggle switch -->
+    <style>
+      /* The switch - the box around the slider */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 25.5px;
+      }
+
+      /* Hide default HTML checkbox */
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      /* The slider */
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: 0.2s;
+        transition: 0.2s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 19.5px;
+        width: 19.5px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        -webkit-transition: 0.2s;
+        transition: 0.2s;
+      }
+
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #2196f3;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(19.5px);
+        -ms-transform: translateX(19.5px);
+        transform: translateX(19.5px);
+      }
+
+      /* Rounded sliders */
+      .slider.round {
+        border-radius: 25.5px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+    </style>
+
+    <!-- 以下CSS全是針對modal -->
+    <style>
+      /* Modal styles */
+      .modal {
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+        padding-top: 60px;
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 100%;
+        max-width: 700px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
-  {% block content %}
+
   <body>
-    <br>
+    <div class="jumbotron">
+      <h1 class="display-4">{{ticker}}</h1>
+      <hr class="my-4" />
+      <a
+        class="btn btn-secondary btn"
+        href="{{url_for('main.ticker_internal_info', ticker=ticker)}}"
+        >內部報告</a
+      >
+      <a
+        class="btn btn-secondary btn"
+        href="{{url_for('main.ticker_market_info', ticker=ticker)}}"
+        >市場資訊</a
+      >
+    </div>
+    <br />
     <div class="container">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title header-title">追蹤面向</h5>
+          <h5 class="card-title header-title d-flex justify-content-between">
+            <strong>Assumption Management</strong>
+            <i
+              class="bi bi-plus-square-fill"
+              style="font-size: 2rem; cursor: pointer"
+              id="addAssumptionIcon"
+            ></i>
+          </h5>
           <table class="table table-hover">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Following Issue</th>
+                <th>Active</th>
+                <th>Assumption</th>
                 <th>Uploaded Date</th>
-                <th>Uploader</th>
-                <th>
-                  <a
-                    href="{{url_for('main.render_static_html', page='issue_register')}}"
-                    class="btn btn-dark btn-sm"
-                  >
-                    <i class="fas fa-plus"></i>
-                    <!-- 使用 Font Awesome 的 + 號圖標 -->
-                  </a>
-                </th>
+                <th>Updated Date</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {% for issue_meta in issue_meta_list %}
+              {% for assumption_meta in assumption_meta_list %}
               <tr>
                 <th scope="row">{{loop.index}}</th>
-                <td>{{issue_meta["issue"]}}</td>
-                <td>{{issue_meta["upload_timestamp"]}}</td>
-                <td>{{issue_meta["username"]}}</td>
+                <td>
+                  <!-- Rounded switch -->
+                  <label class="switch">
+                    <input id="assumption_toggle_switch" type="checkbox" {% if
+                    assumption_meta["is_active"] %} checked {% endif %}
+                    data-assumption-id="{{ assumption_meta['_id'] }}"
+                    class="toggle-switch" data-type="assumption"/>
+                    <span class="slider round"></span>
+                  </label>
+                </td>
+                <td>{{assumption_meta["assumption"]}}</td>
+                <td>{{assumption_meta["upload_timestamp"]}}</td>
+                <td>{{assumption_meta["updated_timestamp"]}}</td>
                 <td>
                   <button
-                    class="btn btn-secondary btn-sm"
-                    data-toggle="collapse"
-                    data-target="#summary{{loop.index}}"
-                    aria-expanded="false"
-                    aria-controls="summary{{loop.index}}"
+                    class="btn btn-secondary btn-sm editAssumptionButton"
+                    data-assumption_id="{{ assumption_meta['_id'] }}"
                   >
-                    查看
+                    Edit
                   </button>
-                </td>
-              </tr>
-              <tr>
-                <td colspan="5">
-                  <div id="summary{{loop.index}}" class="collapse">
-                    <div class="alert alert-secondary" role="alert">
-                      以下內容由AI自近10篇研究報告彙整<strong
-                        >（更新日期：{{issue_meta['issue_review_date']}}）</strong
-                      >
-                    </div>
-                    <textarea
-                      id="issue_review_diff_content_{{loop.index}}"
-                      style="display: none"
-                    >
-      {{issue_meta["issue_review_diff"]}}</textarea
-                    >
-                    <div
-                      class="alert alert-light"
-                      role="alert"
-                      id="issue_review_diff_markdown_{{loop.index}}"
-                    ></div>
-                    <h3>報告觀點總結</h3>
-                    <!-- 將換行符 \n 替換為 HTML 的換行標籤 <br>。 | safe 用來確保 replace('\n', '<br>') 操作產生的 <br> 標籤會被解釋為 HTML 換行標籤，而不是顯示為普通文本。 -->
-                    <p>
-                      {{ issue_meta["issue_review"].replace('\n', '<br />') |
-                      safe }}
-                    </p>
-                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -81,6 +189,438 @@
         </div>
       </div>
     </div>
+
+    <br />
+
+    <div class="container">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title header-title d-flex justify-content-between">
+            <strong>Issue Management</strong>
+            <i
+              class="bi bi-plus-square-fill"
+              style="font-size: 2rem; cursor: pointer"
+              id="addIssueIcon"
+            ></i>
+          </h5>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Active</th>
+                <th>Issue</th>
+                <th>Uploaded Date</th>
+                <th>Updated Date</th>
+                <th>Assumption Num</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue_meta in issue_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>
+                  <!-- Rounded switch -->
+                  <label class="switch">
+                    <input id="issue_toggle_switch" type="checkbox" {% if
+                    issue_meta["is_active"] %} checked {% endif %}
+                    data-issue-id="{{ issue_meta['_id'] }}"
+                    class="toggle-switch" data-type="issue" />
+                    <span class="slider round"></span>
+                  </label>
+                </td>
+                <td>{{issue_meta["issue"]}}</td>
+                <td>{{issue_meta["upload_timestamp"]}}</td>
+                <td>{{issue_meta["updated_timestamp"]}}</td>
+                <td>0</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Form： Add assumption-->
+    <div id="addAssumptionModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="container">
+          <form
+            action="{{url_for('main.upload_investment_assumption')}}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <div class="form-group">
+              <label for="assumption">Investment Assumption</label>
+              <input
+                type="text"
+                class="form-control"
+                id="assumption"
+                name="assumption"
+                placeholder="e.g. Apple's AI (Apple Intelligence) will drive iPhone sales in 2025 and 2026."
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="ticker"
+                >Related Ticker (separated with comma ',' )</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="tickers"
+                name="tickers"
+                placeholder="AAPL,MSFT,..."
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+              Creat
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Form： Edit assumption-->
+    <div id="editAssumptionModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <!-- 隐藏的 input 存储 assumption_id -->
+        <input type="hidden" id="assumption_id_input" name="assumption_id" />
+
+        <span class="close">&times;</span>
+        <div class="container">
+          <div class="form-group">
+            <label for="search_issues">Search Issues</label>
+            <input
+              type="text"
+              class="form-control"
+              id="search_issues"
+              name="search_issues"
+              placeholder=""
+              required
+            />
+            <!-- 将suggestions放在输入框下方，而非覆盖 -->
+            <ul
+              id="issue_suggestions"
+              class="list-group"
+              style="
+                position: relative;
+                z-index: 1000;
+                width: auto;
+                margin-top: 5px;
+                cursor: pointer;
+              "
+            ></ul>
+          </div>
+          <br />
+          <label for="linked_issues">Linked Issues</label>
+          <!-- 使selected-items的宽度与linked_issues对齐 -->
+          <div id="selected-items" style="width: auto"></div>
+
+          <button id="save-button" class="btn btn-secondary mt-2">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Form： Add issue-->
+    <div id="issueModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="container">
+          <form
+            action="{{url_for('main.upload_issue')}}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <div class="form-group">
+              <label for="issue">Issue</label>
+              <input
+                type="text"
+                class="form-control"
+                id="issue"
+                name="issue"
+                placeholder="Use concise language to describe the issue (e.g. iPhone shipments)."
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="ticker"
+                >Related Ticker (separated with comma ',' )</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="tickers"
+                name="tickers"
+                placeholder="AAPL,MSFT,..."
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+              Creat
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Toggle Switch Checkbox(Active/Inactive)
+      $(document).ready(function () {
+        $(".toggle-switch").change(function () {
+          var isChecked = $(this).is(":checked");
+          var id = $(this).data("assumption-id") || $(this).data("issue-id");
+          var type = $(this).data("type"); // 获取类型（assumption 或 issue）
+
+          var url =
+            type === "assumption"
+              ? "{{url_for('main.update_assumption_status')}}"
+              : "{{url_for('main.update_issue_status')}}";
+
+          var data = {
+            is_active: isChecked,
+          };
+          data[`${type}_id`] = id; // 动态设置 id 参数
+
+          $.ajax({
+            url: url,
+            type: "POST",
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            error: function (xhr, status, error) {
+              alert(`An error occurred while updating the ${type} status.`);
+            },
+          });
+        });
+      });
+
+      // Add Assumption Modal
+      $(document).ready(function () {
+        var $modal = $("#addAssumptionModal");
+
+        // When the user clicks the icon, open the modal
+        $("#addAssumptionIcon").on("click", function () {
+          $modal.show();
+        });
+
+        // When the user clicks on <span> (x), close the modal
+        $(".close").on("click", function () {
+          $modal.hide();
+        });
+
+        // When the user clicks anywhere outside of the modal, close it
+        $(window).on("click", function (event) {
+          if ($(event.target).is($modal)) {
+            $modal.hide();
+          }
+        });
+
+        // Handle form submission
+        $("#assumptionForm").on("submit", function (event) {
+          event.preventDefault();
+          // var ticker = $("#ticker").val();
+          // var assumption = $("#assumption").val();
+          $modal.hide();
+        });
+      });
+
+      // Add Issue Modal
+      $(document).ready(function () {
+        var $modal = $("#issueModal");
+
+        // When the user clicks the icon, open the modal
+        $("#addIssueIcon").on("click", function () {
+          $modal.show();
+        });
+
+        // When the user clicks on <span> (x), close the modal
+        $(".close").on("click", function () {
+          $modal.hide();
+        });
+
+        // When the user clicks anywhere outside of the modal, close it
+        $(window).on("click", function (event) {
+          if ($(event.target).is($modal)) {
+            $modal.hide();
+          }
+        });
+
+        // Handle form submission
+        $("#issueForm").on("submit", function (event) {
+          event.preventDefault();
+          $modal.hide();
+        });
+      });
+
+      // Edit Assumption Modal
+      $(document).ready(function () {
+        var $modal = $("#editAssumptionModal");
+        let selectedItems = []; // 全局存储已选中的 linked_issues
+
+        // 当用户点击 Edit 按钮时，打开 modal 并传递 assumption_id
+        $(".editAssumptionButton").on("click", function () {
+          var assumptionId = $(this).data("assumption_id");
+
+          // 将 assumption_id 存储到隐藏的 input 中
+          $("#assumption_id_input").val(assumptionId);
+
+          // 清空之前显示的已选中的 linked_issues
+          selectedItems = [];
+          updateSelectedItemsUI();
+
+          // 通过 AJAX 请求获取该 assumption_id 对应的 linked_issues
+          $.ajax({
+            type: "GET",
+            url: "{{url_for('main.get_assumption_issues')}}", // 假设你有一个获取 linked_issues 的 API
+            data: { assumption_id: assumptionId },
+            success: function (response) {
+              // 将返回的 linked_issues 填入 selectedItems 并更新UI
+              selectedItems = response.linked_issues.map(function (issue) {
+                return {
+                  issue_id: issue.issue_id,
+                  issue: issue.issue, // 假设返回的数据有 issue_name 字段
+                };
+              });
+              updateSelectedItemsUI();
+              $modal.show();
+            },
+            error: function () {
+              alert("Failed to load linked issues.");
+            },
+          });
+        });
+
+        // 当用户点击关闭按钮时，关闭 modal
+        $(".close").on("click", function () {
+          $modal.hide();
+        });
+
+        // 当用户点击 modal 外部区域时，关闭 modal
+        $(window).on("click", function (event) {
+          if ($(event.target).is($modal)) {
+            $modal.hide();
+          }
+        });
+
+        // issue 输入建议列表（自动完成）
+        $("#search_issues").on("input", function () {
+          let query = $(this).val();
+
+          // 如果输入为空，则清除建议列表
+          if (query === "") {
+            $("#issue_suggestions").empty();
+            return;
+          }
+
+          $.ajax({
+            type: "POST",
+            url: "{{url_for('main.issue_search_suggestion')}}",
+            contentType: "application/json",
+            data: JSON.stringify({ query: query }),
+            success: function (suggestions) {
+              let $suggestionsList = $("#issue_suggestions");
+              $suggestionsList.empty();
+
+              // 如果有建议，则显示在输入框下方
+              suggestions.forEach(function (suggestion) {
+                // 创建包含 issue 和 tickers 的元素
+                let $item = $(
+                  '<li class="list-group-item d-flex justify-content-between align-items-center"></li>'
+                );
+
+                // Issue 部分
+                let $issue = $("<span></span>").text(suggestion.issue);
+
+                // Tickes 部分，使用分隔符将多个 ticker 连接在一起
+                let tickersText = suggestion.tickers.join(", ");
+                let $tickers = $('<span class="text-muted"></span>').text(
+                  tickersText
+                );
+
+                // 将 issue 和 tickers 添加到 list item
+                $item.append($issue);
+                // $item.append($('<span class="mx-2">|</span>')); // 添加分隔线
+                $item.append($tickers);
+
+                $item.data("issue-id", suggestion.issue_id);
+
+                // 选中建议项后，将 issue 和 issue_id 添加到 selectedItems 并在界面上展示
+                $item.on("click", function () {
+                  let issueId = $item.data("issue-id");
+                  let issueText = suggestion.issue;
+
+                  // 检查是否已经选择了该 issue
+                  if (
+                    !selectedItems.some((item) => item.issue_id === issueId)
+                  ) {
+                    selectedItems.push({ issue_id: issueId, issue: issueText });
+                    updateSelectedItemsUI();
+                  }
+                  $("#search_issues").val(""); // 清空输入框
+                  $suggestionsList.empty(); // 清空建议列表
+                });
+
+                $suggestionsList.append($item);
+              });
+            },
+          });
+        });
+
+        // 更新显示已选中的项目
+        function updateSelectedItemsUI() {
+          let $selectedItemsDiv = $("#selected-items");
+          $selectedItemsDiv.empty();
+
+          selectedItems.forEach(function (item) {
+            let $selectedItem = $(`
+                <div class="alert alert-secondary d-flex align-items-center mb-2" role="alert" style="cursor: pointer;">
+                    ${item.issue}
+                </div>
+            `);
+
+            // 点击已选中的项目，移除它
+            $selectedItem.on("click", function () {
+              selectedItems = selectedItems.filter(function (i) {
+                return i.issue_id !== item.issue_id;
+              });
+              updateSelectedItemsUI();
+            });
+
+            $selectedItemsDiv.append($selectedItem);
+          });
+        }
+
+        // 保存按钮点击事件
+        $("#save-button").on("click", function () {
+          var assumptionId = $("#assumption_id_input").val(); // 获取隐藏的 assumption_id
+          var linkedIssues = selectedItems; // 假设你已经有 selectedItems 来存储选中的 issues
+
+          var data = {
+            assumption_id: assumptionId,
+            linked_issues: linkedIssues,
+          };
+
+          $.ajax({
+            type: "POST",
+            url: "{{url_for('main.save_selected_issues')}}",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function (response) {
+              alert("Selected items saved successfully!");
+              // 根据需要处理响应内容
+            },
+          });
+        });
+      });
+
+      // 在#linked_issues 输入内容时动态设置 #suggestions 的宽度，使其与输入框的宽度完全一致
+      $(document).ready(function () {
+        $("#search_issues").on("input", function () {
+          $("#issue_suggestions").css("width", $(this).outerWidth());
+        });
+      });
+    </script>
   </body>
   {% endblock %}
 </html>

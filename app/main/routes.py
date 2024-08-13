@@ -175,9 +175,9 @@ def ticker_market_info(ticker):
     issue_meta_list = []
         
     # 取得近期報告的多空觀點彙整（stock_report_review）
-    stock_report_review_meta = MDB_client["published_content"]["stock_report_review"].find_one({"ticker": ticker}, sort=[("date", -1)])
+    stock_report_review_meta = MDB_client["published_content"]["stock_report_review"].find_one({"ticker": ticker}, sort=[("data_timestamp", -1)])
     if stock_report_review_meta:
-        stock_report_review_date = datetime2str(stock_report_review_meta["date"])
+        stock_report_review_date = datetime2str(stock_report_review_meta["data_timestamp"])
         stock_report_review = stock_report_review_meta.get("stock_report_review", {})
         bullish_argument_list = stock_report_review.get("bullish_outlook", [])
         bearish_argument_list = stock_report_review.get("bearish_outlook", [])
@@ -191,7 +191,7 @@ def ticker_market_info(ticker):
         stock_info_daily = shorts_summary_meta.get("shorts_summary", '')
 
     # 取得近期報告列表（近10篇）
-    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"ticker": ticker}, sort=[("data_timestamp", -1)], limit=10))
+    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"ticker": ticker}, sort=[("data_timestamp", -1)], limit=30))
     for stock_report_meta in stock_report_meta_list:
         stock_report_meta["title"] = stock_report_meta["title"].replace("_", " ")[:-4][:80]
         stock_report_meta["data_timestamp"] = datetime2str(stock_report_meta["data_timestamp"])
@@ -241,10 +241,154 @@ def ticker_market_info(ticker):
 @main.route('/ticker_setting_info/<ticker>')
 @us_data_view_perm.require(http_exception=403)
 def ticker_setting_info(ticker):
-    # 取得用戶上傳的追蹤問題列表（近10個）
-    issue_id_list = [meta["_id"] for meta in MDB_client["users"]["following_issues"].find({"tickers": ticker}, {"_id": 1}).limit(10)]
-    context = {}
+    # 取得個股的投資假設
+    assumption_meta_list = list(MDB_client["users"]["investment_assumptions"].find({"tickers": ticker}))
+    for assumption_meta in assumption_meta_list:
+        # 將_id轉為str，以便前端綁定於class
+        assumption_meta['_id'] = str(assumption_meta["_id"])
+        assumption_meta["upload_timestamp"] = datetime2str(assumption_meta.get("upload_timestamp", ''))
+        assumption_meta["updated_timestamp"] = datetime2str(assumption_meta.get("updated_timestamp", ''))
+    
+    # 取得用戶上傳的追蹤問題列表
+    issue_meta_list = list(MDB_client["users"]["following_issues"].find({"tickers": ticker}))
+    for issue_meta in issue_meta_list:
+        # 將_id轉為str，以便前端綁定於class
+        issue_meta['_id'] = str(issue_meta["_id"])
+        issue_meta["upload_timestamp"] = datetime2str(issue_meta.get("upload_timestamp", ''))
+        issue_meta["updated_timestamp"] = datetime2str(issue_meta.get("updated_timestamp", ''))
+    
+    context = {
+        "ticker": ticker,
+        "assumption_meta_list": assumption_meta_list,
+        "issue_meta_list": issue_meta_list,
+    }
     return render_template('ticker_setting_info.html', **context)
+
+@main.route('/upload_investment_assumption', methods=['POST'])
+@login_required
+def upload_investment_assumption():
+    assumption, tickers = request.form["assumption"], request.form["tickers"]
+    ticker_list = tickers.split(",")
+    ticker_list = [ticker.strip() for ticker in ticker_list]
+    assumption_meta = {
+        "assumption": assumption,
+        "tickers": ticker_list,
+        "uploader": ObjectId(current_user.get_id()),
+        "upload_timestamp": datetime.now(),
+        "updated_timestamp": datetime.now(),
+        "is_active": True,
+        "linked_issues": [],
+    }
+    MDB_client["users"]["investment_assumptions"].insert_one(assumption_meta)
+    flash("Assumption uploaded successfully!", "success")
+    return redirect(url_for("main.ticker_setting_info", ticker=ticker_list[0]))
+
+@main.route('/get_assumption_issues', methods=['GET'])
+@login_required
+def get_assumption_issues():
+    assumption_id = request.args.get('assumption_id')
+    # 查找对应的 assumption 文档
+    assumption_doc = MDB_client["users"]["investment_assumptions"].find_one({"_id": ObjectId(assumption_id)})
+
+    # 获取 linked_issues 字段
+    linked_issues = assumption_doc.get('linked_issues', [])
+
+    # 构造响应内容，假设每个 issue 包含 issue_id 和 issue_name
+    response_data = []
+    for issue_meta in linked_issues:
+        if issue_meta:
+            response_data.append({
+                "issue_id": str(issue_meta["issue_id"]),
+                "issue": issue_meta["issue"]
+            })
+
+    return jsonify({"status": "success", "linked_issues": response_data})
+
+@main.route('/issue_search_suggestion', methods=['POST'])
+@login_required
+def issue_search_suggestion():
+    # 取得前端傳來的查詢字串
+    query = request.json.get('query')
+    # 构建查询条件：在 `issue` 或 `ticker` 字段中查找包含 `query` 的值
+    # $regex 运算符： 通过 $regex 运算符在 issue 或 ticker 字段中进行模糊匹配。"$options": "i" 选项使查询不区分大小写
+    # 用 $or 运算符来查找 issue 或 ticker 字段中包含 query 的记录
+    search_filter = {
+        "$or": [
+            {"issue": {"$regex": query, "$options": "i"}},  # `i`选项用于不区分大小写的匹配
+            {"tickers": {"$regex": query, "$options": "i"}}
+        ],
+        "is_active": True,
+    }
+    # 在 MongoDB 中查找符合条件的文档
+    results = MDB_client["users"]["following_issues"].find(search_filter)
+    # 将结果转换为列表并提取必要的字段
+    suggestions = [
+        {"issue_id": str(result["_id"]), "issue": result["issue"], "tickers": result.get("tickers", [])}
+        for result in results
+    ]    
+    return jsonify(suggestions)
+
+@main.route('/save_selected_issues', methods=['POST'])
+@login_required
+def save_selected_issues():
+    data = request.json
+    assumption_id, linked_issues = data.get('assumption_id'), data.get('linked_issues')
+    #  # 将每个 issue_meta 的 issue_id 转换为 ObjectId
+    for issue_meta in linked_issues:
+        issue_meta["issue_id"] = ObjectId(issue_meta.get("issue_id", ''))
+    
+    # 获取 MongoDB 集合
+    collection = MDB_client["users"]["investment_assumptions"]
+
+    # 查找对应的 assumption 文档，确保它存在
+    assumption_doc = collection.find_one({"_id": ObjectId(assumption_id)})
+
+    if not assumption_doc:
+        return jsonify({"status": "error", "message": "Assumption not found"}), 404
+
+    # 使用 $set 操作符将 linked_issues 字段替换为当前接收到的值
+    collection.update_one(
+        {"_id": ObjectId(assumption_id)},
+        {"$set": {"linked_issues": linked_issues, "updated_timestamp": datetime.now()}}
+    )
+
+    return jsonify({"status": "success"})
+
+@main.route('/upload_issue', methods=['POST'])
+@login_required
+def upload_issue():
+    issue, tickers = request.form["issue"], request.form["tickers"]
+    ticker_list = tickers.split(",")
+    ticker_list = [ticker.strip() for ticker in ticker_list]
+    issue_meta = {
+        "issue": issue,
+        "tickers": ticker_list,
+        "uploader": ObjectId(current_user.get_id()),
+        "upload_timestamp": datetime.now(),
+        "updated_timestamp": datetime.now(),
+        "is_active": False,
+    }
+    MDB_client["users"]["following_issues"].insert_one(issue_meta)
+    flash("Issue uploaded successfully!", "success")
+    return redirect(url_for("main.ticker_setting_info", ticker=ticker_list[0]))
+
+@main.route('/update_assumption_status', methods=['POST'])
+def update_assumption_status():
+    data = request.json
+    assumption_id, is_active = data.get('assumption_id'), data.get('is_active')
+    # 更新issue的狀態(is_active: True/False)
+    MDB_client["users"]["investment_assumptions"].update_one({"_id": ObjectId(assumption_id)}, {"$set": {"is_active": is_active,
+                                                                                              "updated_timestamp:": datetime.now()}})
+    return jsonify({"status": "success"})
+
+@main.route('/update_issue_status', methods=['POST'])
+def update_issue_status():
+    data = request.json
+    issue_id, is_active = data.get('issue_id'), data.get('is_active')
+    # 更新issue的狀態(is_active: True/False)
+    MDB_client["users"]["following_issues"].update_one({"_id": ObjectId(issue_id)}, {"$set": {"is_active": is_active,
+                                                                                              "updated_timestamp:": datetime.now()}})
+    return jsonify({"status": "success"})
 
 @main.route("/report_summary_page/<report_id>")
 @login_required
@@ -256,7 +400,7 @@ def report_summary_page(report_id):
     source = stock_report_meta["source"]
     url = stock_report_meta["url"]
     summary =  stock_report_meta["summary"]
-    issue_meta_list =  stock_report_meta["issue_summary"]
+    issue_meta_list =  stock_report_meta.get("issue_summary", [])
     
     issue_summary = {} 
     for issue_meta in issue_meta_list:
@@ -276,6 +420,57 @@ def report_summary_page(report_id):
                            source=source,
                            url=url, summary=summary,
                            issue_summary=issue_summary)
+
+@main.route("/investment_issue_summary/<issue_id>")
+def investment_issue_summary(issue_id):
+    issue_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(issue_id)}))
+    
+    context = {
+        "issue_meta_list": issue_meta_list
+    }
+    
+    return render_template("investment_issue_summary.html", **context)
+
+@main.route("/investment_issue_overview")
+def investment_issue_overview():
+    # 製作username與employee_id的對應表
+    user_id = current_user.get_id()
+    
+    user_info_meta_list = list(MDB_client["users"]["user_basic_info"].find())
+    mapping_df = pd.DataFrame(user_info_meta_list).loc[:, ["username", "_id"]].set_index("_id")
+    id_mapping_dict = mapping_df.to_dict(orient='index')
+    
+    issue_meta_list = list(MDB_client["users"]["following_issues"].find())
+    for issue_meta in issue_meta_list:
+        issue_meta["upload_timestamp"] = datetime2str(issue_meta["upload_timestamp"])
+        issue_meta["updated_timestamp"] = datetime2str(issue_meta["updated_timestamp"])
+        issue_meta["uploader"] = id_mapping_dict[issue_meta["uploader"]]["username"]
+        issue_meta["is_following"] = (ObjectId(user_id) in issue_meta.get("following_users", []))
+        issue_meta["followers_num"] = len(issue_meta.get("following_users", []))
+        
+    return render_template('investment_issue_overview.html', issue_meta_list=issue_meta_list)
+
+@main.route("/update_issue_following_status", methods=['POST'])
+def update_issue_following_status():
+    data = request.json
+    issue_id = data.get('issue_id')
+    follow_status = data.get('follow_status')
+    user_id = current_user.get_id()
+    
+    if follow_status:
+        # 如果 follow_status 为 True，添加 user_id 到 following_users
+        MDB_client["users"]["following_issues"].update_one(
+            {"_id": ObjectId(issue_id)},
+            {"$addToSet": {"following_users": ObjectId(user_id)}}  # 使用 $addToSet 防止重复添加
+        )
+    else:
+        # 如果 follow_status 为 False，从 following_users 中移除 user_id
+        MDB_client["users"]["following_issues"].update_one(
+            {"_id": ObjectId(issue_id)},
+            {"$pull": {"following_users": ObjectId(user_id)}}  # 使用 $pull 移除 user_id
+        )
+
+    return jsonify({"status": "success"})
 
 @main.route('/upload_stock_report', methods=['POST'])
 @login_required
@@ -331,7 +526,7 @@ def upload_stock_report():
             "uploader": ObjectId(current_user.get_id()),
             "source": source,
             "url": blob_url_dict[blob_name],
-            "if_processed": False # 標註為尚未進行預處理
+            "is_processed": False # 標註為尚未進行預處理
         }
         mongo_db_data_list.append(mongo_db_data_meta)
     
@@ -482,28 +677,6 @@ def note_search():
     selected_article_meta_list = readwise_client.search_highlights_by_tags(article_meta_list, tag_list)
     selected_article_meta_list = convert_objectid_to_str(selected_article_meta_list)
     return jsonify(selected_article_meta_list)
-
-# @main.route("/summarize_articles", methods=['GET'])
-# @login_required
-# def summarize_articles():
-#     return render_template("summary_display.html")
-
-@main.route('/upload_issue', methods=['POST'])
-@login_required
-@us_data_upload_perm.require(http_exception=403)
-def upload_issue():
-    issue, tickers = request.form["issue"], request.form["tickers"]
-    ticker_list = tickers.split(",")
-    ticker_list = [ticker.strip() for ticker in ticker_list]
-    issue_meta = {
-        "issue": issue,
-        "tickers": ticker_list,
-        "uploader": ObjectId(current_user.get_id()),
-        "upload_timestamp": datetime.now(),
-    }
-    MDB_client["users"]["following_issues"].insert_one(issue_meta)
-    flash("Issue uploaded successfully!", "success")
-    return render_template("issue_register.html")
 
 @main.route('/new_user_register')
 @login_required
