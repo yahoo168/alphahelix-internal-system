@@ -116,6 +116,7 @@ def pool_list_review():
 
 @main.route('/ticker_internal_info/<ticker>')
 def ticker_internal_info(ticker):
+    updated_timestamp = ''
     publication_type_list = []
     publication_count_list = []
     publications_meta_list = []
@@ -132,21 +133,23 @@ def ticker_internal_info(ticker):
     
     # 取得個股內部報告
     research_status_dict = MDB_client["pool_list"]["research_status"].find_one({"ticker": ticker})
-    updated_timestamp = datetime2str(research_status_dict["updated_timestamp"])
-    publications_meta_list = research_status_dict["publications"]
-    for publication_meta in publications_meta_list:
-        # 將data_timestamp轉換為字串
-        publication_meta["data_timestamp"] = datetime2str(publication_meta["data_timestamp"])
-        # 將author_id轉換為username
-        publication_meta["author"] = id_mapping_dict[publication_meta["author_id"]]["username"]
-            
-    if publications_meta_list:
-        # 提取 publication type 并统计数量
-        publication_counts_series = (pd.Series(Counter(item['type'] for item in publications_meta_list))
-                                    .rename(index={"Preliminary": "初步研究", "Comprehensive": "深入研究", "Initial": "初次推薦", "Supplemental": "補充研究", "Model": "財務模型"}))
+    if research_status_dict:
+        updated_timestamp = datetime2str(research_status_dict["updated_timestamp"])
+        publications_meta_list = research_status_dict["publications"]
+    
+        for publication_meta in publications_meta_list:
+            # 將data_timestamp轉換為字串
+            publication_meta["data_timestamp"] = datetime2str(publication_meta["data_timestamp"])
+            # 將author_id轉換為username
+            publication_meta["author"] = id_mapping_dict[publication_meta["author_id"]]["username"]
+                
+        if publications_meta_list:
+            # 提取 publication type 并统计数量
+            publication_counts_series = (pd.Series(Counter(item['type'] for item in publications_meta_list))
+                                        .rename(index={"Preliminary": "初步研究", "Comprehensive": "深入研究", "Initial": "初次推薦", "Supplemental": "補充研究", "Model": "財務模型"}))
 
-        publication_type_list = publication_counts_series.index.tolist()
-        publication_count_list = publication_counts_series.values.astype(int).tolist()
+            publication_type_list = publication_counts_series.index.tolist()
+            publication_count_list = publication_counts_series.values.astype(int).tolist()
     
     context = {
         "ticker": ticker,
@@ -234,7 +237,7 @@ def ticker_market_info(ticker):
         'stock_info_daily': stock_info_daily,
         
         'stock_report_meta_list': stock_report_meta_list,
-        'issue_meta_list': issue_meta_list,
+        'item_meta_list': issue_meta_list,
     }
     return render_template('ticker_market_info.html', **context)
 
@@ -421,56 +424,101 @@ def report_summary_page(report_id):
                            url=url, summary=summary,
                            issue_summary=issue_summary)
 
-@main.route("/investment_issue_summary/<issue_id>")
-def investment_issue_summary(issue_id):
-    issue_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(issue_id)}))
-    
-    context = {
-        "issue_meta_list": issue_meta_list
-    }
-    
-    return render_template("investment_issue_summary.html", **context)
-
-@main.route("/investment_issue_overview")
-def investment_issue_overview():
+# 顯示following_issues以及investment_assumptions的總覽表格（以及追蹤按鈕）
+@main.route("/investment_tracking_overview/<tracking_type>")
+def investment_tracking_overview(tracking_type):
     # 製作username與employee_id的對應表
     user_id = current_user.get_id()
-    
     user_info_meta_list = list(MDB_client["users"]["user_basic_info"].find())
     mapping_df = pd.DataFrame(user_info_meta_list).loc[:, ["username", "_id"]].set_index("_id")
     id_mapping_dict = mapping_df.to_dict(orient='index')
     
-    issue_meta_list = list(MDB_client["users"]["following_issues"].find())
-    for issue_meta in issue_meta_list:
-        issue_meta["upload_timestamp"] = datetime2str(issue_meta["upload_timestamp"])
-        issue_meta["updated_timestamp"] = datetime2str(issue_meta["updated_timestamp"])
-        issue_meta["uploader"] = id_mapping_dict[issue_meta["uploader"]]["username"]
-        issue_meta["is_following"] = (ObjectId(user_id) in issue_meta.get("following_users", []))
-        issue_meta["followers_num"] = len(issue_meta.get("following_users", []))
+    if tracking_type == "following_issues":
+        collection = MDB_client["users"]["following_issues"]
+        content_field_name = "issue"
+        html_template = 'investment_issue_overview.html'
         
-    return render_template('investment_issue_overview.html', issue_meta_list=issue_meta_list)
+    elif tracking_type == "investment_assumptions":
+        collection = MDB_client["users"]["investment_assumptions"]
+        content_field_name = "assumption"
+        html_template = 'investment_assumption_overview.html'
+    
+    item_meta_list = list(collection.find())
+    for item_meta in item_meta_list:
+        item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
+        item_meta["updated_timestamp"] = datetime2str(item_meta["updated_timestamp"])
+        item_meta["item_name"] = item_meta[content_field_name]
+        item_meta["item_type"] = tracking_type
+        item_meta["uploader"] = id_mapping_dict[item_meta["uploader"]]["username"]
+        item_meta["is_following"] = (ObjectId(user_id) in item_meta.get("following_users", []))
+        item_meta["followers_num"] = len(item_meta.get("following_users", []))
+        
+    return render_template(html_template, item_meta_list=item_meta_list)
 
-@main.route("/update_issue_following_status", methods=['POST'])
-def update_issue_following_status():
+# 追蹤/取消追蹤特定的投資主題（包含investment_assumptions以及）
+@main.route("/update_investment_tracking_status/<tracking_type>", methods=['POST'])
+def update_investment_tracking_status(tracking_type):
     data = request.json
-    issue_id = data.get('issue_id')
+    item_id = data.get('item_id')
     follow_status = data.get('follow_status')
     user_id = current_user.get_id()
     
+    if tracking_type == "following_issues":
+        collection = MDB_client["users"]["following_issues"]
+    elif tracking_type == "investment_assumptions":
+        collection = MDB_client["users"]["investment_assumptions"]
+        
     if follow_status:
         # 如果 follow_status 为 True，添加 user_id 到 following_users
-        MDB_client["users"]["following_issues"].update_one(
-            {"_id": ObjectId(issue_id)},
+        collection.update_one(
+            {"_id": ObjectId(item_id)},
             {"$addToSet": {"following_users": ObjectId(user_id)}}  # 使用 $addToSet 防止重复添加
         )
     else:
         # 如果 follow_status 为 False，从 following_users 中移除 user_id
-        MDB_client["users"]["following_issues"].update_one(
-            {"_id": ObjectId(issue_id)},
+        collection.update_one(
+            {"_id": ObjectId(item_id)},
             {"$pull": {"following_users": ObjectId(user_id)}}  # 使用 $pull 移除 user_id
         )
 
     return jsonify({"status": "success"})
+
+@main.route("/investment_assumption_review/<item_id>")
+def investment_assumption_review(item_id):
+    item_meta_list = list(MDB_client["published_content"]["assumption_review"].find({"assumption_id": ObjectId(item_id)}))
+    item_title = ''
+    if item_meta_list:
+        item_title = item_meta_list[0]["investment_assumption"]
+    
+    item_meta_list = sorted(item_meta_list, key=lambda x: x['upload_timestamp'], reverse=True)
+    for item_meta in item_meta_list:
+        item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
+
+    context = {
+        "item_meta_list": item_meta_list,
+        "item_title": item_title,
+    }
+    
+    return render_template("investment_assumption_review.html", **context)
+
+@main.route("/investment_issue_review/<item_id>")
+def investment_issue_review(item_id):
+    item_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(item_id)}))
+    
+    item_title = ''
+    if item_meta_list:
+        item_title = item_meta_list[0]["issue"]
+        
+    item_meta_list = sorted(item_meta_list, key=lambda x: x['upload_timestamp'], reverse=True)
+    for item_meta in item_meta_list:
+        item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
+
+    context = {
+        "item_meta_list": item_meta_list,
+        "item_title": item_title,
+    }
+    
+    return render_template("investment_issue_review.html", **context)
 
 @main.route('/upload_stock_report', methods=['POST'])
 @login_required

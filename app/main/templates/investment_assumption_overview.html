@@ -2,16 +2,17 @@
 
 {% block content %}
 <div class="jumbotron">
-  <h1 class="display-4">Investment Issue Overview</h1>
+  <h1 class="display-4">Investment Assumption Overview</h1>
   <hr class="my-4" />
 </div>
 <!-- 保留父模板 content 块中的内容 -->
 {{ super() }}
+<div class="footer-spacing"></div>
 {% endblock %} 
 
 {% block scripts %}
 <script>
-  apiURL = "{{url_for('main.update_investment_tracking_status', tracking_type='following_issues')}}";
+  apiURL = "{{url_for('main.update_investment_tracking_status', tracking_type='investment_assumptions')}}";
   handleFollowItem(apiURL);
 </script>
 {% endblock %}

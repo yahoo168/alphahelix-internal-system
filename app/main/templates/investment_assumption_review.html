@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- 引用 Bootstrap 的 CSS 文件 -->
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <style>
+      .collapse {
+        transition: height 0.5s ease;
+      }
+    </style>
+  </head>
+  {% extends "_main_base.html" %}
+  <body>
+    {% block content %}
+    <div class="jumbotron text-center">
+      <h1>Assumption Review</h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <h3 class="display-6"><strong>{{item_title[:50]}}</strong></h3>
+      <div class="card">
+        <div class="card-body">
+          <!-- Table with hoverable rows -->
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Upload Date</th>
+                <th scope="col">Risk Score</th>
+                <th scope="col">Review Type</th>
+                <th scope="col">Comment</th>
+                <th scope="col">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in item_meta_list %}
+              <tr
+                data-toggle="collapse"
+                data-target="#collapse{{ loop.index }}"
+                aria-expanded="{{ 'true' if loop.first else 'false' }}"
+                aria-controls="collapse{{ loop.index }}"
+              >
+                <!-- Upload Date-->
+                <td class="align-middle">
+                  {{ item_meta['upload_timestamp'] }}
+                </td>
+                <!-- Risk Score -->
+                <td class="align-middle">{{ item_meta['risk_score'] }}</td>
+                <!-- Review Type -->
+                <td class="align-middle">Regular</td>
+                <!-- Comment-->
+                <td class="align-middle">None</td>
+                <!-- Expand  Button-->
+                <td class="align-middle">
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="collapse"
+                    data-target="#collapse{{ loop.index }}"
+                    aria-expanded="{{ 'true' if loop.first else 'false' }}"
+                    aria-controls="collapse{{ loop.index }}"
+                  >
+                    <i class="bi bi-chevron-down button-like"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr
+                id="collapse{{ loop.index }}"
+                class="collapse {% if loop.first %}show{% endif %}"
+                aria-labelledby="heading{{ loop.index }}"
+              >
+                <td colspan="5">
+                  <!-- Collapsed content -->
+                  <p style="text-align: left">
+                    {{ item_meta.get("assumption_review", "").replace('\n', '<br />')
+                    | safe }}
+                  </p>
+                </td>
+              </tr>
+              {% endfor %}
+              <br />
+              <br />
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <!-- 在頁尾添加額外的間距 -->
+    <div class="footer-spacing"></div>
+    {% endblock %}
+  </body>
+</html>

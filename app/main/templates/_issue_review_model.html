@@ -18,18 +18,18 @@
 </head>
 
 <div class="container mt-4">
-  {% for issue_meta in issue_meta_list %}
-  <h2>{{issue_meta["issue"]}}</h2>
+  {% for item_meta in item_meta_list %}
+  <h2>{{item_meta["issue"]}}</h2>
   <div class="alert alert-info" role="alert">
-    以下觀點涵蓋近3個月，共{{issue_meta["ref_report_num"]}}篇研究報告<strong
-      >（更新日期: {{issue_meta["upload_timestamp"]}}）</strong
+    以下觀點涵蓋近3個月，共{{item_meta["ref_report_num"]}}篇研究報告<strong
+      >（更新日期: {{item_meta["upload_timestamp"]}}）</strong
     >
   </div>
   <div class="card">
     <div class="card-body">
       <h3>市場共識與分歧</h3>
       <p>
-        {{ issue_meta.get("market_issue_concensus_and_dissensus",
+        {{ item_meta.get("market_issue_concensus_and_dissensus",
         "").replace('\n', '<br />') | safe }}
       </p>
     </div>
@@ -51,7 +51,7 @@
         <hr class="my-4" />
         <h3>市場觀點彙整</h3>
         <p>
-          {{ issue_meta.get("market_issue_review", "").replace('\n', '<br />') |
+          {{ item_meta.get("market_issue_review", "").replace('\n', '<br />') |
           safe }}
         </p>
       </div>
@@ -59,10 +59,10 @@
       <div class="card card-body">
         <h3>新增市場觀點</h3>
         <div class="alert alert-info" role="alert">
-          以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
+          以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
         </div>
         <p>
-          {{ issue_meta.get("added_issue_review", "").replace('\n', '<br />') |
+          {{ item_meta.get("added_issue_review", "").replace('\n', '<br />') |
           safe }}
         </p>
       </div>
@@ -70,10 +70,10 @@
       <div class="card card-body">
         <h3>市場觀點變化</h3>
         <div class="alert alert-info" role="alert">
-          以下觀點為近1週，共{{issue_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
+          以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
         </div>
         <p>
-          {{ issue_meta.get("issue_review_change", "").replace('\n', '<br />') |
+          {{ item_meta.get("issue_review_change", "").replace('\n', '<br />') |
           safe }}
         </p>
       </div>

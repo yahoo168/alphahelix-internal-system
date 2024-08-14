@@ -14,14 +14,16 @@
       <div class="row">
         <div class="col-md-4 mb-3">
           <a
-            href="{{url_for('main.investment_issue_overview')}}"
+            href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
             class="btn btn-light custom-high-button btn-block"
             >投資議題追蹤
           </a>
         </div>
 
         <div class="col-md-4 mb-3">
-          <a href="#" class="btn btn-secondary custom-high-button btn-block"
+          <a 
+          href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+          class="btn btn-secondary custom-high-button btn-block"
             >投資假設追蹤
           </a>
         </div>
