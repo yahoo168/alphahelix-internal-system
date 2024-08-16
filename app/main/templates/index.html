@@ -1,64 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
-  {% extends "_main_base.html" %} {% block content %}
-  <body>
-    <div class="jumbotron">
-      <h1 class="display-4">Alphahelix Internal System</h1>
-      <hr class="my-4" />
-      <p class="lead">
-        一站式整合投資研究流程：研究工具、資料上傳、部位追蹤...
-      </p>
-    </div>
-    <br />
-    <br />
-    <!-- 功能選擇 -->
-    <div class=".container mt-5 mb-5 mx-4">
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <a
-            href="{{url_for('main.pool_list_review')}}"
-            class="btn btn-light custom-high-button btn-block"
-            >Pool List管理
-          </a>
-        </div>
-        <div class="col-md-4 mb-3">
-          <a href="{{url_for('main.render_static_html', page='research_tools_overview')}}" class="btn btn-secondary custom-high-button btn-block"
-            >研究工具
-          </a>
-        </div>
-        <div class="col-md-4 mb-3">
-          <a
-            href="{{url_for('main.render_static_html', page='data_manage_overview')}}"
-            class="btn btn-light custom-high-button btn-block"
-            >資料管理
-          </a>
-        </div>
+{% extends "_main_base.html" %} {% block content %}
+<body>
+  <div class="jumbotron">
+    <h1 class="display-4">Alphahelix Internal System</h1>
+    <hr class="my-4" />
+    <p class="lead">一站式整合投資研究流程：研究工具、資料上傳、部位追蹤...</p>
+  </div>
+  <br />
+  <br />
+  <!-- 功能選擇 -->
+  <div class=".container mt-5 mb-5 mx-4">
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <a
+          href="{{url_for('main.pool_list_review')}}"
+          class="btn btn-light custom-high-button btn-block"
+          >Pool List管理
+        </a>
       </div>
-      
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <a
-            href="#"
-            class="btn btn-secondary custom-high-button btn-block"
-            >量化投資
-          </a>
-        </div>
-        <div class="col-md-4 mb-3">
-          <a
-            href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
-            class="btn btn-light custom-high-button btn-block"
-            >公司行政
-          </a>
-        </div>
-        <div class="col-md-4 mb-3">
-          <a
-            href="{{url_for('main.render_static_html', page='system_manage_overview')}}"
-            class="btn btn-secondary custom-high-button btn-block"
-            >後台管理
-          </a>
-        </div>
+      <div class="col-md-4 mb-3">
+        <a
+          href="{{url_for('main.render_static_html', page='research_tools_overview')}}"
+          class="btn btn-secondary custom-high-button btn-block"
+          >研究工具
+        </a>
+      </div>
+      <div class="col-md-4 mb-3">
+        <a
+          href="{{url_for('main.render_static_html', page='data_manage_overview')}}"
+          class="btn btn-light custom-high-button btn-block"
+          >資料管理
+        </a>
       </div>
     </div>
-  </body>
-  {% endblock %}
-</html>
+
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <a href="#" class="btn btn-secondary custom-high-button btn-block"
+          >量化投資
+        </a>
+      </div>
+      <div class="col-md-4 mb-3">
+        <a
+          href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
+          class="btn btn-light custom-high-button btn-block"
+          >公司行政
+        </a>
+      </div>
+      <div class="col-md-4 mb-3">
+        <a
+          href="{{url_for('main.render_static_html', page='system_manage_overview')}}"
+          class="btn btn-secondary custom-high-button btn-block"
+          >後台管理
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+{% endblock %}
