@@ -8,6 +8,24 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
   />
+
+  <!-- Load self-defined JS -->
+  <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+
+  <style>
+    .heart-red {
+      color: rgb(182, 72, 72);
+    }
+
+    .dark-tag {
+        background-color: rgb(100, 88, 88);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 16px;
+        color: white; /* 设置文字为白色 */
+      }
+  </style>
+
   {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
@@ -31,10 +49,11 @@
         <div class="card-body">
           <h5 class="card-title"></h5>
           <!-- Table with hoverable rows -->
-          <table id="poolListTable" class="table table-hover">
+          <table id="Table" class="table table-hover">
             <thead>
               <tr>
                 <th scope="col">Ticker</th>
+                <th scope="col">Follow</th>
                 <th scope="col">Researcher</th>
                 <th scope="col">Holding Status</th>
                 <th scope="col">Tracking Status</th>
@@ -45,39 +64,62 @@
               </tr>
             </thead>
             <tbody>
-              {% for pool_list_meta in pool_list_meta_list %}
+              {% for item_meta in pool_list_meta_list %}
               <tr>
                 <td>
                   <a
-                    href="{{ url_for('main.ticker_market_info', ticker=pool_list_meta['ticker']) }}"
+                    href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
                   >
-                    {{ pool_list_meta['ticker'] }}
+                    {{ item_meta['ticker'] }}
                   </a>
                 </td>
-                <td>{{ pool_list_meta['researcher'] }}</td>
+                <!-- Follow Stock-->
+                {% if item_meta['is_following'] == True %}
+                <td data-sort="1">
+                  <i
+                    class="bi bi-suit-heart-fill heart-red button-like follow-item"
+                    data-item_id="{{item_meta['ticker_info_id']}}"
+                  ></i>
+                </td>
+                {% else %}
+                <td data-sort="0">
+                  <i
+                    class="bi bi-suit-heart button-like follow-item"
+                    data-item_id="{{item_meta['ticker_info_id']}}"
+                  ></i>
+                </td>
+                {% endif %}
+                
+                <!-- researcher -->
+                {% if item_meta['researcher'] != '' %}
+                <td><span class="tag">{{ item_meta['researcher'] }}</span></td>
+                {% else %}
+                <td></td>
+                {% endif %}
+                
+                <!-- holding_status -->
                 <td>
-                  {% if pool_list_meta['holding_status']%} {% for status in
-                  pool_list_meta['holding_status'].split(',') %}
+                  {% if item_meta['holding_status']%} {% for status in item_meta['holding_status'].split(',') %}
                   <span class="tag">{{ status }}</span>
                   {% endfor %} {% endif %}
                 </td>
-                <td>{{ pool_list_meta['tracking_status'] }}</td>
-                <td>{{ pool_list_meta['last_publication_timestamp'] }}</td>
+                <td>{{ item_meta['tracking_status'] }}</td>
+                <td>{{ item_meta['last_publication_timestamp'] }}</td>
                 <td>
                   <a
-                    href="{{ url_for('main.ticker_market_info', ticker=pool_list_meta['ticker']) }}"
+                    href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
                     class="bi bi-graph-up button-like"
                   ></a>
                 </td>
                 <td>
                   <a
-                    href="{{ url_for('main.ticker_internal_info', ticker=pool_list_meta['ticker']) }}"
+                    href="{{ url_for('main.ticker_internal_info', ticker=item_meta['ticker']) }}"
                     class="bi bi-terminal button-like"
                   ></a>
                 </td>
                 <td>
                   <a
-                    href="{{ url_for('main.ticker_setting_info', ticker=pool_list_meta['ticker']) }}"
+                    href="{{ url_for('main.ticker_setting_info', ticker=item_meta['ticker']) }}"
                     class="bi bi-gear-fill button-like"
                   ></a>
                 </td>
@@ -100,15 +142,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
 
 <script>
-  $(document).ready(function () {
-    // 初始化 DataTable，设置每页显示 50 条记录
-    $("#poolListTable").DataTable({
-      paging: true, // 启用分页
-      ordering: true, // 启用排序
-      info: true, // 启用表格信息
-      searching: true, // 启用搜索
-      pageLength: 50, // 设置每页显示 50 条记录
-    });
-  });
+  apiURL = "{{url_for('main.update_ticker_following_status')}}";
+  handleFollowItem(apiURL);
 </script>
 {% endblock %}

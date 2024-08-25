@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Notification Detail</h1>
+      <hr class="my-4" />
+      <a
+        href="{{url_for('main.get_all_notifications', user_id=current_user._id)}}"
+        class="btn btn-secondary"
+        >回到通知總覽</a>
+    </div>
+
+    <div class="container">
+      <br />
+      <div class="card">
+        <h3>{{notification_meta['title']}}</h3>
+        <hr class="my-1" />
+        <!-- 使用 safe 过滤器确保 HTML 标签被正确渲染，而不是转义成普通文本。 -->
+        <p>{{notification_meta['message'].replace('\n', '<br>') | safe }}</p>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

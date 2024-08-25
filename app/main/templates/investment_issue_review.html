@@ -1,21 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-  </head>
-  {% extends "_main_base.html" %}
-  <body>
-    {% block content %}
-    <div class="jumbotron text-center">
-      <h1 class="display-6">{{item_title[:50]}}</h1>
-      <hr class="my-4" />
-    </div>
+{% extends "_main_base.html" %}
+<head>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
 
-    <!-- 引入issue review模板 -->
-    {% include "_issue_review_model.html" %} {% endblock %}
-    <!-- 在頁尾添加額外的間距 -->
-    <div class="footer-spacing"></div>
-  </body>
-</html>
+<body>
+  {% block content %}
+  <div class="jumbotron text-center">
+    <h1>Issue Review</h1>
+    <hr class="my-4" />
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+      >回到目錄</a
+    >
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+      >假設追蹤</a
+    >
+  </div>
+
+  <div class="container mt-2 mx-6">
+    <h3 class="display-6"><strong>{{item_title}}</strong></h3>
+    <div class="card">
+      <div class="card-body">
+        <!-- Table with hoverable rows -->
+        <div class="container mt-2 mx-6">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Upload Date</th>
+
+                <th scope="col">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in item_meta_list %}
+              <tr>
+                <td class="align-middle">
+                  {{ item_meta['upload_timestamp'] }}
+                </td>
+                <td class="align-middle">
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="modal"
+                    data-target="#modal{{ loop.index }}"
+                  >
+                    <i class="bi bi-eye button-like"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal templates for each item -->
+  {% for item_meta in item_meta_list %}
+  <div
+    class="modal fade"
+    id="modal{{ loop.index }}"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="modalLabel{{ loop.index }}"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel{{ loop.index }}">
+            <strong>{{item_meta['upload_timestamp']}} - Review</strong>
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="collapse show" id="issue_{{ loop.index }}">
+            <div class="card card-body">
+              <hr class="my-4" />
+              <h3>市場觀點彙整</h3>
+              <p>
+                {{ item_meta.get("market_issue_review", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+            <br />
+            <div class="card card-body">
+              <h3>新增市場觀點</h3>
+              <div class="alert alert-info" role="alert">
+                以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
+              </div>
+              <p>
+                {{ item_meta.get("added_issue_review", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+            <br />
+            <div class="card card-body">
+              <h3>市場觀點變化</h3>
+              <div class="alert alert-info" role="alert">
+                以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
+              </div>
+              <p>
+                {{ item_meta.get("issue_review_change", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-dark" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %} {% endblock %}
+</body>

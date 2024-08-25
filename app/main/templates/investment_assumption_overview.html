@@ -1,18 +1,20 @@
-{% extends "_item_follow_table_model.html" %} 
-
-{% block content %}
+{% extends "_item_follow_table_model.html" %} {% block content %}
 <div class="jumbotron">
   <h1 class="display-4">Investment Assumption Overview</h1>
   <hr class="my-4" />
+  <a
+    class="btn btn-secondary btn"
+    href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+    >議題追蹤</a
+  >
 </div>
 <!-- 保留父模板 content 块中的内容 -->
 {{ super() }}
 <div class="footer-spacing"></div>
-{% endblock %} 
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
-  apiURL = "{{url_for('main.update_investment_tracking_status', tracking_type='investment_assumptions')}}";
+  apiURL =
+    "{{url_for('main.update_investment_tracking_status', tracking_type='investment_assumptions')}}";
   handleFollowItem(apiURL);
 </script>
 {% endblock %}

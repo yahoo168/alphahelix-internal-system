@@ -68,6 +68,18 @@
         font-size: 16px;
       }
 
+      .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        margin-bottom: 16px;
+        background-color: #fff;
+      }
+      .footer-spacing {
+        margin-bottom: 100px; /* Adjust the value as needed */
+      }
+
       /* 仿照bootstrap的btn-light，製作.button-like （可用於icon背景）*/
       .button-like {
         background-color: #f8f9fa; /* 背景色，与 Bootstrap 的 btn-light 一致 */
@@ -170,6 +182,7 @@
                 id="notificationDropdown"
                 data-toggle="dropdown"
                 aria-expanded="false"
+                href="#"
               >
                 <i
                   class="bi bi-bell-fill notification-icon-gold"
@@ -185,6 +198,7 @@
                 role="button"
                 data-toggle="dropdown"
                 aria-expanded="false"
+                href="#"
               >
                 <i class="bi bi-bell-fill" id="notification_bell_icon"></i>
               </a>
@@ -201,40 +215,35 @@
                 aria-labelledby="notificationDropdown"
                 id="notificationDropdownMenu"
               >
+                <li class="notification-item">
+                  <div class="dropdown-item">
+                    Only Latest 5 Notifications
+                    <a
+                      href="{{url_for('main.get_all_notifications', user_id=current_user._id)}}"
+                      style="color: rgb(54, 118, 177); font-size: inherit"
+                      >(view records)</a
+                    >
+                  </div>
+                </li>
                 {% for notification_meta in g.recent_notification_meta_list %}
                 <li
                   class="notification-item {% if notification_meta['is_read'] %}read{% endif %}"
                 >
                   <a
                     class="dropdown-item"
+                    href="{{ url_for('main.notification_detail', notification_id=notification_meta['_id']) }}"
                     data-id="{{ notification_meta['_id'] }}"
                   >
-                    <span class="notification-title"
-                      >{{ notification_meta['title'] }}</span
-                    >
+                    <span class="notification-title">{{ notification_meta['title'] }}</span>
                     <br />
-                    <small class="text-muted"
-                      >{{ notification_meta['uploaded_timestamp'] }}</small
-                    >
+                    <small>{{ notification_meta['upload_timestamp'] }}</small>
                     <br />
                     <span class="notification-content"
-                      ><small>{{ notification_meta['content'] }}</small></span
+                      ><small>{{ notification_meta['message'][:40]}}</small></span
                     >
                   </a>
                 </li>
-
                 {% endfor %}
-
-                <li>
-                  <div class="dropdown-item">
-                    Only show latest 5 records
-                    <a
-                      href="#"
-                      style="color: rgb(54, 118, 177); font-size: inherit"
-                      >(view all)</a
-                    >
-                  </div>
-                </li>
               </ul>
             </div>
           </li>
@@ -246,7 +255,8 @@
           </li>
           <!-- Play-icon: For Testing -->
           <li class="nav-item">
-            <a href="http://127.0.0.1:5000/main/ticker_setting_info/AAPL"
+            <a
+              href="http://127.0.0.1:5000/main/investment_issue_review/6660844ec3d52e9bc0f815e2"
               ><i class="nav-link bi bi-caret-right-square-fill"></i>
             </a>
           </li>

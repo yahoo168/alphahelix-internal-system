@@ -1,99 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <!-- 引用 Bootstrap 的 CSS 文件 -->
-    <link
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
-    <style>
-      .collapse {
-        transition: height 0.5s ease;
-      }
-    </style>
-  </head>
-  {% extends "_main_base.html" %}
-  <body>
-    {% block content %}
-    <div class="jumbotron text-center">
-      <h1>Assumption Review</h1>
-      <hr class="my-4" />
-    </div>
+{% extends "_main_base.html" %}
+<head>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
 
-    <div class="container mt-2 mx-6">
-      <h3 class="display-6"><strong>{{item_title[:50]}}</strong></h3>
-      <div class="card">
-        <div class="card-body">
-          <!-- Table with hoverable rows -->
-          <table id="Table" class="table table-hover">
+<body>
+  {% block content %}
+  <div class="jumbotron text-center">
+    <h1>Assumption Review</h1>
+    <hr class="my-4" />
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+      >回到目錄</a
+    >
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+      >議題追蹤</a
+    >
+  </div>
+
+  <div class="container mt-2 mx-6">
+    <h3 class="display-6"><strong>{{item_title[:100]}}</strong></h3>
+    <div class="card">
+      <div class="card-body">
+        <!-- Table with hoverable rows -->
+        <div class="container mt-2 mx-6">
+          <table class="table table-hover">
             <thead>
               <tr>
                 <th scope="col">Upload Date</th>
                 <th scope="col">Risk Score</th>
                 <th scope="col">Review Type</th>
-                <th scope="col">Comment</th>
+                <th scope="col">Status</th>
                 <th scope="col">Review</th>
               </tr>
             </thead>
             <tbody>
               {% for item_meta in item_meta_list %}
-              <tr
-                data-toggle="collapse"
-                data-target="#collapse{{ loop.index }}"
-                aria-expanded="{{ 'true' if loop.first else 'false' }}"
-                aria-controls="collapse{{ loop.index }}"
-              >
-                <!-- Upload Date-->
+              <tr>
                 <td class="align-middle">
                   {{ item_meta['upload_timestamp'] }}
                 </td>
-                <!-- Risk Score -->
                 <td class="align-middle">{{ item_meta['risk_score'] }}</td>
-                <!-- Review Type -->
                 <td class="align-middle">Regular</td>
-                <!-- Comment-->
                 <td class="align-middle">None</td>
-                <!-- Expand  Button-->
                 <td class="align-middle">
                   <button
                     class="btn btn-link"
                     type="button"
-                    data-toggle="collapse"
-                    data-target="#collapse{{ loop.index }}"
-                    aria-expanded="{{ 'true' if loop.first else 'false' }}"
-                    aria-controls="collapse{{ loop.index }}"
+                    data-toggle="modal"
+                    data-target="#modal{{ loop.index }}"
                   >
-                    <i class="bi bi-chevron-down button-like"></i>
+                    <i class="bi bi-eye button-like"></i>
                   </button>
                 </td>
               </tr>
-              <tr
-                id="collapse{{ loop.index }}"
-                class="collapse {% if loop.first %}show{% endif %}"
-                aria-labelledby="heading{{ loop.index }}"
-              >
-                <td colspan="5">
-                  <!-- Collapsed content -->
-                  <p style="text-align: left">
-                    {{ item_meta.get("assumption_review", "").replace('\n', '<br />')
-                    | safe }}
-                  </p>
-                </td>
-              </tr>
               {% endfor %}
-              <br />
-              <br />
             </tbody>
           </table>
         </div>
       </div>
     </div>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
-    <!-- 在頁尾添加額外的間距 -->
-    <div class="footer-spacing"></div>
-    {% endblock %}
-  </body>
-</html>
+  </div>
+
+  <!-- Modal templates for each item -->
+  {% for item_meta in item_meta_list %}
+  <div
+    class="modal fade"
+    id="modal{{ loop.index }}"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="modalLabel{{ loop.index }}"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel{{ loop.index }}">
+            <strong>{{item_meta['upload_timestamp']}} - Review</strong>
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          {{ item_meta.get("assumption_review", "").replace('\n', '<br />') |
+          safe }}
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info">Check</button>
+          <button
+            type="button"
+            class="btn btn-warning show-input-btn"
+            data-index="{{ loop.index }}"
+          >
+            Comment
+          </button>
+          <button type="button" class="btn btn-dark" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+        <!-- Hidden input fields -->
+        <div
+          id="inputField{{ loop.index }}"
+          class="input-field"
+          style="display: none; padding: 10px"
+        >
+          <label for="comment{{ loop.index }}">Add Comment</label>
+          <textarea
+            id="comment{{ loop.index }}"
+            class="form-control"
+            rows="3"
+            placeholder="Enter your comment here..."
+          ></textarea>
+          <label for="fileUpload{{ loop.index }}" style="margin-top: 10px"
+            >Upload Report</label
+          >
+          <input
+            type="file"
+            id="fileUpload{{ loop.index }}"
+            class="form-control-file"
+          />
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary">Upload</button>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- JavaScript to control the input field visibility -->
+  <script>
+    $(document).ready(function () {
+      $(".show-input-btn").click(function () {
+        var index = $(this).data("index");
+        showInputField(index);
+      });
+    });
+
+    function showInputField(index) {
+      var inputField = $("#inputField" + index);
+      inputField.toggle();
+    }
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+  {% endblock %}
+</body>

@@ -1,25 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+  {% extends "_main_base.html" %} {% block head %}
   <head>
-    <meta charset="utf-8" />
+    <!-- {{ super() }} -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-      .card {
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 16px;
-        margin-bottom: 16px;
-        background-color: #fff;
-      }
-      .footer-spacing {
-        margin-bottom: 100px; /* Adjust the value as needed */
-      }
-    </style>
   </head>
-  {% extends "_main_base.html" %}
+  {% endblock %} {% block content %}
   <body>
-    {% block content %}
     <div class="jumbotron text-center">
       <h1 class="display-4"><strong>研報摘要</strong></h1>
       <hr class="my-4" />
@@ -56,9 +43,11 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById('$summary_markdown').innerHTML = marked.parse(document.getElementById('$summary_text').value);
+        document.getElementById("$summary_markdown").innerHTML = marked.parse(
+          document.getElementById("$summary_text").value
+        );
       });
     </script>
-    {% endblock %}
   </body>
+  {% endblock %}
 </html>

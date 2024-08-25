@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+    <style>
+      .unread-tag {
+        background-color: #424242; /* 深色背景 */
+        color: #ffffff; /* 浅色文字 */
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Notification Overview</h1>
+      <hr class="my-4" />
+      <p class="lead">
+        僅保存最近90天的通知紀錄，點擊View後將標記為已讀。
+      </p>
+    </div>
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <!-- Table with hoverable rows -->
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Title</th>
+                <th scope="col">Type</th>
+                <th scope="col">Is_Read</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for notification_meta in notification_meta_list %}
+              <tr>
+                <td scope="row">{{ loop.index }}</td>
+                <td>
+                  <span>{{ notification_meta["upload_timestamp"] }}</span>
+                </td>
+                <td scope="row">{{ notification_meta["title"] }}</td>
+                <td>
+                  <span class="tag">{{ notification_meta["type"] }}</span>
+                </td>
+                <td>
+                  {% if notification_meta["is_read"]%}
+                  <span class="tag">Read</span>
+                  {% else %}
+                  <span class="unread-tag">Unread</span>
+                  {% endif %}
+                </td>
+                <td scope="row">
+                  <a
+                    href="{{ url_for('main.notification_detail', notification_id=notification_meta['_id']) }}"
+                    class="btn btn-secondary btn-sm view-btn"
+                    data-notification_id="{{ notification_meta['_id'] }}"
+                  >
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
+
+{% block scripts %} {{ super() }}
+<script>
+  // 點擊後將通知標記為已讀
+  $(document).ready(function () {
+    // 监听点击事件
+    $(".view-btn").on("click", function (e) {
+      console.log("View button clicked");
+      // 阻止默认的链接跳转
+      // e.preventDefault();
+      // 获取notification_id
+      const notificationId = $(this).data("notification_id");
+      // 构建API URL
+      const apiUrl = `{{ url_for('main.mark_notification_as_read', notification_id='') }}${notificationId}`;
+
+      // 发送POST请求
+      $.post(apiUrl, function (response) {
+        console.log("Notification marked as read");
+      });
+    });
+  });
+</script>
+{% endblock %}
