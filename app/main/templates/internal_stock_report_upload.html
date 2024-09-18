@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %}
+  <head>
+    {% block head %} {{ super() }}
+    <style>
+      .filename-format {
+        font-size: 0.9em; /* 调整字体大小 */
+        color: #555; /* 设置文本颜色 */
+      }
+
+      .highlight {
+        font-weight: bold; /* 粗体显示关键部分 */
+        color: #007bff; /* 改变颜色以突出显示 */
+      }
+    </style>
+
+    <!-- 引用 asset/js/files_upload.js；加上 defer 屬性來延遲執行，直到整個頁面加載完畢-->
+    <script src="{{ url_for('static', filename='assets/js/files_upload.js') }}"></script>
+
+    {% endblock %}
+  </head>
+
+  <body>
+    {% block content %}
+    <div class="container mt-5">
+      <h2 class="card-title">內部研報上傳</h2>
+      <div class="card">
+        <div class="card-body">
+          <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="ticker">Ticker</label>
+              <input
+                type="text"
+                class="form-control"
+                id="ticker"
+                name="ticker"
+                placeholder="ex: AAPL(僅能填寫一個)"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="report_type">Report Type</label>
+              <select
+                class="form-control"
+                id="report_type"
+                name="report_type"
+                required
+              >
+                <option value="" disabled selected>Select a Type</option>
+                <option value="preliminary">初步研究 || Preliminary</option>
+                <option value="comprehensive">深入研究 || Comprehensive</option>
+                <option value="initial">初次推薦 || Initial</option>
+                <option value="tracking">定期追蹤 || Tracking</option>
+                <option value="supplemental">補充研究 || Supplemental</option>
+                <option value="model">財務模型 || Model</option>
+                <option value="unspecified">不指定|| Unspecified</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="files"
+                >Choose Files
+                <span class="filename-format"
+                  >(檔名格式:
+                  <span class="highlight">2024-01-01_AAPL_XXX.pdf</span>)</span
+                ></label
+              >
+              <input
+                type="file"
+                class="form-control"
+                id="files"
+                name="files"
+                multiple
+                required
+              />
+            </div>
+            <br />
+            <button type="submit" id="uploadButton" class="btn btn-dark">
+              Upload
+            </button>
+            <div id="loadingIndicator" style="display: none">
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Uploading...
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 用於顯示上傳結果 -->
+      <div id="uploadResultBlock" class="card" style="display: none">
+        <div class="card-body">
+          <div id="uploadResultList"></div>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+  </body>
+</html>
+
+{% block scripts %} {{ super() }}
+<script>
+  var apiUrl = "{{ url_for('main.upload_internal_stock_report') }}";
+  UploadReport(apiUrl);
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Market Stock Report Upload Record</h1>
+      <hr class="my-4" />
+      <!-- <p class="lead">一站式上傳自動化所需的資料</p> -->
+    </div>
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Recent {{monitor_period_days}} Days Upload Record</h5>
+          <!-- Table with hoverable rows -->
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Ticker</th>
+                <th scope="col">Upload Count</th>
+                <th scope="col">Latest Upload</th>
+                <th scope="col">Uploader</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ticker, record_stats in record_stats_dict.items() %}
+              <tr>
+                <!-- Row number (using th for strong fontsize)-->
+                <td scope="row">{{loop.index}}</td>
+                <td scope="row">{{ticker}}</td>
+                <td scope="row">{{record_stats['upload_count']}}</td>
+                <td scope="row">{{record_stats['latest_upload_timestamp']}}</td>
+                <td scope="row">{{record_stats['uploader']}}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

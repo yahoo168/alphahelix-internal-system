@@ -16,118 +16,90 @@
       <h1 class="display-4">{{ticker}}</h1>
       <hr class="my-4" />
       <a
-        class="btn btn-secondary btn"
+        class="btn btn-dark btn"
         href="{{url_for('main.ticker_market_info', ticker=ticker)}}"
         >市場資訊</a
       >
+      <a
+        class="btn btn-dark btn"
+        href="{{url_for('main.ticker_setting_info', ticker=ticker)}}"
+        >個股設定</a
+      >
+      <a
+        class="btn btn-dark btn"
+        href="{{url_for('main.render_static_html', page='internal_stock_report_upload')}}"
+        >報告上傳</a
+      >
     </div>
-    <div class="container mt-2 mx-6">
-      <h1 class="display-6">內部觀點</h1>
-      <div class="alert alert-secondary" role="alert">
-        以下觀點來自於公司內部研究總結<strong
-          >（更新日期：{{conclustion_meta["data_timestamp"]}}）</strong
-        >
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title"></h5>
-          <table id="conclusion_table" class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Category</th>
-                <th scope="col">Question</th>
-                <th scope="col">Conclusion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for conclustion in conclustion_meta["10_QA"] %}
-              <tr>
-                <th scope="row">{{loop.index}}</th>
-                <td><strong>{{ conclustion['category'] }}</strong></td>
-                <td>
-                  <strong>{{ conclustion['research_question'] }}</strong>
-                </td>
-                <td>{{ conclustion['research_conclusion'] }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+    <div class="container card">
+      <div class="card-body">
+        <h3 class="card-title">投資邏輯</h3>
+        <div class="alert alert-info" role="alert">
+          <strong>更新日期：{{updated_timestamp}}</strong>
+        </div>
+        <p class="card-text">{{investment_thesis}}</p>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card border-dark mb-3">
+              <div class="card-body">
+                <h5 class="card-title" style="color: rgb(214, 51, 51)">
+                  獲利評等: {{profit_rating}}
+                </h5>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-dark mb-3">
+              <div class="card-body">
+                <h5 class="card-title" style="color: rgb(79, 188, 79)">
+                  風險評等: {{risk_rating}}
+                </h5>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="container mt-2 mx-6">
-      <h1 class="display-6">研究進度</h1>
-      <div class="alert alert-secondary" role="alert">
-        <a class="btn btn-secondary btn-sm" href="">更新</a>
-        <strong>更新日期：{{updated_timestamp}}</strong>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title"></h5>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col"></th>
-                {% for publication_type in publication_type_list %}
-                <th scope="col">{{publication_type}}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>研究數量</strong></td>
-                {% for publication_count in publication_count_list %}
-                <td>{{ publication_count }}</td>
-                {% endfor %}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="container mt-2 mx-6">
-      <h1 class="display-6">研究報告</h1>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title"></h5>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Report Date</th>
-                <th scope="col">Author</th>
-                <th scope="col">Report Type</th>
-                <th scope="col">Description</th>
-                <th scope="col">System Review</th>
-                <th scope="col">Report</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for publication_meta in publications_meta_list %}
-              <tr>
-                <th scope="row">{{loop.index}}</th>
-                <td>{{ publication_meta['data_timestamp'] }}</td>
-                <td>{{ publication_meta['author'] }}</td>
-                <td>{{ publication_meta['type'] }}</td>
-                <td>{{ publication_meta['description'] }}</td>
-                <!-- <td><a class="btn btn-secondary btn-sm" href='/' target="_blank">Read</a></td> -->
-                <td><a class="btn btn-secondary btn-sm" href="">Read</a></td>
-                <td>
-                  <a
-                    class="btn btn-secondary btn-sm"
-                    href="{{ publication_meta['view_url'] }}"
-                    target="_blank"
-                    >Read</a
-                  >
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    <div class="container card">
+      <div class="card-body">
+        <h3 class="card-title">研究報告</h3>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Date</th>
+              <th scope="col">Author</th>
+              <th scope="col">Report Type</th>
+              <th scope="col">Title</th>
+              <th scope="col">Review</th>
+              <th scope="col">Url</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item_meta in internal_stock_report_meta_list %}
+            <tr>
+              <th scope="row">{{loop.index}}</th>
+              <td>{{ item_meta['data_timestamp'] }}</td>
+              <td>{{ item_meta['author'] }}</td>
+              <td>{{ item_meta['report_type'] }}</td>
+              <td>{{ item_meta['title'] }}</td>
+              <!-- <td><a class="btn btn-secondary btn-sm" href='/' target="_blank">Read</a></td> -->
+              <td><a class="btn btn-secondary btn-sm" href="#">Check</a></td>
+              <td>
+                <a
+                  class="btn btn-secondary btn-sm"
+                  href="{{ item_meta['url'] }}"
+                  target="_blank"
+                  >Read</a
+                >
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </body>

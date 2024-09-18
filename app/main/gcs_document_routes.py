@@ -13,14 +13,12 @@ from app.utils.utils import TODAY_DATE_STR, datetime2str, str2datetime
 from app.utils.alphahelix_database_tools import pool_list_db
 
 # 引入權限設定
-from app import us_data_view_perm, us_data_edit_perm, tw_data_view_perm, tw_data_edit_perm
+# from app import us_data_view_perm, us_data_edit_perm, tw_data_view_perm, tw_data_edit_perm
 
 from . import main
 
 @main.route("investment_document_search", methods=['POST'])
 @login_required
-@us_data_view_perm.require(http_exception=403)
-@tw_data_view_perm.require(http_exception=403)
 def investment_document_search():
     document_meta_list = list()
     country = request.form["country"]
@@ -51,8 +49,6 @@ def investment_document_search():
 
 @main.route('/quick_search_investment_document/<int:days>/<string:folder_name>')
 @login_required
-@us_data_view_perm.require(http_exception=403)
-@tw_data_view_perm.require(http_exception=403)
 def quick_search_investment_document(days, folder_name):
     document_meta_list = search_recent_investment_gcs_document(days, [folder_name])
     document_meta_list = sorted(document_meta_list, key=lambda x: x["data_timestamp"], reverse=True)
@@ -60,8 +56,6 @@ def quick_search_investment_document(days, folder_name):
 
 @main.route("edit_gcs_stock_document_metadata", methods=['POST'])
 @login_required
-@us_data_edit_perm.require(http_exception=403)
-@tw_data_edit_perm.require(http_exception=403)
 def edit_gcs_stock_document_metadata():
     edit_metadata = request.get_json()
     blob_name = edit_metadata["blob_name"]
@@ -83,8 +77,6 @@ def edit_gcs_stock_document_metadata():
 
 @main.route("delete_gcs_document", methods=['POST'])
 @login_required
-@us_data_edit_perm.require(http_exception=403)
-@tw_data_edit_perm.require(http_exception=403)
 def delete_gcs_document():
     edit_metadata = request.get_json()
     blob_name = edit_metadata["blob_name"]

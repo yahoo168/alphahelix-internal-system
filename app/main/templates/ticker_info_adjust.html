@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+    <style>
+      label {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Adjust Ticker</h1>
+      <hr class="my-4" />
+      <p class="lead">若Ticker尚未建立，須先建立後再進行調整</p>
+      <a href="{{url_for('main.research_management_overview')}}" class="btn btn-dark"
+        >回到Pool List管理</a
+      >
+    </div>
+
+    <div class="container card" style="max-width: 700px; margin: 0 auto">
+      {% include "_flash_alert_model.html" %}
+      <form
+        id="form"
+        enctype="multipart/form-data"
+        action="{{ url_for('main.create_ticker_info')}}"
+        method="post"
+      >
+        <!-- Enter Ticker -->
+        <div class="form-group">
+          <label for="ticker">Ticker</label>
+          <input
+            type="text"
+            class="form-control"
+            id="ticker"
+            name="ticker"
+            placeholder="ex: AAPL"
+            required
+          />
+        </div>
+        <!-- Select Company Holding -->
+        <div class="form-group">
+          <label for="holding_status">Holding Status</label>
+          <select
+            class="form-control"
+            id="holding_status"
+            name="holding_status"
+            required
+          >
+            <option value="" disabled selected>Select a Holding Status</option>
+            <option value="none">None</option>
+            <option value="stock">Stock</option>
+            <option value="bond">Bond</option>
+            <option value="stock_and_bond">Stock and Bond</option>
+          </select>
+        </div>
+        <!-- Select Tracking Level -->
+        <div class="form-group">
+          <label for="tracking_level">Tracking Level</label>
+          <select
+            class="form-control"
+            id="tracking_level"
+            name="tracking_level"
+            required
+          >
+            <option value="" disabled selected>Select a Level</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+
+        <!-- Select Profit Rating -->
+        <div class="form-group">
+          <label for="profit_rating">Profit Rating</label>
+          <select class="form-control" id="profit_rating" name="profit_rating">
+            <option value="" disabled selected>Select a Rating</option>
+            <option value="extreme_high">Extreme High</option>
+            <option value="high">High</option>
+            <option value="mid">Mid</option>
+            <option value="low">Low</option>
+            <option value="extreme_low">Extreme Low</option>
+          </select>
+        </div>
+
+        <!-- Select Risk Rating -->
+        <div class="form-group">
+          <label for="risk_rating">Risk Rating</label>
+          <select
+            class="form-control"
+            id="risk_rating"
+            name="risk_rating"
+            required
+          >
+            <option value="" disabled selected>Select a Rating</option>
+            <option value="extreme_high">Extreme High</option>
+            <option value="high">High</option>
+            <option value="mid">Mid</option>
+            <option value="low">Low</option>
+            <option value="extreme_low">Extreme Low</option>
+          </select>
+        </div>
+
+        <!-- Enter Volatility -->
+        <div class="form-group">
+          <label for="volatility">Volatility</label>
+          <input
+            type="text"
+            class="form-control"
+            id="volatility"
+            name="volatility"
+            placeholder="ex: 25%"
+            required
+          />
+        </div>
+
+        <!-- Select Researcher -->
+        <div class="form-group">
+          <label for="researcher">Researcher</label>
+          <select
+            class="form-control"
+            id="researcher"
+            name="researcher_id"
+            required
+          >
+            <option value="" disabled selected>Select a Person</option>
+            {% for user_meta in user_meta_list %}
+            <option value="{{user_meta['_id']}}">
+              {{user_meta["username"]}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Select Data Manager -->
+        <div class="form-group">
+          <label for="data_manager_id">Data Manager (optional)</label>
+          <select class="form-control" id="data_manager_id" name="data_manager">
+            <option value="" disabled selected>Select a Person</option>
+            {% for user_meta in user_meta_list %}
+            <option value="{{user_meta['_id']}}">
+              {{user_meta["username"]}}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Enter Investment Thesis -->
+        <div class="form-group">
+          <label for="description">Investment Thesis (optional)</label>
+          <textarea
+            class="form-control"
+            id="investment_thesis"
+            name="investment thesis"
+            rows="7"
+            placeholder="Enter detailed investment thesis here"
+          ></textarea>
+        </div>
+        <button type="submit" id="submit-button" class="btn btn-dark">
+          Create
+        </button>
+      </form>
+    </div>
+    <br />
+    <br />
+  </body>
+  {% endblock %}
+</html>
+
+{% block script %}
+<script>
+  {
+    {
+      super();
+    }
+  }
+</script>
+{% endblock %}

@@ -68,6 +68,24 @@
         font-size: 16px;
       }
 
+      .dark-tag {
+        background-color: rgb(100, 88, 88);
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 16px;
+        color: white; /* 设置文字为白色 */
+      }
+
+      .true-tag {
+        background-color: #6ea1d0;
+        color: white;
+      }
+
+      .false-tag {
+        background-color: #d86060;
+        color: white;
+      }
+
       .card {
         border: 1px solid #e0e0e0;
         border-radius: 4px;
@@ -177,7 +195,8 @@
           <!-- Bell-icon: Notification Page -->
           <li class="nav-item">
             <div class="nav-link dropdown">
-              {% if g.undisplayed_notification_num > 0 %}
+              <!-- 安全調用g，避免出現undefined error -->
+              {% if g.undisplayed_notification_num | default(0) > 0 %}
               <a
                 id="notificationDropdown"
                 data-toggle="dropdown"
@@ -234,12 +253,16 @@
                     href="{{ url_for('main.notification_detail', notification_id=notification_meta['_id']) }}"
                     data-id="{{ notification_meta['_id'] }}"
                   >
-                    <span class="notification-title">{{ notification_meta['title'] }}</span>
+                    <span class="notification-title"
+                      >{{ notification_meta['title'] }}</span
+                    >
                     <br />
                     <small>{{ notification_meta['upload_timestamp'] }}</small>
                     <br />
                     <span class="notification-content"
-                      ><small>{{ notification_meta['message'][:40]}}</small></span
+                      ><small
+                        >{{ notification_meta['message'][:40]}}</small
+                      ></span
                     >
                   </a>
                 </li>
@@ -255,12 +278,18 @@
           </li>
           <!-- Play-icon: For Testing -->
           <li class="nav-item">
-            <a
-              href="http://127.0.0.1:5000/main/investment_issue_review/6660844ec3d52e9bc0f815e2"
+            <a href="http://127.0.0.1:5000/main/pretrade_check_page"
               ><i class="nav-link bi bi-caret-right-square-fill"></i>
             </a>
           </li>
           <!-- Logout-->
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              {{(current_user.username).replace('_', ' ').title()}}</a
+            >
+          </li>
+
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('auth.logout') }}">logout</a>
           </li>

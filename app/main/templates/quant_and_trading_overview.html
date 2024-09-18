@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  {% extends "_main_base.html" %}
+  <head> </head>
+  {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Quant and Trading</h1>
+      <hr class="my-4" />
+      <p class="lead">一站式整合量化與交易功能：交易檢核、風險指標...</p>
+    </div>
+
+    <div class=".container mt-5 mb-5 mx-4">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <a
+            href="{{url_for('main.render_static_html', page='pretrade_check_page')}}"
+            class="btn btn-secondary custom-high-button btn-block"
+            >交易檢核
+          </a>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <a href="#" class="btn btn-light custom-high-button btn-block"
+            >量化因子報表
+          </a>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <a href="#" class="btn btn-secondary custom-high-button btn-block"
+            >風險指標
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

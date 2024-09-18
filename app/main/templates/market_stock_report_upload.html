@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% extends "_main_base.html" %}
+    {% block head %}
+    {{ super() }}
+    <!-- 引用 asset/js/files_upload.js；加上 defer 屬性來延遲執行，直到整個頁面加載完畢-->
+    <script src="{{ url_for('static', filename='assets/js/files_upload.js') }}"></script>
+    {% endblock %}
+  </head>
+
+  {% block content %}
+  <body>
+    <div class="container mt-5">
+      <h2 class="card-title">美股研報上傳</h2>
+      <div class="card">
+        <div class="card-body">
+          <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="ticker">Ticker</label>
+              <input
+                type="text"
+                class="form-control"
+                id="ticker"
+                name="ticker"
+                placeholder="ex: AAPL(僅能填寫一個)"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="source">Source</label>
+              <select class="form-control" id="source" name="source" required>
+                <option value="" disabled selected>Select a source</option>
+                <option value="gs">GS</option>
+                <option value="jpm">JPM</option>
+                <option value="citi">Citi</option>
+                <option value="barclays">Barclays</option>
+                <option value="seeking_alpha">Seeking Alpha</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="files">Choose files to upload</label>
+              <input
+                type="file"
+                class="form-control"
+                id="files"
+                name="files"
+                multiple
+                required
+              />
+            </div>
+            <button type="submit" id="uploadButton" class="btn btn-dark">
+              Upload
+            </button>
+            <div id="loadingIndicator" style="display: none">
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Uploading...
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 用於顯示上傳結果 -->
+      <div id="uploadResultBlock" class="card" style="display: none">
+        <div class="card-body">
+          <div id="uploadResultList"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
+
+{% block scripts %}
+{{ super() }}
+<script>
+  var apiUrl = "{{ url_for('main.upload_market_stock_report') }}";
+  UploadReport(apiUrl);
+</script>
+{% endblock %}

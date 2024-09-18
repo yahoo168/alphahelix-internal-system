@@ -9,14 +9,20 @@ def _is_valid_date(date_string):
         return False
 
 def _is_pdf_file(file_name):
-    file_type = file_name[-4:]
-    return file_type == ".pdf"
+    return file_name.endswith(".pdf")
 
-def is_valid_report_name(file_name):
-    if _is_valid_date(file_name[:10]) and _is_pdf_file(file_name):
-        return True
-    else:
-        return False
+def _is_excel_file(file_name):
+    return file_name.endswith(".xlsx")
+
+# 日期格式（2024-01-01_....)，若有檔名命名錯誤，紀錄在error_file_name_list回傳
+def check_report_name_is_valid(file_name_list):
+    error_file_name_list = list()
+    for file_name in file_name_list:
+        if _is_valid_date(file_name[:10]) and (_is_pdf_file(file_name) or _is_excel_file(file_name)):
+            continue
+        else:
+            error_file_name_list.append(file_name)
+    return error_file_name_list
 
 # 可轉換為帶時區的UTC格式（Note：帶時區與不帶時區的datetime彼此無法比較大小，故無法混用）
 def str2datetime(strdate, _timezone=False):

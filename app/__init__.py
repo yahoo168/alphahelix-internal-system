@@ -17,7 +17,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # REDIS_URL = "rediss://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-214-29-16.compute-1.amazonaws.com:9029"
-REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-34-201-226-42.compute-1.amazonaws.com:16329"
+
+# Mini方案的Redis可能會定期變更（在Heroku上會自動更新），但Local須手動更新
+REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-195-119-75.compute-1.amazonaws.com:17099"
 REDIS_URL = os.environ.get('REDIS_URL', REDIS_URL)
 url = urlparse(REDIS_URL)
 
@@ -26,7 +28,7 @@ pool = redis.ConnectionPool(
     host=url.hostname,
     port=url.port,
     password=url.password,
-    # 若升級到包含SSL連線的的付費方案，再將以下註解取消（否則會導致無法運行）
+    # 若使用SSL連線的的方案，再將以下註解取消（否則會導致無法運行）
     # connection_class=redis.SSLConnection,
     # ssl_cert_reqs=None # 禁用 SSL 證書驗證，避免錯誤
 )
@@ -42,25 +44,6 @@ principals = Principal()
 csrf = CSRFProtect()
 # 用於緩存的全局變數
 cache = Cache()
-
-# 定義功能權限
-us_data_view_perm = Permission(RoleNeed('us_data_view'))
-us_data_upload_perm = Permission(RoleNeed('us_data_upload'))
-us_data_edit_perm = Permission(RoleNeed('us_data_edit'))
-
-tw_data_view_perm = Permission(RoleNeed('tw_data_view'))
-tw_data_upload_perm = Permission(RoleNeed('tw_data_upload'))
-tw_data_edit_perm = Permission(RoleNeed('tw_data_edit'))
-
-quant_data_view_perm = Permission(RoleNeed('quant_data_view'))
-quant_data_upload_perm = Permission(RoleNeed('quant_data_upload'))
-quant_data_edit_perm = Permission(RoleNeed('quant_data_edit'))
-
-administation_data_view_perm = Permission(RoleNeed('administation_data_view'))
-administation_data_upload_perm = Permission(RoleNeed('administation_data_upload'))
-administation_data_edit_perm = Permission(RoleNeed('administation_data_edit'))
-
-system_edit_perm = Permission(RoleNeed('system_edit'))
 
 def create_app():
     app = Flask(__name__)
@@ -99,8 +82,8 @@ def create_app():
             logger.error(f"Error during session teardown: {e}")
         return response
     
-    @app.before_request
     # 確保session數據存在並持久化
+    @app.before_request
     def ensure_session_persist():
         user_id = session.get('user_id')
         current_user_id = current_user.get_id() if current_user.is_authenticated else 'Anonymous'
@@ -144,40 +127,70 @@ def create_app():
     
     return app
 
+# 定義功能權限
+#@us_data_upload_perm.require(http_exception=403)
+
+research_management_role = RoleNeed('research_management_role')
+research_management_role_perm = Permission(research_management_role)
+
+us_internal_stock_report_upload_role = RoleNeed('us_internal_stock_report_upload_role')
+us_internal_stock_report_upload_perm = Permission(us_internal_stock_report_upload_role)
+
+us_market_stock_report_upload_role = RoleNeed('us_market_stock_report_upload_role')
+us_market_stock_report_upload_perm = Permission(us_market_stock_report_upload_role)
+
+system_edit_role = RoleNeed('system_edit')
+system_edit_perm = Permission(system_edit_role)
+
+
 def get_roles_permission_dict():    
     # 為角色分配功能權限
     role_permissions_dict = {
-        "general_manager": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
-                            RoleNeed("tw_data_view"), RoleNeed("tw_data_upload"), 
-                            RoleNeed("quant_data_view"), RoleNeed("quant_data_upload"),
-                            RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        "general_manager": [research_management_role],
         
-        "investment_manager": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
-                               RoleNeed("tw_data_view"), RoleNeed("tw_data_upload"), 
-                               RoleNeed("quant_data_view"), RoleNeed("quant_data_upload"),
-                               RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        "investment_manager": [research_management_role],
         
-        "investment_consultant": [RoleNeed("us_data_view"), RoleNeed("tw_data_view")],
+        "investment_consultant": [research_management_role],
         
-        "investment_researcher": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
-                                  RoleNeed("tw_data_view"), RoleNeed("tw_data_upload")],
+        "investment_researcher": [research_management_role],
         
-        "quant_researcher": [RoleNeed("quant_data_view"), RoleNeed("quant_data_upload")],
+        "quant_researcher": [research_management_role],
         
-        "administration_staff": [RoleNeed("admin_data_view"), RoleNeed("admin_data_upload")],
+        "administration_staff": [research_management_role],
         
-        "investment_intern": [RoleNeed("us_data_view"), RoleNeed("us_data_upload"), 
-                                  RoleNeed("tw_data_view"), RoleNeed("tw_data_upload")],
+        "investment_intern": [research_management_role, us_internal_stock_report_upload_role, us_market_stock_report_upload_role],
         
-        "remote_investment_intern": [RoleNeed('us_data_view'), RoleNeed('us_data_upload'), RoleNeed('us_data_edit'),
-                                     RoleNeed('tw_data_view'), RoleNeed('tw_data_upload'), RoleNeed('tw_data_edit')],
+        "remote_investment_intern": [us_market_stock_report_upload_role],
         
-        "tw_data_subscriber": [RoleNeed('tw_data_view')],
+        "tw_data_subscriber": [],
         
-        "admin": [RoleNeed('us_data_view'), RoleNeed('us_data_upload'), RoleNeed('us_data_edit'),
-                RoleNeed('tw_data_view'), RoleNeed('tw_data_upload'), RoleNeed('tw_data_edit'),
-                RoleNeed('quant_data_view'), RoleNeed('quant_data_upload'), RoleNeed('quant_data_edit'),
-                RoleNeed('admin_data_view'), RoleNeed('admin_data_upload'), RoleNeed('admin_data_edit'),
-                RoleNeed('system_edit')],
+        "admin": [research_management_role, us_internal_stock_report_upload_role, system_edit_role, us_market_stock_report_upload_role],
     }
     return role_permissions_dict
+
+
+# permission_roles_list = ["research_management_role", "us_internal_stock_report_upload_role", 
+#                         "us_market_stock_report_upload_role", "system_edit_role"]
+
+# # 透過roles_list，生成RoleNeed對象
+# permission_RoleNeed_dict = {role: RoleNeed(role) for role in permission_roles_list}
+# # 透過roles_list，生成Permission對象
+# permissions_dict = {role: Permission(role) for role in permission_roles_list}
+
+# def get_roles_permission_dict():    
+#     # 為每個角色設定權限
+#     role_permissions_settings = {
+#         "general_manager": ["research_management_role"],
+#         "investment_manager": ["research_management_role"],
+#         # "investment_consultant": ["research_management_role"],
+#         "investment_researcher": ["research_management_role"],
+#         "quant_researcher": ["research_management_role"],
+#         "administration_staff": ["research_management_role"],
+#         "investment_intern": ["research_management_role", "us_internal_stock_report_upload_role", "us_market_stock_report_upload_role"],
+#         "remote_investment_intern": ["us_market_stock_report_upload_role"],
+#         "tw_data_subscriber": [],
+#         "admin": ["research_management_role", "us_internal_stock_report_upload_role", "system_edit_role", "us_market_stock_report_upload_role"]
+#     }
+#     # 使用角色權限名稱來動態生成Permission對象
+#     return {role: [permission_RoleNeed_dict[need] for need in needs] for role, needs in role_permissions_settings.items()}
+

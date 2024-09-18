@@ -2,8 +2,7 @@ from flask import request, jsonify, render_template, redirect, url_for, flash, s
 from flask import current_app as app
 from flask_login import login_required, current_user
 
-from collections import Counter
-import io, logging
+import logging
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -16,7 +15,8 @@ from app.utils.alphahelix_database_tools import pool_list_db
 #cache在app/__init.py的creat_app中定義，這裡引入cache，避免重複創建
 from app import redis_instance
 # 引入權限設定
-from app import us_data_view_perm, us_data_edit_perm, tw_data_view_perm, tw_data_edit_perm
+# from app import permissions_dict
+from app import research_management_role_perm, us_internal_stock_report_upload_perm, us_market_stock_report_upload_perm, system_edit_perm
 
 from . import main
 
@@ -55,37 +55,37 @@ def get_stock_shorts_summary():
     
     return jsonify({"date": date_str, "stock_news_daily": stock_news_daily})
 
-@main.route("/pool_list_overview")
-# @login_required
-def pool_list_overview():
-    pool_list_meta_list = (
-        pool_list_db.get_pool_list_data_df()
-        # 將部位資訊轉換為字串，以逗號分割，便於前端顯示
-        .assign(holding_status=lambda df: df["holding_status"].fillna('').apply(lambda x: ','.join(x) if x else ''))
-        .astype({"last_publication_timestamp": str, "tracking_status": int})
-        .replace('NaT', '')
-        .fillna('')
-        .reset_index()
-        .rename(columns={"index": "ticker"})
-        .to_dict(orient="records")
-    )
+@main.route("/research_management_overview")
+@login_required
+@research_management_role_perm.require(http_exception=403)
+def research_management_overview():
+    ticker_info_meta_list = pool_list_db.get_latest_ticker_info_meta_list()
+    id_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
     
-    user_id = ObjectId(current_user.get_id())
-    for item_meta in pool_list_meta_list:
-        # Capitalize the first letter of each word in a string?
-        item_meta["researcher"] = ' '.join(item_meta["researcher"].split("_")).title()
-        following_user_meta_list = item_meta.get("following_users", [])
+    user_id = ObjectId(current_user.get_id())            
+    for item_meta in ticker_info_meta_list:
+        # 透過user_id查找user_name後，Capitalize the first letter of each word in the username
+        researcher_id = item_meta["researchers"].get("researcher_id", '')
+        item_meta["researcher_username"] = id_username_mapping_dict.get(researcher_id).replace("_", " ").title()
+
+        # Get the most recent pool_list_status
+        item_meta["in_poolList"] = item_meta["poolList_status"].get("in_poolList", False)
+
+        # Extract and format the most recent profit and risk ratings
+        item_meta["profit_rating"] = item_meta["investment_ratings"].get("profit_rating", '-').replace("_", " ").title()
+        item_meta["risk_rating"] = item_meta["investment_ratings"].get("risk_rating", '-').replace("_", " ").title()
+        item_meta["tracking_level"] = item_meta["tracking_status"].get("tracking_level")
         # 確保following_users為list（因經過dict轉換，有可能為空字串，導致報錯）
-        if isinstance(following_user_meta_list, list):
-            item_meta["is_following"] = (user_id in following_user_meta_list)
+        following_user_meta_list = item_meta.get("following_users", [])
+        item_meta["is_following"] = isinstance(following_user_meta_list, list) and (user_id in following_user_meta_list)
         
-    return render_template('pool_list_overview.html', pool_list_meta_list=pool_list_meta_list)
+    return render_template('research_management_overview.html', pool_list_meta_list=ticker_info_meta_list)
 
 @main.route("/update_ticker_following_status", methods=['POST'])
 def update_ticker_following_status():
     data = request.json
     item_id, follow_status = data.get('item_id'), data.get('follow_status')
-    collection = MDB_client["pool_list"]["ticker_info"]
+    collection = MDB_client["research_admin"]["ticker_info"]
     user_id = ObjectId(current_user.get_id())
     
     if follow_status:
@@ -105,55 +105,41 @@ def update_ticker_following_status():
     
 @main.route('/ticker_internal_info/<ticker>')
 def ticker_internal_info(ticker):
-    updated_timestamp = ''
-    publication_type_list = []
-    publication_count_list = []
-    publications_meta_list = []
+    item_meta = pool_list_db.get_latest_ticker_info_meta_list(ticker_list=[ticker])[0]
     
-    # 取得個股內部觀點(使用pool_list_db物件)
-    conclustion_meta = pool_list_db.get_conclustion_meta_list(ticker=ticker)
-    if conclustion_meta:
-        conclustion_meta["data_timestamp"] = datetime2str(conclustion_meta["data_timestamp"])
+    updated_timestamp = item_meta.get("investment_ratings", {}).get("updated_timestamp", '')
+    if updated_timestamp:
+        updated_timestamp = datetime2str(updated_timestamp)
     
-    # 製作username與employee_id的對應表
-    user_info_meta_list = list(MDB_client["users"]["user_basic_info"].find())
-    mapping_df = pd.DataFrame(user_info_meta_list).loc[:, ["username", "employee_id"]].set_index("employee_id")
-    id_mapping_dict = mapping_df.to_dict(orient='index')
+    # 取得profit_rating, risk_rating, investment_thesis
+    profit_rating = item_meta.get("investment_ratings", {}).get("profit_rating", '').replace("_", " ").title()
+    risk_rating = item_meta.get("investment_ratings", {}).get("risk_rating", '').replace("_", " ").title()
+    investment_thesis = item_meta.get("investment_ratings", {}).get("investment_thesis", '')
     
-    # 取得個股內部報告
-    research_status_dict = MDB_client["pool_list"]["research_status"].find_one({"ticker": ticker})
-    if research_status_dict:
-        updated_timestamp = datetime2str(research_status_dict["updated_timestamp"])
-        publications_meta_list = research_status_dict["publications"]
+    # 取得最近的內部報告
+    internal_stock_report_meta_list = pool_list_db.get_internal_stock_report(ticker=ticker)
+    internal_stock_report_meta_list.sort(key=lambda x: x["data_timestamp"], reverse=True)
+    id_to_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
     
-        for publication_meta in publications_meta_list:
-            # 將data_timestamp轉換為字串
-            publication_meta["data_timestamp"] = datetime2str(publication_meta["data_timestamp"])
-            # 將author_id轉換為username
-            publication_meta["author"] = id_mapping_dict[publication_meta["author_id"]]["username"]
-                
-        if publications_meta_list:
-            # 提取 publication type 并统计数量
-            publication_counts_series = (pd.Series(Counter(item['type'] for item in publications_meta_list))
-                                        .rename(index={"Preliminary": "初步研究", "Comprehensive": "深入研究", "Initial": "初次推薦", "Supplemental": "補充研究", "Model": "財務模型"}))
-
-            publication_type_list = publication_counts_series.index.tolist()
-            publication_count_list = publication_counts_series.values.astype(int).tolist()
-    
+    for internal_stock_report_meta in internal_stock_report_meta_list:
+        internal_stock_report_meta["data_timestamp"] = datetime2str(internal_stock_report_meta["data_timestamp"])
+        internal_stock_report_meta["author"] = id_to_username_mapping_dict[internal_stock_report_meta["uploader_id"]].replace("_", " ").title()
+        
     context = {
         "ticker": ticker,
         "updated_timestamp": updated_timestamp,
-        'conclustion_meta': conclustion_meta,
-        'publication_type_list': publication_type_list,
-        'publication_count_list': publication_count_list,
-        'publications_meta_list': publications_meta_list,
+        "profit_rating": profit_rating,
+        "risk_rating": risk_rating,
+        "investment_thesis": investment_thesis,
+        
+        "internal_stock_report_meta_list": internal_stock_report_meta_list,
+        
     }
     return render_template('ticker_internal_info.html', **context)
 
 @main.route('/ticker_market_info/<ticker>')
-# @login_required
+@login_required
 # @cache.cached(timeout=60)  #緩存60秒
-@us_data_view_perm.require(http_exception=403)
 def ticker_market_info(ticker):
     # 初始化變量，避免未定義錯誤
     stock_report_review_date = ''
@@ -231,7 +217,7 @@ def ticker_market_info(ticker):
     return render_template('ticker_market_info.html', **context)
          
 @main.route('/ticker_setting_info/<ticker>')
-@us_data_view_perm.require(http_exception=403)
+# @us_data_view_perm.require(http_exception=403)
 def ticker_setting_info(ticker):
     # 取得個股的投資假設
     assumption_meta_list = list(MDB_client["users"]["investment_assumptions"].find({"tickers": ticker}))
@@ -384,7 +370,6 @@ def update_issue_status():
 
 @main.route("/report_summary_page/<report_id>")
 @login_required
-@us_data_view_perm.require(http_exception=403)
 def report_summary_page(report_id):
     stock_report_meta = MDB_client["preprocessed_content"]["stock_report"].find_one({"_id": ObjectId(report_id)})
     title = stock_report_meta["title"][:-4]

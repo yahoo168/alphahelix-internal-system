@@ -1,49 +1,56 @@
 <!-- templates/auth/register.html -->
 <!DOCTYPE html>
+{% extends "_main_base.html" %}
 <html>
-<head>
+  {% block head %}
+  <head>
     <meta charset="utf-8" />
     <style>
-        /* 內聯CSS樣式，調整多選選擇框的高度 */
-        .select-multiple {
-            height: auto; /* 自動調整高度 */
-            min-height: 200px; /* 設置最小高度，以顯示所有選項 */
-        }
+      /* 內聯CSS樣式，調整多選選擇框的高度 */
+      .select-multiple {
+        height: auto; /* 自動調整高度 */
+        min-height: 200px; /* 設置最小高度，以顯示所有選項 */
+      }
     </style>
-    {% extends "main_base.html" %}
-</head>
-{% block content %}
-<body>
-    <div class="container mt-4">
-        <h1>User Register</h1>
-
-        <form method="POST" action="{{ url_for('auth.user_register') }}">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                {{ form.email.label(class="form-control-label") }}
-                {{ form.email(class="form-control", placeholder="Enter user email") }}
-            </div>
-            <div class="form-group">
-                {{ form.username.label(class="form-control-label") }}
-                {{ form.username(class="form-control", placeholder="Enter user username") }}
-            </div>
-            <div class="form-group">
-                {{ form.password.label(class="form-control-label") }}
-                {{ form.password(class="form-control", placeholder="Enter user initial password") }}
-            </div>
-            <div class="form-group">
-                {{ form.confirm_password.label(class="form-control-label") }}
-                {{ form.confirm_password(class="form-control", placeholder="Confirm user password") }}
-            </div>
-            <div class="form-group">
-                {{ form.roles.label(class="form-control-label") }}
-                {{ form.roles(class="form-control select-multiple", multiple=True) }}
-            </div>
-            <div class="form-group">
-                {{ form.submit(class="btn btn-secondary") }}
-            </div>
-        </form>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">User Register</h1>
+      <hr class="my-4" />
     </div>
-</body>
-{% endblock %}
+    <div class="container mt-4">
+    {% include "_flash_alert_model.html" %}  
+
+      <div class="card card-body">
+        <form method="POST" action="{{ url_for('auth.user_register') }}">
+          {{ form.hidden_tag() }}
+          <div class="form-group">
+            {{ form.email.label(class="form-control-label") }} {{
+            form.email(class="form-control", placeholder="Enter user email") }}
+          </div>
+          <div class="form-group">
+            {{ form.username.label(class="form-control-label") }} {{
+            form.username(class="form-control", placeholder="Enter username") }}
+          </div>
+          <div class="form-group">
+            {{ form.password.label(class="form-control-label") }} {{
+            form.password(class="form-control", placeholder="Enter user initial password") }}
+          </div>
+          <div class="form-group">
+            {{ form.confirm_password.label(class="form-control-label") }} {{
+            form.confirm_password(class="form-control", placeholder="Confirm user password") }}
+          </div>
+          <div class="form-group">
+            {{ form.roles.label(class="form-control-label") }} {{
+            form.roles(class="form-control select-multiple", multiple=True) }}
+          </div>
+          <div class="form-group">
+            {{ form.submit(class="btn btn-secondary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
 </html>

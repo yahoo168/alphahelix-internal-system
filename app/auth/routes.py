@@ -16,6 +16,7 @@ from app import bcrypt, redis_instance
 from .users_model import User, check_username_exist, create_new_user
 
 from . import auth  # 从当前包中导入 auth blueprint
+from app import system_edit_perm
 
 # setting logging
 logging.basicConfig(level=logging.INFO)
@@ -28,39 +29,49 @@ logger = logging.getLogger(__name__)
 #     if '_csrf_token' not in session:
 #         session['_csrf_token'] = generate_csrf()
 
-
-# 确保浏览器不缓存页面，保证每次访问页面时都从服务器获取最新的内容。（實際有沒有作用，待確認）
-# @auth.after_request
-# def make_sure_browser_non_cache(response):
-#     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-#     response.headers['Pragma'] = 'no-cache'
-#     response.headers['Expires'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
-#     return response
-
-@auth.route("/user_register", methods=['GET', 'POST'])
+# 处理 GET 请求：表单初始化时通过 GET 请求返回注册页面。
+# 处理 POST 请求：如果表单提交成功，首先检查用户名是否已存在，如果已存在则显示错误消息。如果用户名不存在，则对密码进行哈希处理并创建新用户。
+@auth.route('/user_register', methods=['GET', 'POST'])
 @login_required
+@system_edit_perm.require(http_exception=403)
 def user_register():
     form = RegistrationForm()
+
+    # 处理 POST 请求
     if form.validate_on_submit():
         if check_username_exist(form.username.data):
-            flash('Username already exist!', 'danger')
-            return redirect(url_for('auth.register'))
-        
+            flash('Username already exists!', 'danger')
+            return render_template('user_register.html', title='Register', form=form)
+
+        # 创建新用户
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        create_new_user(email=form.email.data, username=form.username.data, password_hash=hashed_password, roles=form.roles.data)
+        create_new_user(
+            email=form.email.data,
+            username=form.username.data,
+            password_hash=hashed_password,
+            roles=form.roles.data
+        )
         flash('New account has been created!', 'success')
-    else:
-        flash('New account creating Fail!', 'danger')
-    
+        return redirect(url_for('auth.user_register'))  # 成功创建后可以重定向到同一页面或其他页面
+
+    # 处理 GET 请求，或者表单验证失败的情况
+    if request.method == 'POST':
+        flash('New account creation failed!', 'danger')
+
     return render_template('user_register.html', title='Register', form=form)
+
               
 @auth.route("/login", methods=['GET', 'POST'])
 def login():    
     form = LoginForm()
     if form.validate_on_submit():
         user_data = MDB_client["users"]["user_basic_info"].find_one({"username": form.username.data})
-        # 如果用戶存在且密碼正確
+        # 如果用戶資料存在且登入密碼正確
         if user_data and bcrypt.check_password_hash(user_data['password_hash'], form.password.data):
+            if user_data['is_active'] == False:
+                flash('The account is inactive. Please contact the admin!', 'danger')
+                return redirect(url_for('auth.login'))
+            
             user = User.get(user_data['_id'])
             # 清理舊的session，以避免數據錯誤
             session.clear()

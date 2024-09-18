@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">Pre-trade Check</h1>
+      <hr class="my-4" />
+      <p class="lead">確認部位交易符合公司IPS規定</p>
+    </div>
+
+    <div class="container">
+      <h2 class="card-title">交易前檢核</h2>
+      <div class="card">
+        <div class="card-body">
+          <form
+            enctype="multipart/form-data"
+            method="post"
+            action="{{url_for('main.pretrade_check')}}"
+          >
+            <div class="form-group">
+              <label for="ticker_list">Stock Ticker List</label>
+              <input
+                type="text"
+                class="form-control"
+                id="ticker_list"
+                name="ticker_list"
+                placeholder="AAPL, TSM, ...(以, 分隔)"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-dark">Submit</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 檢核結果 -->
+      <div class="card">
+        <div class="card-body">
+          <h3 class="card-title">檢核結果 ({{current_timestamp}})</h3>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Ticker</th>
+                <th scope="col">Is PoolList</th>
+                <th scope="col">Is Updated</th>
+                <th scope="col">Latest Update</th>
+                <th scope="col">Since Last Update</th>
+                <th scope="col">Is Executable</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in pretrade_check_meta_list %}
+              <tr>
+                <th scope="row">{{loop.index}}</th>
+                <!-- Ticker -->
+                <td><span class="tag">{{ item_meta['ticker'] }}</span></td>
+                <!-- <td>{{ item_meta['ticker'] }}</td> -->
+
+                <!-- Pool List -->
+                {% if item_meta["in_poolList"]%}
+                <td>
+                  <span class="tag true-tag">Yes</span>
+                </td>
+                {% else %}
+                <td>
+                  <span class="tag false-tag">No</span>
+                </td>
+                {% endif %}
+
+                <!-- Is Updated -->
+                {% if item_meta["is_updated"]%}
+                <td>
+                  <span class="tag true-tag">Yes</span>
+                </td>
+                {% else %}
+                <td>
+                  <span class="tag false-tag">No</span>
+                </td>
+                {% endif %}
+
+                <!-- Is Latest Update Date -->
+
+                <td>{{ item_meta['latest_report_date'] }}</td>
+
+                <!-- Since Last Update -->
+                <td>{{ item_meta['days_since_latest_report_date'] }}</td>
+                <!-- Is Executable -->
+                {% if item_meta["is_executable"]%}
+                <td>
+                  <span class="tag true-tag">Yes</span>
+                </td>
+                {% else %}
+                <td>
+                  <span class="tag false-tag">No</span>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>

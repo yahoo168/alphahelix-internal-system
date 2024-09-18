@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 {% extends "_main_base.html" %}
 <html lang="en">
-  {% block head %} {{ super() }}
+  {% block head %}
   <!-- 保留基础模板中的其他 head 内容 -->
+  {{ super() }}
   <!-- DataTables CSS -->
   <link
     rel="stylesheet"
@@ -16,25 +17,20 @@
     .heart-red {
       color: rgb(182, 72, 72);
     }
-
-    .dark-tag {
-        background-color: rgb(100, 88, 88);
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 16px;
-        color: white; /* 设置文字为白色 */
-      }
   </style>
 
   {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
-      <h1 class="display-4">Pool List Management</h1>
+      <h1 class="display-4">Research Management</h1>
       <hr class="my-4" />
       <p class="lead">
-        <a href="" class="btn btn-dark">建立個股</a>
-        <a href="" class="btn btn-dark">調整分工</a>
-        <a href="" class="btn btn-dark">調整追蹤等級</a>
+        <a
+          href="{{url_for('main.create_ticker_info_page')}}"
+          class="btn btn-dark"
+          >建立個股</a
+        >
+
         <a
           href="https://finance-jeff.notion.site/8f97220a0df544a297626d203755dd0c?pvs=4"
           target="_blank"
@@ -54,10 +50,12 @@
               <tr>
                 <th scope="col">Ticker</th>
                 <th scope="col">Follow</th>
+                <th scope="col">Profit Rating</th>
+                <th scope="col">Risk Rating</th>
                 <th scope="col">Researcher</th>
                 <th scope="col">Holding Status</th>
+                <th scope="col">Pool List</th>
                 <th scope="col">Tracking Status</th>
-                <th scope="col">Last Update Date</th>
                 <th scope="col">Market Info</th>
                 <th scope="col">Internal Info</th>
                 <th scope="col">Setting</th>
@@ -78,45 +76,73 @@
                 <td data-sort="1">
                   <i
                     class="bi bi-suit-heart-fill heart-red button-like follow-item"
-                    data-item_id="{{item_meta['ticker_info_id']}}"
+                    data-item_id="{{item_meta['_id']}}"
                   ></i>
                 </td>
                 {% else %}
                 <td data-sort="0">
                   <i
                     class="bi bi-suit-heart button-like follow-item"
-                    data-item_id="{{item_meta['ticker_info_id']}}"
+                    data-item_id="{{item_meta['_id']}}"
                   ></i>
                 </td>
                 {% endif %}
-                
+
+                <!-- Profit Rating -->
+                <td>{{item_meta["profit_rating"]}}</td>
+                <!-- Risk Rating -->
+                <td>{{item_meta["risk_rating"]}}</td>
+
                 <!-- researcher -->
-                {% if item_meta['researcher'] != '' %}
-                <td><span class="tag">{{ item_meta['researcher'] }}</span></td>
+                {% if item_meta['researchers'] != '' %}
+                <td>
+                  <span class="tag"
+                    >{{ item_meta['researcher_username'] }}</span
+                  >
+                </td>
                 {% else %}
                 <td></td>
                 {% endif %}
-                
+
                 <!-- holding_status -->
                 <td>
-                  {% if item_meta['holding_status']%} {% for status in item_meta['holding_status'].split(',') %}
+                  {% if item_meta['holding_status']%} {% for status in
+                  item_meta['holding_status']['securities'] %}
                   <span class="tag">{{ status }}</span>
                   {% endfor %} {% endif %}
                 </td>
-                <td>{{ item_meta['tracking_status'] }}</td>
-                <td>{{ item_meta['last_publication_timestamp'] }}</td>
+
+                <!-- Pool List -->
+                {% if item_meta["in_poolList"]%}
+                <td>
+                  <span class="tag true-tag">Yes</span>
+                </td>
+                {% else %}
+                <td>
+                  <span class="tag false-tag">No</span>
+                </td>
+                {% endif %}
+
+                <!-- Tracking Status -->
+                <td>{{ item_meta['tracking_status']['tracking_level'] }}</td>
+
+                <!-- Ticker Market info -->
                 <td>
                   <a
                     href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
                     class="bi bi-graph-up button-like"
                   ></a>
                 </td>
+
+                <!-- Ticker Internal Info -->
                 <td>
                   <a
                     href="{{ url_for('main.ticker_internal_info', ticker=item_meta['ticker']) }}"
                     class="bi bi-terminal button-like"
                   ></a>
                 </td>
+
+                <!-- Ticker Setting -->
                 <td>
                   <a
                     href="{{ url_for('main.ticker_setting_info', ticker=item_meta['ticker']) }}"

@@ -2,7 +2,7 @@ from flask import request, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from bson import ObjectId
 from app.utils.mongodb_tools import MDB_client
-from app import system_edit_perm
+#from app import system_edit_perm
 
 # 引入權限設定
 
@@ -46,6 +46,6 @@ def show_user_setting():
 
 @main.route('/new_user_register')
 @login_required
-@system_edit_perm.require(http_exception=403)
+#@system_edit_perm.require(http_exception=403)
 def new_user_register():
     return redirect(url_for("auth.user_register"))
