@@ -1,136 +1,290 @@
 <!DOCTYPE html>
 {% extends "_main_base.html" %}
 <head>
-  <!-- Bootstrap CSS -->
-  <link
-    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  {{ super() }}
+  <!-- 本頁面標題 -->
+  <title>{% block title %}{{ issue_meta['issue'] }}{% endblock %}</title>
 </head>
 
 <body>
   {% block content %}
-  <div class="jumbotron text-center">
-    <h1>Issue Review</h1>
+  <!-- 此處雖然非實際的目錄導引位置，但定位於此瀏覽時較為便利 -->
+  <div class="jumbotron text-center" id="table_of_sections">
+    <h1 class="display-4"><strong>投資議題</strong></h1>
     <hr class="my-4" />
     <a
-      class="btn btn-secondary btn"
-      href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
-      >回到目錄</a
+      class="btn btn-outline-dark"
+      href="{{ url_for('main.investment_tracking_overview', tracking_type='following_issues') }}"
     >
+      議題總覽
+    </a>
     <a
-      class="btn btn-secondary btn"
-      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
-      >假設追蹤</a
+      class="btn btn-outline-dark"
+      href="{{ url_for('main.investment_tracking_overview', tracking_type='investment_assumptions') }}"
     >
+      假設總覽
+    </a>
   </div>
 
-  <div class="container mt-2 mx-6">
-    <h3 class="display-6"><strong>{{item_title}}</strong></h3>
+  <div class="container mt-2">
+    <h3 class="display-6"><strong></strong></h3>
+
+    <!-- Issue基本資訊 -->
     <div class="card">
-      <div class="card-body">
-        <!-- Table with hoverable rows -->
-        <div class="container mt-2 mx-6">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">Upload Date</th>
-
-                <th scope="col">Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item_meta in item_meta_list %}
-              <tr>
-                <td class="align-middle">
-                  {{ item_meta['upload_timestamp'] }}
-                </td>
-                <td class="align-middle">
-                  <button
-                    class="btn btn-link"
-                    type="button"
-                    data-toggle="modal"
-                    data-target="#modal{{ loop.index }}"
-                  >
-                    <i class="bi bi-eye button-like"></i>
-                  </button>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h3 class="mb-0">議題: 「{{ issue_meta['issue'] }}」</h3>
+        <a
+          href="{{url_for('main.investment_issue_review_records', item_id=issue_meta['_id'])}}"
+          class="btn btn-outline-dark btn-sm float-end"
+          >查看歷史紀錄</a
+        >
       </div>
-    </div>
-  </div>
 
-  <!-- Modal templates for each item -->
-  {% for item_meta in item_meta_list %}
-  <div
-    class="modal fade"
-    id="modal{{ loop.index }}"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="modalLabel{{ loop.index }}"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel{{ loop.index }}">
-            <strong>{{item_meta['upload_timestamp']}} - Review</strong>
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="collapse show" id="issue_{{ loop.index }}">
-            <div class="card card-body">
-              <hr class="my-4" />
-              <h3>市場觀點彙整</h3>
-              <p>
-                {{ item_meta.get("market_issue_review", "").replace('\n', '<br />')
-                | safe }}
-              </p>
-            </div>
-            <br />
-            <div class="card card-body">
-              <h3>新增市場觀點</h3>
-              <div class="alert alert-info" role="alert">
-                以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整新增的部分
-              </div>
-              <p>
-                {{ item_meta.get("added_issue_review", "").replace('\n', '<br />')
-                | safe }}
-              </p>
-            </div>
-            <br />
-            <div class="card card-body">
-              <h3>市場觀點變化</h3>
-              <div class="alert alert-info" role="alert">
-                以下觀點為近1週，共{{item_meta["added_report_num"]}}篇研究報告，相較於前次觀點彙整，市場看法的變化
-              </div>
-              <p>
-                {{ item_meta.get("issue_review_change", "").replace('\n', '<br />')
-                | safe }}
-              </p>
-            </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-12">
+            <p class="card-text">
+              <strong>Tickers:</strong>
+              {% for ticker in issue_meta['tickers'] %}
+              <span class="tag">{{ ticker }}</span>
+              {% endfor %}
+            </p>
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-dark" data-dismiss="modal">
-            Close
-          </button>
+        <br />
+        <div class="row">
+          <div class="col-md-4">
+            <!-- 本次彙整更新日期 -->
+            <p class="card-text">
+              <strong>更新日期:</strong>
+              <span>{{ issue_review_meta['upload_date_str'] }}</span>
+            </p>
+          </div>
+          <!-- 本Issue上傳日期 -->
+          <div class="col-md-4">
+            <p class="card-text">
+              <strong>上傳日期:</strong>
+              <span>{{ issue_meta['upload_date_str'] }}</span>
+            </p>
+          </div>
+          <!-- 本Issue狀態 -->
+          <div class="col-md-4">
+            <p class="card-text">
+              <strong>是否更新:</strong>
+              <span class="tag">{{ issue_meta['is_active'] }}</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 目錄導引 -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="mb-0">目錄</h3>
+      </div>
+
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li><strong>議題追蹤</strong></li>
+          <li>
+            <i class="bi bi-1-circle"></i>
+            <a href="#issue_market_concensus_and_diff">共識與差異</a>
+          </li>
+
+          <li>
+            <i class="bi bi-2-circle"></i>
+            <a href="#issue_issue_review_change">觀點變化</a>
+          </li>
+
+          <li>
+            <i class="bi bi-3-circle"></i>
+            <a href="#issue_added_issue_review">新增觀點</a>
+          </li>
+
+          <li>
+            <i class="bi bi-4-circle"></i>
+            <a href="#issue_market_issue_review">觀點彙整</a>
+          </li>
+          <br />
+          <li><strong>參考報告</strong></li>
+          <li>
+            <i class="bi bi-5-circle"></i>
+            <a href="#added_report">本次新增</a> (共{{added_report_meta_list |
+            length}}篇)
+          </li>
+
+          <li>
+            <i class="bi bi-6-circle"></i>
+            <a href="#other_report">其它報告</a> (共{{other_report_meta_list
+            | length}}篇)
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Issue Review Record List -->
+    <div class="mt-4">
+      <!-- 市場共識與差異 -->
+      <div class="card mb-4" id="issue_market_concensus_and_diff">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">市場共識與差異</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <p id="issue_market_concensus_and_diff_text">
+            {{ issue_review_meta.get('market_issue_concensus_and_dissensus',
+            '').replace('\n', '<br />') | safe }}
+          </p>
+        </div>
+      </div>
+
+      <!-- 市場觀點轉向 -->
+      <div class="card mb-4" id="issue_issue_review_change">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">市場觀點轉向</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <p>
+            {% if issue_review_meta.get('issue_review_change', '') == '' %}
+            <span class="text-muted">此次為本議題首次彙整，故此章節為空</span>
+            {% endif %} {{ issue_review_meta.get('issue_review_change',
+            '').replace('\n', '<br />') | safe }}
+          </p>
+        </div>
+      </div>
+
+      <!-- 新增市場觀點 -->
+      <div class="card mb-4" id="issue_added_issue_review">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">新增市場觀點</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <p>
+            {% if issue_review_meta.get('added_issue_review', '') == '' %}
+            <span class="text-muted">此次為本議題首次彙整，故此章節為空</span>
+            {% endif %} {{ issue_review_meta.get('added_issue_review',
+            '').replace('\n', '<br />') | safe }}
+          </p>
+        </div>
+      </div>
+
+      <!-- 市場觀點彙整 -->
+      <div class="card mb-4" id="issue_market_issue_review">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">市場觀點彙整</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <p>
+            {{ issue_review_meta.get('market_issue_review', '').replace('\n',
+            '<br />') | safe }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增參考報告 -->
+    <div class="card" id="added_report">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h3 class="mb-0">參考報告（新增）</h3>
+        <a
+          href="#table_of_sections"
+          class="btn btn-outline-secondary btn-sm float-end"
+          >回到導引列</a
+        >
+      </div>
+      <div class="card-body">
+        <!-- Table with hoverable rows -->
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Title</th>
+              <th scope="col">Date</th>
+              <th scope="col">Tag</th>
+              <th scope="col">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item_meta in added_report_meta_list %}
+            <tr>
+              <th scope="row">{{loop.index}}</th>
+
+              <td
+                scope="row"
+                style="
+                  text-align: left;
+                  max-width: 500px;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  color: #333;
+                  font-weight: bold;
+                "
+              >
+                <a
+                  href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
+                  >{{ item_meta['title'] }}</a
+                >
+              </td>
+
+              <td style="white-space: nowrap">{{ item_meta['date_str'] }}</td>
+              <td><span class="tag true-tag">{{ item_meta['ticker'] }}</span></td>
+              <td style="text-align: center">{{ item_meta['source'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  {% endfor %} {% endblock %}
+  <!-- 在頁尾添加額外的間距 -->
+  <div class="footer-spacing"></div>
+  {% endblock %}
 </body>
+
+{% block scripts %} {{ super() }}
+<script>
+  $(document).ready(function () {
+    // 啟用Popover
+    $('[data-toggle="popover"]').popover();
+
+    // 使用正則表達式找到「共識點」和「差異點」所在的行，並替換為<h3>標籤
+    // 辨識到「共識點」或「差異點」後，刪除其後面可能連接的':'或'：'
+    $("#issue_market_concensus_and_diff_text").html(function (_, html) {
+      return html.replace(/(共識點|差異點)[:：]/g, "<strong>$1</strong>");
+    });
+  });
+</script>
+{% endblock %}

@@ -154,6 +154,7 @@
                 <th>Assumption</th>
                 <th>Uploaded Date</th>
                 <th>Updated Date</th>
+                <th>Linked Issue</th>
                 <th></th>
               </tr>
             </thead>
@@ -171,9 +172,16 @@
                     <span class="slider round"></span>
                   </label>
                 </td>
-                <td style="text-align: left">{{assumption_meta["assumption"]}}</td>
+                <td style="text-align: left">
+                  <a
+                    href="{{ url_for('main.investment_assumption_review', item_id=assumption_meta['_id']) }}"
+                  >
+                    {{ assumption_meta['assumption'] }}
+                  </a>
+                </td>
                 <td>{{assumption_meta["upload_timestamp"]}}</td>
                 <td>{{assumption_meta["updated_timestamp"]}}</td>
+                <td>{{assumption_meta["linked_issue_num"]}}</td>
                 <td>
                   <button
                     class="btn btn-secondary btn-sm editAssumptionButton"
@@ -228,10 +236,18 @@
                     <span class="slider round"></span>
                   </label>
                 </td>
-                <td style="text-align: left">{{issue_meta["issue"]}}</td>
+                <!-- <td style="text-align: left">{{issue_meta["issue"]}}</td> -->
+                <td style="text-align: left">
+                  <a
+                    href="{{ url_for('main.investment_issue_review', item_id=issue_meta['_id']) }}"
+                  >
+                    {{ issue_meta['issue'] }}
+                  </a>
+                </td>
+
                 <td>{{issue_meta["upload_timestamp"]}}</td>
                 <td>{{issue_meta["updated_timestamp"]}}</td>
-                <td>0</td>
+                <td>{{issue_meta["linked_by_assumption_num"]}}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -274,8 +290,8 @@
                 required
               />
             </div>
-            <button type="submit" class="btn btn-secondary btn-sm">
-              Creat
+            <button type="submit" class="btn btn-dark btn-sm">
+              Create
             </button>
           </form>
         </div>
@@ -334,7 +350,7 @@
             enctype="multipart/form-data"
           >
             <div class="form-group">
-              <label for="issue">Issue</label>
+              <label for="issue">Investment Issue</label>
               <input
                 type="text"
                 class="form-control"
@@ -357,8 +373,8 @@
                 required
               />
             </div>
-            <button type="submit" class="btn btn-secondary btn-sm">
-              Creat
+            <button type="submit" class="btn btn-dark btn-sm">
+              Create
             </button>
           </form>
         </div>

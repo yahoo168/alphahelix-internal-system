@@ -3,17 +3,21 @@ from flask_login import login_required, current_user
 
 import os
 from datetime import datetime, timedelta, timezone
+import pytz
 from bson import ObjectId
 from collections import defaultdict
+import tempfile
+import pandas as pd
 
 from app.utils.google_tools import google_cloud_storage_tools
 from app.utils.mongodb_tools import MDB_client
-from app.utils.utils import datetime2str, str2datetime, unix_timestamp2datetime, check_report_name_is_valid
+from app.utils.utils import datetime2str, str2datetime, unix_timestamp2datetime, check_report_name_is_valid, local_timezone
 
 # 引入權限設定
 #from app import us_internal_stock_report_upload_perm, us_market_stock_report_upload_perm, system_edit_perm
 
 from app.utils.alphahelix_database_tools import pool_list_db
+from alphahelix_database_tools.utils.ticker_trans_mapping import trans_BBG_event_type, trans_BBG_main_ticker #type: ignore
 
 from . import main
 
@@ -196,19 +200,27 @@ def create_ticker_info(http_exception=403):
         
         return redirect(url_for('main.create_ticker_info_page'))
 
-@main.route('/market_stock_report_upload_record')
+@main.route('/market_stock_report_upload_record', methods=['GET', 'POST'])
 @login_required
 def market_stock_report_upload_record():
-    monitor_period_days = 30
-    record_stats_dict = pool_list_db.get_market_report_upload_record(monitor_period_days)
+    if request.method == 'POST':
+        monitor_period_days = int(request.form["days_before"])
+    else:
+        monitor_period_days = 30
+        
+    record_meta_list = pool_list_db.get_market_report_upload_record(monitor_period_days)
     id_to_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
-    for ticker, record_stats in record_stats_dict.items():
-        # 原始資料庫中的uploaders為set，轉換為list後取第一個元素
-        latest_uplodaer_id = ObjectId(list(record_stats["uploaders"])[0])
-        record_stats["uploader"] = id_to_username_mapping_dict.get(latest_uplodaer_id, "Unknown")
+    # Sort the list by ticker(Alphabetical order)
+    record_meta_list.sort(key=lambda x: x["ticker"])
+    for record_meta in record_meta_list:
+        record_meta["uploader"] = id_to_username_mapping_dict.get(record_meta["uploader_id"], "Unknown").replace("_", " ").title()
+        # 轉換時區（UTC to local）
+        record_meta["upload_timestamp"] = record_meta["upload_timestamp"].replace(tzinfo=timezone.utc).astimezone(local_timezone)
+        record_meta["data_timestamp"] = datetime2str(record_meta["data_timestamp"])
+        record_meta["source"] = record_meta["source"].replace("_", " ").title()
         
     return render_template('market_stock_report_upload_record.html', 
-                           record_stats_dict=record_stats_dict, 
+                           record_meta_list=record_meta_list, 
                            monitor_period_days=monitor_period_days)
 
 @main.route('/pretrade_check', methods=['POST'])
@@ -263,4 +275,90 @@ def pretrade_check():
     pretrade_check_meta_list.sort(key=lambda x: x["ticker"])
     return render_template('pretrade_check_page.html', current_timestamp=current_timestamp, pretrade_check_meta_list=pretrade_check_meta_list)
 
+@main.route('/upload_ticker_event', methods=['POST'])
+@login_required
+def upload_ticker_event():
+    ticker, event_type, event_title, event_date = request.form["ticker"], request.form["event_type"], request.form["event_title"], request.form["event_date"]
+    
+    is_ticker_info_exist = pool_list_db.check_ticker_info_exist(ticker)
+    if is_ticker_info_exist is False:
+        flash("Event upload failed !", "danger")
+        return redirect(url_for('main.render_static_html', page='ticker_event_upload'))
+    
+    event_timestamp = str2datetime(event_date)
+    
+    meta = {
+        "ticker": ticker,
+        "event_type": event_type,
+        "event_title": event_title,
+        # 以輸入的日期為準，不進行時區轉換
+        "event_timestamp": event_timestamp,
+        "upload_timestamp": datetime.now(timezone.utc),
+        "uploader_id": ObjectId(current_user.get_id()),
+        # 是否soft deleted本事件（可能是輸入錯誤）
+        "is_deleted": False,
+    }
+    
+    result = MDB_client["research_admin"]["ticker_event"].insert_one(meta)
+    
+    if result:
+        flash("Event uploaded successfully !", "success")
+    else:
+        flash("Event upload failed !", "danger")
+    
+    return redirect(url_for('main.render_static_html', page='ticker_event_upload'))
 
+
+@main.route('/upload_ticker_event_by_BBG', methods=['POST'])
+@login_required
+def upload_ticker_event_by_BBG():
+    # 確保文件已上傳
+    if 'file' not in request.files:
+        flash("No file", "danger")
+        return redirect(url_for('main.render_static_html', page='ticker_event_upload'))
+    
+    file = request.files['file']
+
+    # 檢查文件名稱是否正確
+    if file.filename != 'event_data.xlsx':
+        flash("Filename is not correct", "danger")
+        return redirect(url_for('main.render_static_html', page='ticker_event_upload'))
+
+    if file:
+        # 使用 TemporaryDirectory 來保存臨時文件
+        with tempfile.TemporaryDirectory() as temp_folder_path:
+            file_path = os.path.join(temp_folder_path, file.filename)
+            file.save(file_path)
+            # 讀取 Excel 文件
+            event_df = pd.read_excel(file_path)
+
+            # 選擇需要的列並重命名
+            event_df = event_df.loc[:, ["Ticker", "Date", "Event Type", "Description"]]
+            event_df.rename(columns={
+                "Ticker": "ticker", 
+                "Date": "event_timestamp", 
+                "Event Type": "event_type", 
+                "Description": "event_title"
+            }, inplace=True)
+
+            # 應用自定義轉換函數
+            event_df["event_type"] = event_df["event_type"].apply(trans_BBG_event_type)
+            event_df["ticker"] = event_df["ticker"].apply(trans_BBG_main_ticker)
+
+            # 將資料添加上傳相關資訊，並傳送至MongoDB儲存
+            event_meta_list = event_df.to_dict(orient='records')
+            current_timestamp = datetime.now(timezone.utc)
+            uploader_id = ObjectId(current_user.get_id())
+            
+            for event_meta in event_meta_list:
+                event_meta.update({
+                    "upload_timestamp": current_timestamp,
+                    "uploader_id": uploader_id,
+                    # 是否soft deleted本事件（可能是輸入錯誤）
+                    "is_deleted": False,
+                })
+                
+            MDB_client["research_admin"]["ticker_event"].insert_many(event_meta_list)
+            flash("File uploaded and processed successfully!", "success")
+
+    return redirect(url_for('main.render_static_html', page='ticker_event_upload'))

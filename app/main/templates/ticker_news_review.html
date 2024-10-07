@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %} {% block head %} {{ super () }}
+<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+{% endblock %} {% block content %}
+<body>
+  <div class="jumbotron text-center">
+    <h1 class="display-4">News Summary - {{ ticker }}</h1>
+    <hr class="my-4" />
+
+    <div class="d-flex justify-content-center align-items-center flex-column">
+      <a
+        href="{{url_for('main.ticker_news_overviews')}}"
+        class="btn btn-dark mb-3"
+        >回到總覽</a
+      >
+    </div>
+  </div>
+
+  <div class="container mt-2 mx-6">
+    <h3>Search Range: {{start_date}} ~ {{end_date}}</h3>
+    <div
+      class="alert alert-info d-flex justify-content-between align-items-center"
+      role="alert"
+    >
+      新聞摘要prompt參考：「從以下新聞挑選出對{{ticker}}長期發展而言重要的新聞，彙整成一篇短篇新聞摘要。」<a
+        href="https://chatgpt.com/"
+        target="_blank"
+        class="btn btn-secondary"
+        >ChatGPT</a
+      >
+    </div>
+    {% for item_meta in item_meta_list %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h3>{{item_meta["date"]}}</h3>
+        <p class="card-text">
+          {% if item_meta['content'] is not none and item_meta['content']|length
+          <= 10 %}
+          <strong>No news available this day.</strong>
+          {% else %} {{ item_meta['content'].replace('\n', '<br />') | safe }}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+{% endblock %} {% block scripts %} {{ super () }}
+<script>
+  // Function to apply both URL linkifying and <h3> wrapping in modal content
+  function processContent() {
+    // 遍历所有位于 .card-text 中的 <p> 标签
+    $(".card-text").each(function () {
+      // 获取段落中的原始 HTML 内容
+      let originalText = $(this).html();
+
+      // 调用 linkifyText 函数，将文本中的 URL 替换为超链接
+      let newText = linkifyText(originalText);
+
+      // 调用 wrapSubject 函数，将 "主題" 开头的句子替换为 <h3> 标签
+      newText = wrapSubject(newText);
+
+      // 更新 <p> 标签的 HTML 内容，插入处理后的文本
+      $(this).html(newText);
+    });
+  }
+
+  // jQuery ready function，当页面加载完毕时调用
+  $(document).ready(function () {
+    // 调用处理函数，对所有模态框的内容进行 URL 替换和 <h3> 包裹处理
+    processContent();
+    console.log("Document ready function called.");
+  });
+</script>
+{% endblock %}

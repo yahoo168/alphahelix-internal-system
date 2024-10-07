@@ -73,3 +73,26 @@ function handleFollowItem(apiUrl) {
     });
   });
 }
+
+// Function to convert URLs in the text into clickable links
+function linkifyText(text) {
+  // 改进的正则表达式，匹配以 http 或 https 开头的 URL，直到遇到空格、括号或中文字符
+  // const urlPattern = /(https?:\/\/[^\s\]\[\)\(\u4e00-\u9fa5]+)/g;
+  const urlPattern = /(https?:\/\/[^\s<]+)/g;
+  // 替换找到的 URL 为 <a> 标签，生成超链接
+  let linkedText = text.replace(urlPattern, function (url) {
+    return '<a href="' + url + '" target="_blank">' + url + "</a>";
+  });
+
+  // 将文本中的换行符 \n 替换为 HTML 的 <br> 标签，以保持换行效果
+  return linkedText.replace(/\n/g, "<br>");
+}
+
+// Function to convert sentences starting with "主題" into <h3> tags
+function wrapSubject(text) {
+  // 使用正则表达式查找以 "主題" 开头的句子，后面可跟随数字和中文标点符号，并将其替换为 <h3> 包裹的内容
+  return text.replace(/(主題\d*：.*?)(<br>|$)/g, function (match, p1) {
+    // 返回被 <h3> 包裹的 "主題" 部分
+    return "<h5>" + p1 + "</h5>";
+  });
+}

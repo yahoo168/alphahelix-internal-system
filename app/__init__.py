@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # REDIS_URL = "rediss://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-214-29-16.compute-1.amazonaws.com:9029"
 
 # Mini方案的Redis可能會定期變更（在Heroku上會自動更新），但Local須手動更新
-REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-195-119-75.compute-1.amazonaws.com:17099"
+REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-224-233-154.compute-1.amazonaws.com:17649"
 REDIS_URL = os.environ.get('REDIS_URL', REDIS_URL)
 url = urlparse(REDIS_URL)
 
@@ -123,7 +123,7 @@ def create_app():
     # 權限錯誤處理，當用戶沒有權限時，返回403錯誤並顯示permission_denied.html
     @app.errorhandler(403)
     def handle_permission_denied(error):
-        return render_template('permission_denied.html'), 403
+        return render_template('403.html'), 403
     
     return app
 

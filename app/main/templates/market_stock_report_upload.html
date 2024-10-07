@@ -1,9 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    {% extends "_main_base.html" %}
-    {% block head %}
-    {{ super() }}
+    {% extends "_main_base.html" %} {% block head %} {{ super() }}
+    <style>
+      .filename-format {
+        font-size: 0.9em; /* 调整字体大小 */
+        color: #555; /* 设置文本颜色 */
+      }
+
+      .highlight {
+        font-weight: bold; /* 粗体显示关键部分 */
+        color: #007bff; /* 改变颜色以突出显示 */
+      }
+    </style>
     <!-- 引用 asset/js/files_upload.js；加上 defer 屬性來延遲執行，直到整個頁面加載完畢-->
     <script src="{{ url_for('static', filename='assets/js/files_upload.js') }}"></script>
     {% endblock %}
@@ -40,7 +49,13 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="files">Choose files to upload</label>
+              <label for="files"
+                >Choose Files
+                <span class="filename-format"
+                  >(檔名格式:
+                  <span class="highlight">2024-01-01_AAPL_XXX.pdf</span>)</span
+                ></label
+              >
               <input
                 type="file"
                 class="form-control"
@@ -76,8 +91,7 @@
   {% endblock %}
 </html>
 
-{% block scripts %}
-{{ super() }}
+{% block scripts %} {{ super() }}
 <script>
   var apiUrl = "{{ url_for('main.upload_market_stock_report') }}";
   UploadReport(apiUrl);

@@ -1,7 +1,10 @@
+import re
+import pytz
+
 from flask import request, jsonify, render_template, redirect, url_for, flash, session, g
 from bson import ObjectId
 from app.utils.mongodb_tools import MDB_client
-from app.utils.utils import datetime2str
+from app.utils.utils import *
 from app import cache
 
 from . import main
@@ -15,7 +18,7 @@ def _check_notifications_before_request():
         g.recent_notification_meta_list = []
 
 @main.route('/notifications_recent/<user_id>', methods=['GET'])
-def _get_recent_notifications(user_id, num_limit=5):
+def _get_recent_notifications(user_id, num_limit=10):
     """取得用戶未讀取的通知"""
     collection = MDB_client["users"]["notifications"]
     undisplayed_notification_num = len(list(collection.find({"user_id": ObjectId(user_id),
@@ -24,17 +27,28 @@ def _get_recent_notifications(user_id, num_limit=5):
     recent_notification_meta_list = list(collection.find({"user_id": ObjectId(user_id)},
                                                         sort=[("upload_timestamp", -1)],
                                                         limit=num_limit))
-    for notification_meta in recent_notification_meta_list:
-        notification_meta["_id"] = str(notification_meta["_id"])
+    for item_meta in recent_notification_meta_list:
+        item_meta["_id"] = str(item_meta["_id"])
+        # item_meta["upload_timestamp"] = item_meta["upload_timestamp"].replace(tzinfo=ZoneInfo('UTC')).astimezone(local_tz)
+        timestamp = item_meta["upload_timestamp"]
+        # 加入 UTC 時區資訊後，轉換為當地時間
+        local_timestamp = pytz.utc.localize(timestamp).astimezone(local_timezone)
+        item_meta["upload_timestamp"] = local_timestamp.strftime('%Y-%m-%d %H:%M')
+        item_meta["message"] = re.sub(r'<[^>]*>', '', item_meta["message"])
     
     return undisplayed_notification_num, recent_notification_meta_list
 
 @main.route('/notification_detail/<notification_id>', methods=['GET'])
 def notification_detail(notification_id):
-    """取得通知的詳細資訊"""
     notification_meta = MDB_client["users"]["notifications"].find_one({"_id": ObjectId(notification_id)})
-    
-    return render_template("notification_detail.html", notification_meta=notification_meta)
+    # 若取得通知資訊，則將通知標示為已讀取，並顯示通知詳細資訊
+    if notification_meta is not None:
+        mark_notification_as_read(notification_id)
+        # 去除多餘換行符與空格（避免在HTML中出現多餘的空行或<br>）
+        notification_meta['message'] = notification_meta.get('message', '').replace('\n', ' ').strip()
+        return render_template("notification_detail.html", notification_meta=notification_meta)
+    else:
+        return render_template("404.html"), 404
         
 @main.route('/notifications_all/<user_id>', methods=['GET'])
 def get_all_notifications(user_id):
@@ -44,9 +58,13 @@ def get_all_notifications(user_id):
     notification_meta_list = list(collection.find({"user_id": ObjectId(user_id)},
                                                     sort=[("upload_timestamp", -1)]
                                                 ))
+    
     for notification_meta in notification_meta_list:
         # 控制datetime，仅显示日期和时间（精确到分钟）
-        notification_meta["upload_timestamp"] = notification_meta["upload_timestamp"].strftime('%Y-%m-%d %H:%M')
+        timestamp = notification_meta["upload_timestamp"]
+        local_timestamp = pytz.utc.localize(timestamp).astimezone(local_timezone)
+        notification_meta["upload_timestamp"] = local_timestamp.strftime('%Y-%m-%d %H:%M')
+        notification_meta["type"] = notification_meta["type"].title()
     
     context = {
         "notification_meta_list": notification_meta_list,

@@ -1,5 +1,18 @@
 from datetime import datetime, timezone
 from bson import ObjectId
+import pytz
+
+def beautify_broker_name(name):
+    trans_dict = {"gs": "Goldman Sachs", 
+                  "jpm": "J.P. Morgan", 
+                  "citi": "Citi", 
+                  "barclays": "Barclays",
+                  "seeking_alpha": "Seeking Alpha",}
+    
+    return trans_dict.get(name, name)
+
+def beautify_report_title(name):
+    return name.split('.')[0].replace("_", " ").title()
 
 def _is_valid_date(date_string):
     try:
@@ -63,3 +76,7 @@ def convert_session_data(session_data):
         else:
             converted[key] = value
     return converted
+
+
+# 將 UTC 時間轉換為當地時間 (假設當地是 Asia/Taipei)
+local_timezone = pytz.timezone('Asia/Taipei')

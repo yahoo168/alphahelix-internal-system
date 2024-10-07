@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html lang="en">
+  {% block head %}
+  <!-- 保留基础模板中的其他 head 内容 -->
+  {{ super() }}
+  <!-- DataTables CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
+  />
+
+  {% endblock %}
+  <body>
+    {% block content %}
+    <div class="jumbotron">
+      <h1 class="display-4">Event Overview</h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <div class="alert alert-info" role="alert">
+        預設為顯示最近3日到未來30日，已追蹤個股的事件列表，如須查詢其餘條件請使用右側功能
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3 class="card-title">Incoming Event List</h3>
+            <div class="dropdown ml-auto">
+              <button
+                class="btn btn-light dropdown-toggle"
+                type="button"
+                id="dropdownMenuButton"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                查詢歷史事件
+              </button>
+              <div
+                class="dropdown-menu dropdown-menu-right"
+                style="width: 80vw; max-width: 800px; left: auto; right: 0"
+                aria-labelledby="dropdownMenuButton"
+              >
+                <div class="container mt-2 mx-6">
+                  <h3 class="card-title">Search</h3>
+
+                  <hr class="my-4" />
+                  <form
+                    action="{{ url_for('main.ticker_event_overview') }}"
+                    method="post"
+                    enctype="multipart/form-data"
+                  >
+                    <div class="form-row">
+                      <div class="form-group col-md-6">
+                        <label for="start_date">Start Date</label>
+                        <input
+                          type="date"
+                          class="form-control"
+                          id="start_date"
+                          name="start_date"
+                          required
+                        />
+                      </div>
+                      <div class="form-group col-md-6">
+                        <label for="end_date">End Date</label>
+                        <input
+                          type="date"
+                          class="form-control"
+                          id="end_date"
+                          name="end_date"
+                          required
+                        />
+                      </div>
+
+                      <div class="form-group col-md-6">
+                        <button type="submit" class="btn btn-secondary">
+                          Search
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <a class="btn btn-info ml-3" href="{{ url_for('main.ticker_event_overview', ticker_range='all') }}">查看所有個股</a>
+          </div>
+
+          <hr class="my-4" />
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Ticker</th>
+                <th scope="col">Event Type</th>
+                <th scope="col">Event</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in event_meta_list %}
+              <tr>
+                <!-- Row number (using th for strong fontsize)-->
+                <th scope="row">{{loop.index}}</th>
+                <td scope="row">{{item_meta["event_timestamp"]}}</td>
+                <td scope="row">
+                  <span class="tag">{{item_meta["ticker"]}}</span>
+                </td>
+                <td scope="row">{{item_meta["event_type"]}}</td>
+                <td scope="row" style="text-align: left">
+                  {{item_meta["event_title"]}}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+  </body>
+</html>
+
+{% block scripts %}
+<!-- 覆盖基础模板中的 jQuery 引入 -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+<script>
+  $("#Table").DataTable({
+    paging: true, // 启用分页
+    ordering: true, // 启用排序
+    info: true, // 启用表格信息
+    searching: true, // 启用搜索
+    pageLength: 50, // 设置每页显示 50 条记录
+  });
+</script>
+{% endblock %}

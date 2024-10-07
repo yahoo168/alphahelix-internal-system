@@ -28,21 +28,21 @@
             </tr>
           </thead>
           <tbody>
-            {% for stock_report_meta in stock_report_meta_list %}
+            {% for item_meta in stock_report_meta_list %}
             <tr>
               <th scope="row">{{loop.index}}</th>
               <td style="text-align: left">
-                <a href="{{ stock_report_meta['url'] }}"
-                  >{{ stock_report_meta['title'] }}</a
+                <a href="{{ item_meta['url'] }}"
+                  >{{ item_meta['title'] }}</a
                 >
               </td>
-              <td>{{stock_report_meta['data_timestamp']}}</td>
-              <td>{{stock_report_meta['upload_timestamp']}}</td>
-              <td style="text-align: left">{{stock_report_meta['source']}}</td>
+              <td>{{item_meta['data_timestamp']}}</td>
+              <td>{{item_meta['upload_timestamp']}}</td>
+              <td style="text-align: left">{{item_meta['source']}}</td>
               <td>
                 <a
                   class="btn btn-secondary"
-                  href="{{ url_for('main.report_summary_page', report_id=stock_report_meta['_id']) }}"
+                  href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
                   >摘要</a
                 >
               </td>

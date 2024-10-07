@@ -31,9 +31,19 @@
         </div>
         <div class="col-md-4 mb-3">
           <a
-          href="{{url_for('main.market_stock_report_upload_record')}}"
+            href="{{url_for('main.market_stock_report_upload_record')}}"
             class="btn btn-light custom-high-button btn-block"
             >上傳紀錄查詢
+          </a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <a
+            href="{{url_for('main.render_static_html', page='ticker_event_upload')}}"
+            class="btn btn-secondary custom-high-button btn-block"
+            >個股事件上傳
           </a>
         </div>
       </div>

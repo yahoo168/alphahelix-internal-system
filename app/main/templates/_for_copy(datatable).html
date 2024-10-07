@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html lang="en">
+  {% block head %}
+  <!-- 保留基础模板中的其他 head 内容 -->
+  {{ super() }}
+  <!-- DataTables CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
+  />
+
+  {% endblock %}
+  <body>
+    {% block content %}
+    <div class="jumbotron">
+      <h1 class="display-4">Event Overview</h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <!-- Table with hoverable rows -->
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Ticker</th>
+                <th scope="col">Event Type</th>
+                <th scope="col">Event</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in event_meta_list %}
+              <tr>
+                <!-- Row number (using th for strong fontsize)-->
+                <th scope="row">{{loop.index}}</th>
+                <td scope="row">{{item_meta["event_timestamp"]}}</td>
+                <td scope="row">
+                  <span class="tag">{{item_meta["ticker"]}}</span>
+                </td>
+                <td scope="row">{{item_meta["event_type"]}}</td>
+                <td scope="row" style="text-align: left">
+                  {{item_meta["event_title"]}}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+  </body>
+</html>
+
+{% block scripts %}
+<!-- 覆盖基础模板中的 jQuery 引入 -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+<script>
+  $("#Table").DataTable({
+    paging: true, // 启用分页
+    ordering: true, // 启用排序
+    info: true, // 启用表格信息
+    searching: true, // 启用搜索
+    pageLength: 50, // 设置每页显示 50 条记录
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %}
+  <head>
+    {% block head %} {{ super() }}
+    <style>
+      .input-note-format {
+        font-size: 0.9em; /* 调整字体大小 */
+        color: #555; /* 设置文本颜色 */
+      }
+
+      .highlight {
+        font-weight: bold; /* 粗体显示关键部分 */
+        color: #007bff; /* 改变颜色以突出显示 */
+      }
+    </style>
+    {% endblock %}
+  </head>
+
+  <body>
+    {% block content %}
+    <div class="jumbotron">
+      <h1 class="display-4">Event Upload</h1>
+      <hr class="my-4" />
+      <p class="lead"></p>
+    </div>
+    <div class="container mt-5">
+      {% include "_flash_alert_model.html" %}
+      <h2 class="card-title">Manual Upload</h2>
+      <div class="card">
+        <div class="card-body">
+          <form
+            id="uploadForm"
+            enctype="multipart/form-data"
+            action="{{ url_for('main.upload_ticker_event') }}"
+            method="POST"
+          >
+            <div class="form-group">
+              <label for="ticker">Ticker</label>
+              <input
+                type="text"
+                class="form-control"
+                id="ticker"
+                name="ticker"
+                placeholder="ex: AAPL(僅能填寫一個)"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="event_type">Event Type</label>
+              <select
+                class="form-control"
+                id="event_type"
+                name="event_type"
+                required
+              >
+                <option value="" disabled selected>Select a Type</option>
+                <option value="earnings_call">財報法說 || Earnings Call</option>
+                <option value="conference_call">
+                  券商會議 || Conference Call
+                </option>
+                <option value="product_launch">
+                  產品發布 || Product Launch
+                </option>
+                <option value="other">其他|| Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="event_title">Event Title</label>
+              <input
+                type="text"
+                class="form-control"
+                id="event_title"
+                name="event_title"
+                placeholder="ex: AAPL 2024Q1 Earnings Call"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="event_date"
+                >Event Date
+                <span class="input-note-format highlight">
+                  (以台灣時間(GMT +8)為準)</span
+                >
+              </label>
+
+              <input
+                type="date"
+                class="form-control"
+                id="event_date"
+                name="event_date"
+                required
+              />
+            </div>
+
+            <br />
+
+            <button type="submit" id="uploadButton" class="btn btn-dark">
+              Upload
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <br />
+      <br />
+
+      <h2 class="card-title">Import from BBG</h2>
+      <div class="card">
+        <div class="card-body">
+          <form
+            id="uploadForm"
+            enctype="multipart/form-data"
+            action="{{ url_for('main.upload_ticker_event_by_BBG') }}"
+            method="POST"
+          >
+            <div class="form-group">
+              <label for="files"
+                >Choose File
+                <a href="#" class="input-note-format highlight"
+                  >(流程指引)</a
+                ></label
+              >
+              <input
+                type="file"
+                class="form-control"
+                id="file"
+                name="file"
+                required
+              />
+            </div>
+
+            <button type="submit" id="uploadButton" class="btn btn-dark">
+              Upload
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
+  </body>
+</html>

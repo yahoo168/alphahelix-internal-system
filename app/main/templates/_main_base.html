@@ -158,9 +158,10 @@
       }
 
       .notification-item.read {
-        background-color: #f8f9fa; /* 淡灰色背景 */
-        color: #6c757d; /* 淡化文字颜色 */
-        opacity: 0.7; /* 降低不透明度以淡化整个元素 */
+        background-color: #e9ecef; /* 更深的灰色背景，與未讀訊息形成更強的對比 */
+        color: #adb5bd; /* 使文字顏色更淡，凸顯已讀訊息 */
+        opacity: 0.5; /* 降低不透明度以進一步淡化 */
+        border-left: 4px solid #ced4da; /* 添加左邊框，進一步區分已讀訊息 */
       }
 
       /* 覆盖 .dropdown-item 的 hover 样式，使光标变为指针 */
@@ -234,39 +235,72 @@
                 aria-labelledby="notificationDropdown"
                 id="notificationDropdownMenu"
               >
-                <li class="notification-item">
-                  <div class="dropdown-item">
-                    Only Latest 5 Notifications
-                    <a
-                      href="{{url_for('main.get_all_notifications', user_id=current_user._id)}}"
-                      style="color: rgb(54, 118, 177); font-size: inherit"
-                      >(view records)</a
-                    >
-                  </div>
+                <li class="dropdown-header text-center" style="font-size: 18px">
+                  <i
+                    class="bi bi-chat-dots"
+                    style="color: rgb(57, 99, 133)"
+                  ></i>
+
+                  <strong>Recent 10 Messages</strong>
+                  (<a
+                    href="{{url_for('main.get_all_notifications', user_id=current_user._id)}}"
+                    class="text-primary"
+                    style="font-size: inherit"
+                  >
+                    More </a
+                  >)
                 </li>
+
+                <li class="dropdown-divider"></li>
+
                 {% for notification_meta in g.recent_notification_meta_list %}
                 <li
-                  class="notification-item {% if notification_meta['is_read'] %}read{% endif %}"
+                  class="notification-item {% if notification_meta['is_read'] %}read{% else %}unread{% endif %}"
                 >
                   <a
                     class="dropdown-item"
                     href="{{ url_for('main.notification_detail', notification_id=notification_meta['_id']) }}"
                     data-id="{{ notification_meta['_id'] }}"
                   >
-                    <span class="notification-title"
-                      >{{ notification_meta['title'] }}</span
+                    <!-- 通知標題 & 時間 -->
+                    <div class="d-flex justify-content-between">
+                      <span
+                        class="notification-title font-weight-bold"
+                        style="
+                          display: inline-block;
+                          max-width: 400px;
+                          white-space: nowrap;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          font-size: 15px; /* 調整字體大小 */
+                        "
+                      >
+                        {{ notification_meta['title'] }}
+                      </span>
+
+                      <span class="text-muted small" style="font-size: 12px"
+                        >{{ notification_meta['upload_timestamp'] }}</span
+                      >
+                    </div>
+                    <!-- 通知訊息（簡短） -->
+                    <div
+                      class="notification-content text-muted"
+                      style="
+                        display: inline-block;
+                        max-width: 500px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        font-size: 14px;
+                      "
                     >
-                    <br />
-                    <small>{{ notification_meta['upload_timestamp'] }}</small>
-                    <br />
-                    <span class="notification-content"
-                      ><small
-                        >{{ notification_meta['message'][:40]}}</small
-                      ></span
-                    >
+                      <small>{{ notification_meta['message'] }}</small>
+                    </div>
                   </a>
                 </li>
                 {% endfor %}
+
+                <li class="dropdown-divider"></li>
               </ul>
             </div>
           </li>

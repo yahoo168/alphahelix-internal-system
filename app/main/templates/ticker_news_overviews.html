@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<head>
+  {% block head %} {{super ()}}
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    .modal-wide {
+      max-width: 50%; /* 可以根据需要调整宽度 */
+    }
+  </style>
+
+  <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+</head>
+{% endblock %}
+
+<body>
+  {% block content %}
+  <div class="jumbotron text-center">
+    <h1>Daily Stocks News</h1>
+    <hr class="my-4" />
+  </div>
+
+  <div class="container mt-2 mx-6">
+    <div
+      class="alert alert-info d-flex justify-content-between align-items-center"
+      role="alert"
+    >
+      <span>
+        新聞摘要預設以用戶<a
+          href="{{url_for('main.research_management_overview')}}"
+          target="_blank"
+        >
+          個股追蹤名單 </a
+        >為基礎，如須查詢特定標的新聞（如製作個股週報）請使用右側搜尋功能
+      </span>
+
+      <div class="dropdown ml-auto">
+        <button
+          class="btn btn-secondary dropdown-toggle"
+          type="button"
+          id="dropdownMenuButton"
+          data-toggle="dropdown"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
+          特定標的新聞
+        </button>
+        <div
+          class="dropdown-menu dropdown-menu-right"
+          style="width: 80vw; max-width: 800px; left: auto; right: 0"
+          aria-labelledby="dropdownMenuButton"
+        >
+          <div class="container">
+            <div class="card-body">
+              <h3 class="card-title">Ticker Search</h3>
+              <hr class="my-4" />
+              <p class="lead">
+                統整單一個股在指定日期範圍內的新聞摘要，請輸入日期範圍查詢（預設為近一週）
+              </p>
+              <form
+                action="{{ url_for('main.ticker_news_review') }}"
+                method="post"
+                enctype="multipart/form-data"
+                target="_blank"
+              >
+                <div class="form-group">
+                  <label for="ticker">Ticker</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ticker"
+                    name="ticker"
+                    required
+                  />
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="start_date">Start Date</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="start_date"
+                      name="start_date"
+                      required
+                    />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="end_date">End Date</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="end_date"
+                      name="end_date"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-group col-md-6">
+                    <button type="submit" class="btn btn-secondary">
+                      Search
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h3 class="card-title">Daily News of Tracking list</h3>
+        <div class="container mt-2 mx-6">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col" class="text-center">Date</th>
+                <th scope="col" class="text-center">Read Min</th>
+                <th scope="col" class="text-center">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in item_meta_list %}
+              <tr>
+                <td class="align-middle">
+                  {{ item_meta['date_with_weekday'] }}
+                </td>
+                <td class="align-middle">{{ item_meta['read_mins'] }}</td>
+                <td>
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="modal"
+                    data-target="#modal{{ loop.index }}"
+                  >
+                    <i class="bi bi-eye button-like"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal templates for each item -->
+  {% for item_meta in item_meta_list %}
+  <div
+    class="modal fade"
+    id="modal{{ loop.index }}"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="modalLabel{{ loop.index }}"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-wide" role="document">
+      <div class="modal-content">
+        <div class="modal-header" id="{{item_meta['date_str']}}-header">
+          <h3 class="modal-title" id="modalLabel{{ loop.index }}">
+            <strong>個股新聞摘要-{{ item_meta['date_with_weekday'] }}</strong>
+          </h3>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <!-- Ticker 導引列 -->
+        <div class="modal-body">
+          <div class="container">
+            <div class="btn-toolbar" role="toolbar" aria-label="Ticker Toolbar">
+              <div
+                class="btn-group mr-2"
+                role="group"
+                aria-label="Ticker Group"
+              >
+                {% for ticker, news_content in item_meta['content']|dictsort %}
+                <a
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  href="#{{ item_meta['date_str'] }}-{{ ticker }}"
+                >
+                  {{ ticker }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            <br />
+
+            <!-- <div class="alert alert-info" role="alert">
+              新聞摘要的超連結為系統自動添加/辨識，可能會有誤判，但與新聞內容的正確性無關
+            </div> -->
+          </div>
+          <div class="container">
+            <!-- Ticker 新聞內容 -->
+            {% for ticker, news_content in item_meta['content']|dictsort %}
+            <div id="{{item_meta['date_str']}}-{{ ticker }}" class="card">
+              <div class="card-body">
+                <div class="card-title">
+                  <h3>
+                    <strong>{{ ticker }} ({{item_meta['date_str']}})</strong>
+                    <a
+                      href="#{{item_meta['date_str']}}-header"
+                      class="btn btn-dark float-right"
+                      >回到導引列</a
+                    >
+                  </h3>
+                  <hr />
+                </div>
+                <p class="card-text">
+                  {% if news_content is not none and news_content|length <= 10
+                  %}
+                  <strong>No news available for this stock.</strong>
+                  {% else %} {{ news_content.replace('\n', '<br />') | safe }}
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-dark" data-dismiss="modal">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  <br />
+  <br />
+  {% endblock %}
+</body>
+
+{% block scripts %} {{ super () }}
+<script>
+  // 使用 jQuery 的 animate() 方法來實現平滑滾動。
+  // function scrollToTicker(elementID) {
+  //   const target = $(`#${elementID}`);
+  //   if (target.length) {
+  //     $("html, body").animate(
+  //       {
+  //         scrollTop: target.offset().top,
+  //       },
+  //       800
+  //     ); // 800ms 滾動持續時間，可根據需求調整
+  //   }
+  // }
+
+  // Function to apply both URL linkifying and <h3> wrapping in modal content
+  function processModalContent() {
+    // 遍历所有位于 .modal-body 中的 <p> 标签
+    $(".modal-body p").each(function () {
+      // 获取段落中的原始 HTML 内容
+      let originalText = $(this).html();
+
+      // 调用 linkifyText 函数，将文本中的 URL 替换为超链接
+      let newText = linkifyText(originalText);
+
+      // 调用 wrapSubjectWithH3 函数，将 "主題" 开头的句子替换为 <h3> 标签
+      newText = wrapSubject(newText);
+
+      // 更新 <p> 标签的 HTML 内容，插入处理后的文本
+      $(this).html(newText);
+    });
+  }
+
+  function autofillDate() {
+    // 取得今天的日期
+    const today = new Date();
+
+    // 計算7天前的日期
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    // 格式化日期為 YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0"); // 月份從0開始
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    // 將格式化日期設置為 input 的預設值
+    $("#start_date").val(formatDate(sevenDaysAgo));
+    $("#end_date").val(formatDate(today));
+  }
+  // jQuery ready function，当页面加载完毕时调用
+  $(document).ready(function () {
+    // 调用处理函数，对所有模态框的内容进行 URL 替换和 <h3> 包裹处理
+    processModalContent();
+    autofillDate();
+  });
+</script>
+{% endblock %}

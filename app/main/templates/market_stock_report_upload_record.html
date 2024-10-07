@@ -4,38 +4,80 @@
   {% block head %}
   <head>
     {{ super() }}
+
+    <!-- DataTables CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
+    />
   </head>
   {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
       <h1 class="display-4">Market Stock Report Upload Record</h1>
       <hr class="my-4" />
-      <!-- <p class="lead">一站式上傳自動化所需的資料</p> -->
     </div>
     <div class="container mt-2 mx-6">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Recent {{monitor_period_days}} Days Upload Record</h5>
+          <h4 class="card-title">Recent N Days</h4>
+          <form
+            action="{{ url_for('main.market_stock_report_upload_record') }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="d-flex"
+          >
+            <div class="form-group mr-2">
+              <input
+                type="number"
+                class="form-control"
+                id="days_before"
+                name="days_before"
+                min="1"
+                max="365"
+                placeholder="N"
+                required
+              />
+            </div>
+            <div class="form-group align-self-end">
+              <button type="submit" class="btn btn-secondary">Search</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">
+            Recent {{monitor_period_days}} Days Upload Record
+          </h4>
           <!-- Table with hoverable rows -->
           <table id="Table" class="table table-hover">
             <thead>
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Ticker</th>
+                <th scope="col">Source</th>
+                <th scope="col">Latest Upload Timestamp</th>
+                <th scope="col">Latest Report Date</th>
                 <th scope="col">Upload Count</th>
-                <th scope="col">Latest Upload</th>
                 <th scope="col">Uploader</th>
               </tr>
             </thead>
             <tbody>
-              {% for ticker, record_stats in record_stats_dict.items() %}
+              {% for item_meta in record_meta_list %}
               <tr>
                 <!-- Row number (using th for strong fontsize)-->
                 <td scope="row">{{loop.index}}</td>
-                <td scope="row">{{ticker}}</td>
-                <td scope="row">{{record_stats['upload_count']}}</td>
-                <td scope="row">{{record_stats['latest_upload_timestamp']}}</td>
-                <td scope="row">{{record_stats['uploader']}}</td>
+                <td scope="row">
+                  <span class="tag">{{item_meta['ticker']}}</span>
+                </td>
+                <td scope="row">{{item_meta['source']}}</td>
+                <!-- <td scope="row">{{item_meta['upload_count']}}</td> -->
+                <td scope="row">{{item_meta['upload_timestamp']}}</td>
+                <td scope="row">{{item_meta['data_timestamp']}}</td>
+                <td scope="row">{{item_meta['upload_count']}}</td>
+                <td scope="row">{{item_meta['uploader']}}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -46,3 +88,19 @@
   </body>
   {% endblock %}
 </html>
+
+{% block scripts %}
+<!-- 覆盖基础模板中的 jQuery 引入 -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+<script>
+  $("#Table").DataTable({
+    paging: true, // 启用分页
+    ordering: true, // 启用排序
+    info: true, // 启用表格信息
+    searching: true, // 启用搜索
+    pageLength: 50, // 设置每页显示 50 条记录
+  });
+</script>
+{% endblock %}

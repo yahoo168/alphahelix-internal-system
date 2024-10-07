@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<head>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
+
+<body>
+  {% block content %}
+  <div class="jumbotron text-center">
+    <h1 class="display-4"><strong>投資議題 - 彙整紀錄</strong></h1>
+    <hr class="my-4" />
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+      >回到目錄</a
+    >
+    <a
+      class="btn btn-secondary btn"
+      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+      >假設追蹤</a
+    >
+  </div>
+
+  <div class="container mt-2 mx-6">
+    <h3 class="display-6"><strong></strong></h3>
+
+    <!-- Issue基本資訊 -->
+    <div class="card mb-4">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h3 class="mb-0">議題: 「{{issue_meta["issue"]}}」</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4">
+            <p class="card-text">
+              <strong>Tickers:</strong>
+              {% for ticker in issue_meta["tickers"] %}
+              <span class="tag">{{ticker}}</span>
+              {% endfor %}
+            </p>
+          </div>
+
+          <div class="col-md-4">
+            <p class="card-text">
+              <strong>上傳日期: </strong
+              ><span>{{issue_meta["upload_date_str"]}}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issue Review Record List -->
+    <div class="card">
+      <div class="card-body">
+        <div class="container mt-2 mx-6">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Upload Date</th>
+                <th scope="col">Type</th>
+                <th scope="col">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in issue_review_meta_list %}
+              <tr>
+                <!-- Upload Date -->
+                <td class="align-middle">
+                  {{ item_meta['upload_timestamp'] }}
+                </td>
+                <!-- Type -->
+                <td>Regular</td>
+                <!-- Review Button-->
+                <td class="align-middle">
+                  <button
+                    class="btn btn-link"
+                    type="button"
+                    data-toggle="modal"
+                    data-target="#modal{{ loop.index }}"
+                  >
+                    <i class="bi bi-eye button-like"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal templates for each item -->
+  {% for item_meta in issue_review_meta_list %}
+  <div
+    class="modal fade"
+    id="modal{{ loop.index }}"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="modalLabel{{ loop.index }}"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel{{ loop.index }}">
+            <strong
+              >{{item_meta['upload_timestamp']}}-{{item_title}}-Review</strong
+            >
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="collapse show" id="issue_{{ loop.index }}">
+            <!-- Tool bar -->
+            <div
+              class="container mb-3"
+              role="group"
+              id="issue_{{ loop.index }}_header"
+            >
+              <div class="d-flex justify-content-between">
+                <a
+                  type="button"
+                  class="btn btn-secondary"
+                  href="#issue_{{loop.index}}_market_concensus_and_diff"
+                >
+                  共識與差異
+                </a>
+                <a
+                  type="button"
+                  class="btn btn-secondary"
+                  href="#issue_{{loop.index}}_issue_review_change"
+                >
+                  觀點轉向
+                </a>
+                <a
+                  type="button"
+                  class="btn btn-secondary"
+                  href="#issue_{{loop.index}}_added_issue_review"
+                >
+                  新增觀點
+                </a>
+                <a
+                  type="button"
+                  class="btn btn-secondary"
+                  href="#issue_{{loop.index}}_market_issue_review"
+                >
+                  觀點彙整
+                </a>
+                <br />
+              </div>
+            </div>
+
+            <!-- 市場共識與差異 -->
+            <div
+              class="card card-body"
+              id="issue_{{loop.index}}_market_concensus_and_diff"
+            >
+              <hr class="my-4" />
+              <h3>
+                市場共識與差異
+                <a
+                  href="#issue_{{ loop.index }}_header"
+                  class="btn btn-dark float-right"
+                  >回到導引列</a
+                >
+              </h3>
+              <p>
+                {{ item_meta.get("market_issue_concensus_and_dissensus",
+                "").replace('\n', '<br />') | safe }}
+              </p>
+            </div>
+            <!-- 市場觀點轉向 -->
+            <div
+              class="card card-body"
+              id="issue_{{loop.index}}_issue_review_change"
+            >
+              <h3>
+                市場觀點轉向
+                <a
+                  href="#issue_{{ loop.index }}_header"
+                  class="btn btn-dark float-right"
+                  >回到導引列</a
+                >
+              </h3>
+              <div class="alert alert-info" role="alert">
+                以下為本次彙整新增的{{ item_meta.added_report_id | length
+                }}篇研究報告，與前次彙整相比之市場看法的轉向
+              </div>
+              <p>
+                {{ item_meta.get("issue_review_change", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+            <!-- 新增市場觀點 -->
+            <div
+              class="card card-body"
+              id="issue_{{loop.index}}_added_issue_review"
+            >
+              <h3>
+                新增市場觀點<a
+                  href="#issue_{{ loop.index }}_header"
+                  class="btn btn-dark float-right"
+                  >回到導引列</a
+                >
+              </h3>
+              <div class="alert alert-info" role="alert">
+                以下為本次彙整新增的{{ item_meta.added_report_id | length
+                }}篇研究報告之觀點摘要
+              </div>
+
+              <p>
+                {{ item_meta.get("added_issue_review", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+
+            <!-- 市場觀點彙整 -->
+            <div
+              class="card card-body"
+              id="issue_{{loop.index}}_market_issue_review"
+            >
+              <hr class="my-4" />
+              <h3>
+                市場觀點彙整<a
+                  href="#issue_{{ loop.index }}_header"
+                  class="btn btn-dark float-right"
+                  >回到導引列</a
+                >
+              </h3>
+              <div class="alert alert-info" role="alert">
+                以下為本次彙整共{{ item_meta.ref_report_id | length
+                }}篇研究報告之觀點摘要（與前次彙整內容可能存在部分重疊）
+              </div>
+              <p>
+                {{ item_meta.get("market_issue_review", "").replace('\n', '<br />')
+                | safe }}
+              </p>
+            </div>
+            <br />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-dark" data-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %} {% endblock %}
+</body>
