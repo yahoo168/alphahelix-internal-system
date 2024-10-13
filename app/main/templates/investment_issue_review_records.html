@@ -14,14 +14,14 @@
     <h1 class="display-4"><strong>投資議題 - 彙整紀錄</strong></h1>
     <hr class="my-4" />
     <a
-      class="btn btn-secondary btn"
+      class="btn btn-outline-secondary btn"
       href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
-      >回到目錄</a
+      >議題總覽</a
     >
     <a
-      class="btn btn-secondary btn"
-      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
-      >假設追蹤</a
+      class="btn btn-outline-secondary btn"
+      href="{{url_for('main.investment_issue_review', item_id=issue_meta['_id'])}}"
+      >回到最新報告</a
     >
   </div>
 
@@ -36,8 +36,8 @@
         <h3 class="mb-0">議題: 「{{issue_meta["issue"]}}」</h3>
       </div>
       <div class="card-body">
-        <div class="row">
-          <div class="col-md-4">
+        <div class="row text-center">
+          <div class="col-md">
             <p class="card-text">
               <strong>Tickers:</strong>
               {% for ticker in issue_meta["tickers"] %}
@@ -46,10 +46,17 @@
             </p>
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md">
             <p class="card-text">
               <strong>上傳日期: </strong
               ><span>{{issue_meta["upload_date_str"]}}</span>
+            </p>
+          </div>
+
+          <div class="col-md">
+            <p class="card-text">
+              <strong>彙整次數: </strong
+              ><span>{{issue_meta["review_num"]}}</span>
             </p>
           </div>
         </div>
@@ -72,9 +79,7 @@
               {% for item_meta in issue_review_meta_list %}
               <tr>
                 <!-- Upload Date -->
-                <td class="align-middle">
-                  {{ item_meta['upload_timestamp'] }}
-                </td>
+                <td class="align-middle">{{ item_meta['data_date_str'] }}</td>
                 <!-- Type -->
                 <td>Regular</td>
                 <!-- Review Button-->

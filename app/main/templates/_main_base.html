@@ -177,6 +177,10 @@
         background-color: #d3d3d3 !important; /* 设置为浅灰色 */
         color: #000000 !important; /* 设置文本颜色为黑色（可根据需求调整） */
       }
+
+      .read-title {
+        color: purple; /* 已讀通知標題顏色，類似於Google已瀏覽過的網頁 */
+      }
     </style>
     {% block head %}{% endblock %}
   </head>
@@ -304,7 +308,7 @@
               </ul>
             </div>
           </li>
-          <!-- Peple-icon: User Setting -->
+          <!-- People-icon: User Setting -->
           <li class="nav-item">
             <a href="/main/show_user_setting"
               ><i class="nav-link bi bi-file-person-fill"></i>
@@ -313,7 +317,7 @@
           <!-- Play-icon: For Testing -->
           <li class="nav-item">
             <a href="http://127.0.0.1:5000/main/pretrade_check_page"
-              ><i class="nav-link bi bi-caret-right-square-fill"></i>
+              ><i class="nav-link bi-ui-checks-grid"></i>
             </a>
           </li>
           <!-- Logout-->

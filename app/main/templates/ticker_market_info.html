@@ -4,7 +4,14 @@
       <img src="{{ url_for('static', filename='images/AAPL_IS.png') }}" class="card-img-top" alt="Example Image" />
     </div> -->
 <html lang="en">
-  {% extends "_main_base.html" %} {% block content %}
+  {% extends "_main_base.html" %}
+  <head>
+    {{ super() }}
+    <!-- 本頁面標題 -->
+    <title>{% block title %}Market Stock Info: {{ticker}}{% endblock %}</title>
+  </head>
+
+  {% block head %}
   <head>
     <!-- <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> -->
     <link
@@ -19,6 +26,7 @@
     />
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script>
+
     <style>
       /* 使用 Flexbox 布局，使标题和按钮在同一行显示 */
       .header-row {
@@ -56,32 +64,34 @@
       }
     </style>
   </head>
-
+  {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
       <h1 class="display-4">{{ticker}}</h1>
       <hr class="my-4" />
       <a
-        class="btn btn-dark btn"
+        class="btn btn-outline-dark btn"
         href="{{url_for('main.ticker_internal_info', ticker=ticker)}}"
         >內部報告</a
       >
       <a
-        class="btn btn-dark btn"
+        class="btn btn-outline-dark btn"
         href="{{url_for('main.ticker_setting_info', ticker=ticker)}}"
         >個股設定</a
       >
     </div>
 
-    <div class="container mt-4">
+    <!-- 新聞slide bar -->
+    <!-- <div class="container mt-4">
       <h1>新聞內容 (<span id="current-date"></span>)</h1>
       <div id="timeline" class="container"></div>
       <br /><br />
       <p id="stock_news_daily"></p>
       <hr class="my-4" />
-    </div>
+    </div> -->
 
-    <div class="container mt-4">
+    <!-- 市場觀點 -->
+    <!-- <div class="container mt-4">
       <h1 class="display-6">市場觀點</h1>
       <div class="alert alert-info" role="alert">
         以下觀點涵蓋近10篇研究報告
@@ -152,12 +162,14 @@
         </div>
       </div>
       <br />
-    </div>
+    </div> -->
 
     <!-- 引入issue review模板 -->
-    {% include "_issue_review_model.html" %}
+    <!-- {% include "_issue_review_model.html" %} -->
+
+    <!-- 引入stock report模板 -->
     {% include "_stock_report_table_model.html" %}
-    
+
     <!-- 在頁尾添加額外的間距 -->
     <div class="footer-spacing"></div>
 

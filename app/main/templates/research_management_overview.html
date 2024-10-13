@@ -53,9 +53,14 @@
                 <th scope="col">Profit Rating</th>
                 <th scope="col">Risk Rating</th>
                 <th scope="col">Researcher</th>
+
+                <!-- 若有權限才會顯示以下欄位 -->
+                {% if has_portfolio_info_access %}
                 <th scope="col">Holding Status</th>
                 <th scope="col">Pool List</th>
                 <th scope="col">Tracking Status</th>
+                {% endif %}
+
                 <th scope="col">Market Info</th>
                 <th scope="col">Internal Info</th>
                 <th scope="col">Setting</th>
@@ -102,8 +107,7 @@
                 </td>
                 {% else %}
                 <td></td>
-                {% endif %}
-
+                {% endif %} {% if has_portfolio_info_access %}
                 <!-- holding_status -->
                 <td>
                   {% if item_meta['holding_status']%} {% for status in
@@ -122,10 +126,9 @@
                   <span class="tag false-tag">No</span>
                 </td>
                 {% endif %}
-
                 <!-- Tracking Status -->
                 <td>{{ item_meta['tracking_status']['tracking_level'] }}</td>
-
+                {% endif %}
                 <!-- Ticker Market info -->
                 <td>
                   <a

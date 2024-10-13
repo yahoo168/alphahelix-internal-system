@@ -48,14 +48,14 @@
             <thead>
               <tr>
                 <th scope="col">#</th>
-                <th scope="col">Active</th>
+                <!-- <th scope="col">Active</th> -->
                 <th scope="col">Item</th>
                 <th scope="col">Tickers</th>
 
                 <th scope="col">Updated</th>
-                <th scope="col">Uplodaer</th>
+                <!-- <th scope="col">Uplodaer</th> -->
                 <th scope="col">Follow</th>
-                <th scope="col">Followers</th>
+                <!-- <th scope="col">Followers</th> -->
               </tr>
             </thead>
             <tbody>
@@ -66,14 +66,14 @@
                 {% if item_meta['is_active'] == True %}
 
                 <!-- Active -->
-                <td data-sort="1">
+                <!-- <td data-sort="1">
                   <i class="bi bi-check-circle"></i>
-                </td>
-                {% else %}
+                </td> -->
+                <!-- {% else %}
                 <td data-sort="0">
                   <i class="bi bi-x-circle-fill"></i>
                 </td>
-                {% endif %}
+                {% endif %} -->
 
                 <!-- issue (embeded link) -->
                 <td style="text-align: left">
@@ -92,16 +92,25 @@
                   {% endif %}
                 </td>
 
+                <!-- ticker tag -->
                 <td>
                   {% if item_meta['tickers']%} {% for ticker in
                   item_meta['tickers']%}
-                  <span class="tag">{{ ticker }}</span>
+                  <a
+                    class="tag"
+                    style="color:black"
+                    href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+                    >{{ ticker }}</a
+                  >
                   {% endfor %} {% endif %}
                 </td>
 
-                <td>{{ item_meta['updated_timestamp'] }}</td>
+                <!-- updated_timestamp -->
+                <td style="white-space: nowrap">
+                  {{ item_meta['updated_timestamp'] }}
+                </td>
 
-                <td>{{item_meta["uploader"]}}</td>
+                <!-- <td>{{item_meta["uploader"]}}</td> -->
 
                 <!-- Follow Issue-->
                 {% if item_meta['is_following'] == True %}
@@ -119,9 +128,9 @@
                   ></i>
                 </td>
                 {% endif %}
-                <td id="follower_num_{{ item_meta['_id'] }}">
+                <!-- <td id="follower_num_{{ item_meta['_id'] }}">
                   {{ item_meta['followers_num'] }}
-                </td>
+                </td> -->
               </tr>
               {% endfor %}
             </tbody>

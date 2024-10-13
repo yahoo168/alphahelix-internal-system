@@ -29,52 +29,63 @@ def _upload_files_to_gcs_and_mdb(gcs_bucket_name, blob_meta_list, mongoDB_collec
     )
     # 上傳成功後，添加blob url進MongoDB元數據
     for mongoDB_meta in mongoDB_meta_list:
-        mongoDB_meta["url"] = blob_url_dict[mongoDB_meta["blob_name"]]
+        mongoDB_meta["url"] = blob_url_dict[mongoDB_meta["upload_info"]["blob_name"]]
     
     mongoDB_collection.insert_many(mongoDB_meta_list)
 
-def _generate_blob_and_mongo_metadata(file_list, ticker, gcs_folder_name, extra_meta=None):
-    blob_meta_list = []
-    mongoDB_meta_list = []
-    upload_timestamp = int(datetime.now(timezone.utc).timestamp())
-    
+def _generate_blob_and_mongo_metadata(file_list, ticker, gcs_folder_name, specified_data_timestamp=None, extra_meta=None):
+    blob_meta_list, mongoDB_meta_list = [], []
     for file in file_list:
-        blob_name = os.path.join(gcs_folder_name, ticker, file.filename)
-        data_timestamp = int(str2datetime(file.filename[:10]).timestamp())
-        title = file.filename[11:]
+        # 若沒有明確指定data_timestamp，則以檔名前10位作為日期
+        # 注意：不要把specified_data_timestamp改名為data_timestamp，否則會導致變數被覆蓋，使得上傳模式判斷錯誤
+        if specified_data_timestamp is None:
+            title = file.filename[11:]
+            data_timestamp = str2datetime(file.filename[:10])
+            
+        # 若有明確指定specified_data_timestamp，則以指定的日期為準（並驗證是否為datetime物件）
+        else:
+            title = file.filename
+            assert(isinstance(specified_data_timestamp, datetime))
+            data_timestamp = specified_data_timestamp
+        
+        data_timestamp_unix = int(data_timestamp.timestamp()) 
+        upload_timestamp = datetime.now(timezone.utc)
+        upload_timestamp_unix = int(upload_timestamp.timestamp())
         current_user_id_str = current_user.get_id()
         
+        # 在檔案名稱前加上上傳時間戳記，以避免重複檔名（會導致檔案覆蓋）
+        blob_name = os.path.join(gcs_folder_name, ticker, f"{upload_timestamp_unix}_{file.filename}")
         blob_meta = {
             "blob_name": blob_name,
             "file_type": "file",
             "file": file,
             "metadata": {
-                "data_timestamp": data_timestamp,  
-                "upload_timestamp": upload_timestamp,
+                "data_timestamp": data_timestamp_unix,  
+                "upload_timestamp": upload_timestamp_unix,
                 "title":  title,
                 "ticker": ticker,
                 "uploader_id": current_user_id_str,
             }
         }
-        
-        if extra_meta:
-            blob_meta["metadata"].update(extra_meta)
-        
-        blob_meta_list.append(blob_meta)
-        
+                    
         mongo_db_data_meta = {
-            "blob_name": blob_name,
-            "data_timestamp": str2datetime(file.filename[:10]),
-            "upload_timestamp": unix_timestamp2datetime(upload_timestamp),
-            "title": title,  
-            "ticker": ticker,
-            "uploader_id": ObjectId(current_user_id_str),
+            "title": title,
+            "tickers": [ticker],
+            "data_timestamp": data_timestamp,
+            "upload_info": {
+                "type": "non_auto",
+                "upload_timestamp": upload_timestamp,
+                "uploader": ObjectId(current_user_id_str),
+                "blob_name": blob_name,
+            },
             "is_processed": False
         }
         
         if extra_meta:
+            blob_meta["metadata"].update(extra_meta) #mongodb的ObjectID在此插入不會出錯（會自動轉換為str）
             mongo_db_data_meta.update(extra_meta)
         
+        blob_meta_list.append(blob_meta)
         mongoDB_meta_list.append(mongo_db_data_meta)
     
     return blob_meta_list, mongoDB_meta_list
@@ -149,7 +160,46 @@ def upload_market_stock_report():
             'upload_success': True,
             'file_name_list': [f.filename for f in file_list]
         })
+
+@main.route('/upload_event_document', methods=['POST'])
+@login_required
+def upload_event_document():
+    try:
+        # 取得 ticker 和 event_id
+        ticker = request.form.get('ticker')  # 從表單獲取 ticker
+        event_id = request.form.get('event_id')  # 從表單獲取 item_meta['_id']
+        event_time_str = request.form.get('event_timestamp')
+        # 獲取上傳的文件列表
+        file_list = request.files.getlist('files')
+        # 加入到額外的元數據中
+        extra_meta = {
+            "type": "transcript",
+            "event_id": ObjectId(event_id)
+        }
+        # 轉換前端回傳的時間字串為datetime物件（顯示'min'，故無法使用str2datetime）
+        event_timestamp = datetime.strptime(event_time_str, "%Y-%m-%d %H:%M")
+        # 設置 GCS 檔案路徑
+        gcs_bucket_name, gcs_folder_name = "investment_report", "US_event_document"
+        
+        # 生成文件的 blob 和 MongoDB 元數據
+        blob_meta_list, mongoDB_meta_list = _generate_blob_and_mongo_metadata(
+            file_list, ticker, gcs_folder_name, data_timestamp=event_timestamp, extra_meta=extra_meta
+        )
+        
+        # 取得 MongoDB collection
+        mongoDB_collection = MDB_client["raw_content"]["raw_event_document"]
+        # 將文件上傳到 GCS 和 MongoDB
+        _upload_files_to_gcs_and_mdb(gcs_bucket_name, blob_meta_list, mongoDB_collection, mongoDB_meta_list)
     
+        flash("Uploaded successfully !", "success")
+    except Exception as e:
+        print(f"Error in upload_event_document: {e}")
+        flash("Uploading failed !", "danger")
+        
+    # 返回 JSON 結果
+    return redirect(url_for('main.ticker_event_overview', ticker_range='all'))
+
+
     
 @main.route('/create_ticker_info_page')
 @login_required

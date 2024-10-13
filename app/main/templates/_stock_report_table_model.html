@@ -1,56 +1,35 @@
 <div class="container mt-2 mx-6">
-    <h1 class="display-6">市場報告</h1>
-    <div class="alert alert-secondary" role="alert">
-      點擊報告標題可自動下載報告；點擊摘要鍵將進入報告重點摘要頁面
-    </div>
-
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">報告列表</h5>
-        <!-- Table with hoverable rows -->
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Title</th>
-              <th scope="col">Report Date</th>
-              <th scope="col">Upload Date</th>
-              <th scope="col">Source</th>
-              <th scope="col">
-                <a
-                  href="{{url_for('main.render_static_html', page='report_upload_page')}}"
-                  class="btn btn-dark btn-sm"
-                >
-                  <i class="fas fa-plus"></i>
-                  <!-- 使用 Font Awesome 的 + 號圖標 -->
-                </a>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item_meta in stock_report_meta_list %}
-            <tr>
-              <th scope="row">{{loop.index}}</th>
-              <td style="text-align: left">
-                <a href="{{ item_meta['url'] }}"
-                  >{{ item_meta['title'] }}</a
-                >
-              </td>
-              <td>{{item_meta['data_timestamp']}}</td>
-              <td>{{item_meta['upload_timestamp']}}</td>
-              <td style="text-align: left">{{item_meta['source']}}</td>
-              <td>
-                <a
-                  class="btn btn-secondary"
-                  href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
-                  >摘要</a
-                >
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <!-- End Table with hoverable rows -->
-      </div>
+  <!-- <h1 class="display-6">市場報告</h1> -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">近期報告列表 (近3個月)</h5>
+      <!-- Table with hoverable rows -->
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Title</th>
+            <th scope="col">Report Date</th>
+            <th scope="col">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item_meta in stock_report_meta_list %}
+          <tr>
+            <th scope="row">{{loop.index}}</th>
+            <td style="text-align: left">
+              <a
+                href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
+                >{{ item_meta['title'] }}</a
+              >
+            </td>
+            <td>{{item_meta['data_timestamp']}}</td>
+            <td style="text-align: left">{{item_meta['source']}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <!-- End Table with hoverable rows -->
     </div>
   </div>
+</div>

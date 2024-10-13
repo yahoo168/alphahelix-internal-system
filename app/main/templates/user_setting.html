@@ -8,13 +8,11 @@
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-8">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-          {% endwith %}
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %} {% endif %} {% endwith %}
+
           <div class="card">
             <div class="card-body">
               <h5 class="card-title"><strong>User Profile</strong></h5>
@@ -38,7 +36,14 @@
                       id="send_report_to_email"
                       name="send_report_to_email"
                       value="yes"
-                      {% if send_report_to_email %} checked {% endif %}
+                      {%
+                      if
+                      send_report_to_email
+                      %}
+                      checked
+                      {%
+                      endif
+                      %}
                     />
                     <label class="form-check-label" for="send_report_to_email">
                       將定期報告寄到此信箱
@@ -58,7 +63,9 @@
                 <div class="form-group">
                   <label for="readwise_token">
                     <strong>Readwise Token:</strong>
-                    <a href="https://readwise.io/access_token" target="_blank">(取得方式)</a>
+                    <a href="https://readwise.io/access_token" target="_blank"
+                      >(取得方式)</a
+                    >
                   </label>
                   <input
                     type="text"
@@ -69,13 +76,29 @@
                   />
                 </div>
                 <!-- 用於覆蓋真實的send_report_to_email -->
-                <input type="hidden" id="hidden_send_report_to_email" name="send_report_to_email" value="no">
-                <button type="submit" class="btn btn-dark">更新設定</button>
+                <input
+                  type="hidden"
+                  id="hidden_send_report_to_email"
+                  name="send_report_to_email"
+                  value="no"
+                />
+                <button type="submit" class="btn btn-outline-dark">更新設定</button>
                 <a
                   href="{{ url_for('main.render_static_html', page='change_password') }}"
-                  class="btn btn-dark"
-                >修改密碼</a>
+                  class="btn btn-outline-dark"
+                  >修改密碼</a
+                >
               </form>
+            </div>
+          </div>
+
+          <!-- 其他資訊 -->
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title"><strong>Other Info</strong></h5>
+              <p class="card-text">
+                <i class="bi bi-bookmark-check"></i></i><strong>已閱讀的報告數量</strong>: {{user_viewed_report_num}}
+              </p>
             </div>
           </div>
         </div>
@@ -84,12 +107,14 @@
     <script>
       // 使用JavaScript在表单提交前设置隐藏字段的值，根據send_report_to_email設定hidden_send_report_to_email（因前者不在form中）
       function setHiddenFieldValue() {
-        const checkbox = document.getElementById('send_report_to_email');
-        const hiddenField = document.getElementById('hidden_send_report_to_email');
+        const checkbox = document.getElementById("send_report_to_email");
+        const hiddenField = document.getElementById(
+          "hidden_send_report_to_email"
+        );
         if (checkbox.checked) {
-          hiddenField.value = 'yes';
+          hiddenField.value = "yes";
         } else {
-          hiddenField.value = 'no';
+          hiddenField.value = "no";
         }
       }
     </script>

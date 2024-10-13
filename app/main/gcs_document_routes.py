@@ -98,8 +98,8 @@ def download_GCS_file(blob_name):
     return send_file(file_obj, as_attachment=True, download_name=blob_name.split("/")[-1])
 
 @main.route('/get_content/<path:blob_name>')
-def get_GCS_text_file_content(blob_name):
+def get_GCS_text_file_content(blob_name, encoding='utf-8'):
     blob = google_cloud_storage_tools.get_blob(bucket_name='investment_report', blob_name=blob_name)
     # 读取文件内容
-    content = blob.download_as_text()
+    content = blob.download_as_text(encoding=encoding)
     return jsonify({"content": content})

@@ -130,8 +130,14 @@ def create_app():
 # 定義功能權限
 #@us_data_upload_perm.require(http_exception=403)
 
-research_management_role = RoleNeed('research_management_role')
-research_management_role_perm = Permission(research_management_role)
+portfolio_info_access_role = RoleNeed('portfolio_info_access')
+portfolio_info_access_perm = Permission(portfolio_info_access_role)
+
+ticker_setting_role = RoleNeed('ticker_setting_role')
+ticker_setting_perm = Permission(ticker_setting_role)
+
+issue_setting_role = RoleNeed('issue_setting_role')
+issue_setting_perm = Permission(issue_setting_role)
 
 us_internal_stock_report_upload_role = RoleNeed('us_internal_stock_report_upload_role')
 us_internal_stock_report_upload_perm = Permission(us_internal_stock_report_upload_role)
@@ -142,29 +148,29 @@ us_market_stock_report_upload_perm = Permission(us_market_stock_report_upload_ro
 system_edit_role = RoleNeed('system_edit')
 system_edit_perm = Permission(system_edit_role)
 
-
 def get_roles_permission_dict():    
     # 為角色分配功能權限
     role_permissions_dict = {
-        "general_manager": [research_management_role],
+        "general_manager": [portfolio_info_access_role],
         
-        "investment_manager": [research_management_role],
+        "investment_manager": [portfolio_info_access_role],
         
-        "investment_consultant": [research_management_role],
+        "investment_consultant": [portfolio_info_access_role],
         
-        "investment_researcher": [research_management_role],
+        "investment_researcher": [portfolio_info_access_role],
         
-        "quant_researcher": [research_management_role],
+        "quant_researcher": [portfolio_info_access_role],
         
-        "administration_staff": [research_management_role],
+        "administration_staff": [portfolio_info_access_role],
         
-        "investment_intern": [research_management_role, us_internal_stock_report_upload_role, us_market_stock_report_upload_role],
+        "investment_intern": [portfolio_info_access_role, us_internal_stock_report_upload_role, us_market_stock_report_upload_role],
         
         "remote_investment_intern": [us_market_stock_report_upload_role],
         
         "tw_data_subscriber": [],
         
-        "admin": [research_management_role, us_internal_stock_report_upload_role, system_edit_role, us_market_stock_report_upload_role],
+        "admin": [portfolio_info_access_role, ticker_setting_role, issue_setting_role,
+                  us_internal_stock_report_upload_role, system_edit_role, us_market_stock_report_upload_role],
     }
     return role_permissions_dict
 

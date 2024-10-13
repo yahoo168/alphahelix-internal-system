@@ -16,13 +16,13 @@
       class="btn btn-outline-dark"
       href="{{ url_for('main.investment_tracking_overview', tracking_type='following_issues') }}"
     >
-      議題總覽
+      投資議題總覽
     </a>
     <a
       class="btn btn-outline-dark"
       href="{{ url_for('main.investment_tracking_overview', tracking_type='investment_assumptions') }}"
     >
-      假設總覽
+      投資假設總覽
     </a>
   </div>
 
@@ -35,11 +35,21 @@
         class="card-header d-flex justify-content-between align-items-center"
       >
         <h3 class="mb-0">議題: 「{{ issue_meta['issue'] }}」</h3>
-        <a
-          href="{{url_for('main.investment_issue_review_records', item_id=issue_meta['_id'])}}"
-          class="btn btn-outline-dark btn-sm float-end"
-          >查看歷史紀錄</a
-        >
+        <!-- 使用 d-flex justify-content-end 將按鈕推到右邊並保持對齊 -->
+        <div class="d-flex justify-content-end">
+          <a
+            href="#"
+            class="btn btn-outline-info btn-sm me-2"
+            data-toggle="modal"
+            data-target="#issueSetModal"
+            >議題設定</a
+          >
+          <a
+            href="{{ url_for('main.investment_issue_review_records', item_id=issue_meta['_id']) }}"
+            class="btn btn-outline-primary btn-sm ml-2"
+            >查看歷史紀錄</a
+          >
+        </div>
       </div>
 
       <div class="card-body">
@@ -48,32 +58,41 @@
             <p class="card-text">
               <strong>Tickers:</strong>
               {% for ticker in issue_meta['tickers'] %}
-              <span class="tag">{{ ticker }}</span>
+              <a
+                class="tag"
+                style="color:black"
+                href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+                >{{ ticker }}</a
+              >
               {% endfor %}
             </p>
           </div>
         </div>
         <br />
         <div class="row">
-          <div class="col-md-4">
+          <div class="col-md-6">
             <!-- 本次彙整更新日期 -->
             <p class="card-text">
-              <strong>更新日期:</strong>
-              <span>{{ issue_review_meta['upload_date_str'] }}</span>
+              <strong>報告日期:</strong>
+              {% if issue_review_meta['data_date_str'] %}
+              <span>{{ issue_review_meta['data_date_str'] }}</span>
+              {% else %}
+              <span class="text-muted tag">本議題尚未更新</span>
+              {% endif %}
             </p>
           </div>
           <!-- 本Issue上傳日期 -->
-          <div class="col-md-4">
+          <!-- <div class="col-md-4">
             <p class="card-text">
-              <strong>上傳日期:</strong>
-              <span>{{ issue_meta['upload_date_str'] }}</span>
+              <strong>起始日期:</strong>
+              <span>{{ issue_meta['data_date_str'] }}</span>
             </p>
-          </div>
+          </div> -->
           <!-- 本Issue狀態 -->
-          <div class="col-md-4">
+          <div class="col-md-6">
             <p class="card-text">
-              <strong>是否更新:</strong>
-              <span class="tag">{{ issue_meta['is_active'] }}</span>
+              <strong>持續更新:</strong>
+              <span class="tag true-tag">{{ issue_meta['is_active'] }}</span>
             </p>
           </div>
         </div>
@@ -118,8 +137,8 @@
 
           <li>
             <i class="bi bi-6-circle"></i>
-            <a href="#other_report">其它報告</a> (共{{other_report_meta_list
-            | length}}篇)
+            <a href="#other_report">其它報告</a> (共{{other_report_meta_list |
+            length}}篇)
           </li>
         </ul>
       </div>
@@ -255,12 +274,15 @@
               >
                 <a
                   href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
+                  class="{% if item_meta['is_viewed'] %} read-title {% endif %}"
                   >{{ item_meta['title'] }}</a
                 >
               </td>
 
               <td style="white-space: nowrap">{{ item_meta['date_str'] }}</td>
-              <td><span class="tag true-tag">{{ item_meta['ticker'] }}</span></td>
+              <td>
+                <span class="tag true-tag">{{ item_meta['ticker'] }}</span>
+              </td>
               <td style="text-align: center">{{ item_meta['source'] }}</td>
             </tr>
             {% endfor %}
@@ -271,6 +293,67 @@
   </div>
   <!-- 在頁尾添加額外的間距 -->
   <div class="footer-spacing"></div>
+
+  <!-- Modal：議題設定 -->
+  <div
+    class="modal fade"
+    id="issueSetModal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="issueModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="issueModalLabel">議題設定</h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- 議題輸入框 -->
+          <div class="mb-3">
+            <label for="issueInput" class="form-label">投資議題</label>
+            <input
+              type="text"
+              class="form-control"
+              id="issueInput"
+              value="{{ issue_meta['issue'] }}"
+            />
+          </div>
+          <!-- Tickers 列表 -->
+          <div class="mb-3">
+            <label for="tickersInput" class="form-label">相關Tickers</label>
+            <input
+              type="text"
+              class="form-control"
+              id="tickersInput"
+              value="{{ issue_meta['tickers'] | join(', ') }}"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="saveIssueSettings()"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% endblock %}
 </body>
 
@@ -286,5 +369,46 @@
       return html.replace(/(共識點|差異點)[:：]/g, "<strong>$1</strong>");
     });
   });
+
+  // 定義保存按鈕的動作，使用 jQuery 進行 AJAX 請求
+  function saveIssueSettings() {
+    const issue = $("#issueInput").val();
+    const tickers = $("#tickersInput")
+      .val()
+      .split(",")
+      .map((ticker) => ticker.trim());
+
+    // 使用 jQuery 發送 AJAX POST 請求到後端
+    $.ajax({
+      url: "{{ url_for('main.investment_issue_setting', item_id=issue_meta['_id']) }}", // 使用 Flask 的 url_for 生成 URL
+      type: "POST",
+      contentType: "application/json",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token() }}", // Flask CSRF token
+      },
+      data: JSON.stringify({
+        issue: issue,
+        tickers: tickers,
+      }),
+      success: function (data) {
+        console.log("Success:", data);
+        // 關閉 Modal
+        $("#issueSetModal").modal("hide");
+        location.reload(); // 刷新頁面
+      },
+      error: function (xhr) {
+        // 根據狀態碼顯示對應的錯誤信息
+        if (xhr.status === 403) {
+          alert("您的權限無法修改議題設定，請聯絡系統管理員");
+        } else if (xhr.status === 400) {
+          alert("伺服器錯誤，請稍後再試");
+        } else {
+          alert("發生未知錯誤，請檢查");
+        }
+        console.error("Error:", xhr);
+      },
+    });
+  }
 </script>
+
 {% endblock %}

@@ -20,10 +20,10 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         try:
-            user_data_dict = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)})
-            return User(employee_id=user_data_dict["employee_id"], username=user_data_dict['username'], 
-                        email=user_data_dict['email'], password_hash=user_data_dict['password_hash'],
-                        _id=user_data_dict['_id'], roles=user_data_dict['roles'],)
+            user_meta = MDB_client["users"]["user_basic_info"].find_one({"_id": ObjectId(user_id)})
+            return User(employee_id=user_meta["employee_id"], username=user_meta['username'], 
+                        email=user_meta['email'], password_hash=user_meta['password_hash'],
+                        _id=user_meta['_id'], roles=user_meta['roles'],)
         except:
             return None
 

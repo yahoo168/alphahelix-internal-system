@@ -1,34 +1,36 @@
 <!DOCTYPE html>
 <html>
+  {% extends "_main_base.html" %} {% block head %}
   <head>
-    {% extends "_main_base.html" %}
+    {{ super() }}
+    <style>
+      .category-group-1 {
+        background-color: #f0f0f0; /* 浅灰色 */
+        border-color: #d6d8db;
+      }
+    </style>
+    <title>{% block title %}Internal Stock Info: {{ticker}}{% endblock %}</title>
+    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
   </head>
-  {% block content %}
-  <style>
-    .category-group-1 {
-      background-color: #f0f0f0; /* 浅灰色 */
-      border-color: #d6d8db;
-    }
-  </style>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
       <h1 class="display-4">{{ticker}}</h1>
       <hr class="my-4" />
       <a
-        class="btn btn-dark btn"
+        class="btn btn-outline-dark btn"
         href="{{url_for('main.ticker_market_info', ticker=ticker)}}"
         >市場資訊</a
       >
       <a
-        class="btn btn-dark btn"
+        class="btn btn-outline-dark btn"
         href="{{url_for('main.ticker_setting_info', ticker=ticker)}}"
         >個股設定</a
       >
       <a
-        class="btn btn-dark btn"
+        class="btn btn-outline-dark btn"
         href="{{url_for('main.render_static_html', page='internal_stock_report_upload')}}"
-        >報告上傳</a
+        >內部報告上傳</a
       >
     </div>
 

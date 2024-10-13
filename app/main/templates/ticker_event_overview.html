@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 {% extends "_main_base.html" %}
 <html lang="en">
-  {% block head %}
-  <!-- 保留基础模板中的其他 head 内容 -->
-  {{ super() }}
-  <!-- DataTables CSS -->
+  {% block head %} {{ super() }}
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css"
   />
-
+  <title>{% block title %}Event Overview{% endblock %}</title>
   {% endblock %}
   <body>
     {% block content %}
@@ -20,8 +17,10 @@
 
     <div class="container mt-2 mx-6">
       <div class="alert alert-info" role="alert">
-        預設為顯示最近3日到未來30日，已追蹤個股的事件列表，如須查詢其餘條件請使用右側功能
+        預設為顯示最近7日到未來30日，已追蹤個股的事件列表，如須查詢其餘條件請使用右側功能
       </div>
+      <!-- flash alert（顯示事件文檔上傳結果） -->
+      {% include "_flash_alert_model.html" %}
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center">
@@ -44,7 +43,6 @@
               >
                 <div class="container mt-2 mx-6">
                   <h3 class="card-title">Search</h3>
-
                   <hr class="my-4" />
                   <form
                     action="{{ url_for('main.ticker_event_overview') }}"
@@ -72,7 +70,6 @@
                           required
                         />
                       </div>
-
                       <div class="form-group col-md-6">
                         <button type="submit" class="btn btn-secondary">
                           Search
@@ -83,7 +80,11 @@
                 </div>
               </div>
             </div>
-            <a class="btn btn-info ml-3" href="{{ url_for('main.ticker_event_overview', ticker_range='all') }}">查看所有個股</a>
+            <a
+              class="btn btn-info ml-3"
+              href="{{ url_for('main.ticker_event_overview', ticker_range='all') }}"
+              >查看所有個股</a
+            >
           </div>
 
           <hr class="my-4" />
@@ -95,20 +96,111 @@
                 <th scope="col">Ticker</th>
                 <th scope="col">Event Type</th>
                 <th scope="col">Event</th>
+                <th scope="col">Upload</th>
               </tr>
             </thead>
             <tbody>
               {% for item_meta in event_meta_list %}
               <tr>
-                <!-- Row number (using th for strong fontsize)-->
                 <th scope="row">{{loop.index}}</th>
                 <td scope="row">{{item_meta["event_timestamp"]}}</td>
                 <td scope="row">
-                  <span class="tag">{{item_meta["ticker"]}}</span>
+                  <a
+                    class="tag"
+                    style="color: black"
+                    href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
+                    >{{ item_meta['ticker'] }}</a
+                  >
                 </td>
                 <td scope="row">{{item_meta["event_type"]}}</td>
                 <td scope="row" style="text-align: left">
                   {{item_meta["event_title"]}}
+                </td>
+                <td scope="row">
+                  <a
+                    class="bi bi-file-arrow-up button-like"
+                    href="#"
+                    data-toggle="modal"
+                    data-target="#uploadModal{{loop.index}}"
+                  ></a>
+
+                  <!-- Modal -->
+                  <div
+                    class="modal fade"
+                    id="uploadModal{{loop.index}}"
+                    tabindex="-1"
+                    role="dialog"
+                    aria-labelledby="uploadModalLabel"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog" role="document">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5
+                            class="modal-title"
+                            id="uploadModalLabel"
+                            style="text-align: left"
+                          >
+                            上傳： ({{item_meta["ticker"]}}) -
+                            {{item_meta["event_title"]}}
+                          </h5>
+                          <button
+                            type="button"
+                            class="close"
+                            data-dismiss="modal"
+                            aria-label="Close"
+                          >
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        <form
+                          action="{{ url_for('main.upload_event_document') }}"
+                          method="POST"
+                          enctype="multipart/form-data"
+                        >
+                          <div class="modal-body">
+                            <input
+                              type="hidden"
+                              name="event_id"
+                              value="{{item_meta['_id']}}"
+                            />
+                            <input
+                              type="hidden"
+                              name="ticker"
+                              value="{{item_meta['ticker']}}"
+                            />
+                            <input
+                              type="hidden"
+                              name="event_timestamp"
+                              value="{{item_meta['event_timestamp']}}"
+                            />
+                            <div class="form-group">
+                              <input
+                                type="file"
+                                class="form-control"
+                                id="files"
+                                name="files"
+                                multiple
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button
+                              type="button"
+                              class="btn btn-secondary"
+                              data-dismiss="modal"
+                            >
+                              取消
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                              上傳
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -122,17 +214,15 @@
 </html>
 
 {% block scripts %}
-<!-- 覆盖基础模板中的 jQuery 引入 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- DataTables JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
 <script>
   $("#Table").DataTable({
-    paging: true, // 启用分页
-    ordering: true, // 启用排序
-    info: true, // 启用表格信息
-    searching: true, // 启用搜索
-    pageLength: 50, // 设置每页显示 50 条记录
+    paging: true,
+    ordering: true,
+    info: true,
+    searching: true,
+    pageLength: 50,
   });
 </script>
 {% endblock %}

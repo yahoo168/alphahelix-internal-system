@@ -16,8 +16,9 @@ from app.utils.alphahelix_database_tools import pool_list_db
 #cache在app/__init.py的creat_app中定義，這裡引入cache，避免重複創建
 from app import redis_instance
 # 引入權限設定
-# from app import permissions_dict
-from app import research_management_role_perm, us_internal_stock_report_upload_perm, us_market_stock_report_upload_perm, system_edit_perm
+from app import portfolio_info_access_role
+from app import ticker_setting_perm, issue_setting_perm
+
 
 from . import main
 
@@ -60,20 +61,24 @@ def get_stock_shorts_summary():
 
 @main.route("/research_management_overview")
 @login_required
-@research_management_role_perm.require(http_exception=403)
 def research_management_overview():
     ticker_info_meta_list = pool_list_db.get_latest_ticker_info_meta_list()
     id_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
     
-    user_id = ObjectId(current_user.get_id())            
+    user_id = ObjectId(current_user.get_id())
+    # 判斷用戶是否有portfolio_info_access權限（顯示投資組合資訊
+
+    # 待改：判斷用戶是否有portfolio_info_access權限（顯示投資組合資訊）
+    has_portfolio_info_access = True
+    if ("remote_investment_intern" in current_user.roles) or ("tw_data_subscriber" in current_user.roles):
+        has_portfolio_info_access = False
+    
     for item_meta in ticker_info_meta_list:
         # 透過user_id查找user_name後，Capitalize the first letter of each word in the username
         researcher_id = item_meta["researchers"].get("researcher_id", '')
         item_meta["researcher_username"] = id_username_mapping_dict.get(researcher_id).replace("_", " ").title()
-
         # Get the most recent pool_list_status
         item_meta["in_poolList"] = item_meta["poolList_status"].get("in_poolList", False)
-
         # Extract and format the most recent profit and risk ratings
         item_meta["profit_rating"] = item_meta["investment_ratings"].get("profit_rating", '-').replace("_", " ").title()
         item_meta["risk_rating"] = item_meta["investment_ratings"].get("risk_rating", '-').replace("_", " ").title()
@@ -82,7 +87,9 @@ def research_management_overview():
         following_user_meta_list = item_meta.get("following_users", [])
         item_meta["is_following"] = isinstance(following_user_meta_list, list) and (user_id in following_user_meta_list)
         
-    return render_template('research_management_overview.html', pool_list_meta_list=ticker_info_meta_list)
+    return render_template('research_management_overview.html', 
+                           has_portfolio_info_access=has_portfolio_info_access,
+                           pool_list_meta_list=ticker_info_meta_list)
 
 @main.route("/update_ticker_following_status", methods=['POST'])
 def update_ticker_following_status():
@@ -171,12 +178,12 @@ def ticker_market_info(ticker):
         stock_info_date = datetime2str(shorts_summary_meta["data_timestamp"])
         stock_info_daily = shorts_summary_meta.get("shorts_summary", '')
 
-    # 取得近期報告列表（近10篇）
-    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"ticker": ticker}, sort=[("data_timestamp", -1)], limit=30))
+    # 取得近期報告列表（近N篇）
+    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"tickers": ticker}, sort=[("data_timestamp", -1)], limit=30))
     for stock_report_meta in stock_report_meta_list:
         stock_report_meta["title"] = stock_report_meta["title"].replace("_", " ")[:-4][:80]
         stock_report_meta["data_timestamp"] = datetime2str(stock_report_meta["data_timestamp"])
-        stock_report_meta["upload_timestamp"] = datetime2str(stock_report_meta["upload_timestamp"])
+        stock_report_meta["upload_timestamp"] = datetime2str(stock_report_meta["upload_info"]["upload_timestamp"])
         
         source_trans_dict = {"gs": "Goldman Sachs", 
                              "jpm": "J.P. Morgan", 
@@ -220,7 +227,7 @@ def ticker_market_info(ticker):
     return render_template('ticker_market_info.html', **context)
          
 @main.route('/ticker_setting_info/<ticker>')
-# @us_data_view_perm.require(http_exception=403)
+@ticker_setting_perm.require(http_exception=403)
 def ticker_setting_info(ticker):
     # 取得個股的投資假設
     assumption_meta_list = list(MDB_client["users"]["investment_assumptions"].find({"tickers": ticker}))
@@ -391,37 +398,50 @@ def update_issue_status():
 @login_required
 def report_summary_page(report_id):
     stock_report_meta = MDB_client["preprocessed_content"]["stock_report"].find_one({"_id": ObjectId(report_id)})
-    if stock_report_meta:
-        # 去除文件的副檔名，如'.pdf'，並進行格式美化：原title有許多'_'，將其拆解後重組
-        stock_report_meta["title"] = stock_report_meta["title"].split('.')[0].replace('_', ' ') 
-        stock_report_meta["date_str"] = datetime2str(stock_report_meta["data_timestamp"])
-        
-        issue_meta_list = []
-        hidden_issue_meta_list = []
-        for issue_meta in stock_report_meta.get("issue_summary", []):
-            # 將ObjectId轉為str，以便前端綁定於class
-            issue_meta["issue_id"] = str(issue_meta["issue_id"])
-            # 若issue_content字數大於10，則將其加入issue_meta_list，否則加入hidden_issue_meta_list
-            if len(issue_meta.get("issue_content", '')) >= 10:
-                issue_meta_list.append(issue_meta)
-            else:
-                hidden_issue_meta_list.append(issue_meta)
-            
-        # 待改：應集中管理，將source縮寫轉換為全名
-        source = stock_report_meta["source"]
-        
-        source_trans_dict = {"gs": "Goldman Sachs", "jpm":"J.P. Morgan", "citi":"Citi", "barclays":"Barclays", "seeking_alpha":"Seeking Alpha"}
-        if source in source_trans_dict.keys():
-            source = source_trans_dict[source]
-        stock_report_meta["source"] = source
-        
-        return render_template('report_summary_page.html', 
-                            item_meta=stock_report_meta,
-                            issue_meta_list=issue_meta_list,
-                            hidden_issue_meta_list=hidden_issue_meta_list)
-    # 若無報告，則返回404頁面
-    else:
+    
+    # 若報告id對應的資料不存在，則返回404頁面
+    if not stock_report_meta:
         return render_template('404.html')
+    
+    # 若當前用戶尚未查看過此報告，則更新view_by字段，將當前用戶的id及當前閱讀時間，加入view_by
+    is_viewed = any(view_record["user_id"] == ObjectId(current_user.get_id()) for view_record in stock_report_meta.get("view_by", []))
+    if not is_viewed:
+        MDB_client["preprocessed_content"]["stock_report"].update_one(
+            { "_id": ObjectId(report_id) },
+            
+            {
+                "$addToSet": { 
+                    "view_by": { "user_id": ObjectId(current_user.get_id()), 
+                                "timestamp": datetime.now(timezone.utc) }
+                },
+            }, upsert=False  # 不需要創建新的文檔，僅更新現有文檔
+        )
+
+    # 去除文件的副檔名，如'.pdf'，並進行格式美化：原title有許多'_'，將其拆解後重組
+    stock_report_meta["title"] = stock_report_meta["title"].split('.')[0].replace('_', ' ') 
+    # 個股報告的tickers只有一個，直接取第一位
+    stock_report_meta["ticker"] = stock_report_meta["tickers"][0]
+    stock_report_meta["date_str"] = datetime2str(stock_report_meta["data_timestamp"])
+    
+    issue_meta_list = []
+    hidden_issue_meta_list = []
+    for issue_meta in stock_report_meta.get("issue_summary", []):
+        # 將ObjectId轉為str，以便前端綁定於class
+        issue_meta["issue_id"] = str(issue_meta["issue_id"])
+        # 若issue_content字數大於10，則將其加入issue_meta_list，否則加入hidden_issue_meta_list
+        if len(issue_meta.get("issue_content", '')) >= 10:
+            issue_meta_list.append(issue_meta)
+        else:
+            hidden_issue_meta_list.append(issue_meta)
+        
+    # 券商名稱格式美化
+    stock_report_meta["source"] = beautify_broker_name(stock_report_meta["source"])
+    
+    return render_template('report_summary_page.html', 
+                        item_meta=stock_report_meta,
+                        issue_meta_list=issue_meta_list,
+                        hidden_issue_meta_list=hidden_issue_meta_list)
+    
 
 # 顯示following_issues以及investment_assumptions的總覽表格（以及追蹤按鈕）
 @main.route("/investment_tracking_overview/<tracking_type>")
@@ -512,11 +532,11 @@ def investment_issue_review_records(item_id):
     
     # 取得issue_review的meta_list
     issue_review_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(item_id)}))
-    
-    issue_review_meta_list = sorted(issue_review_meta_list, key=lambda x: x['upload_timestamp'], reverse=True)
+    issue_meta["review_num"] = len(issue_review_meta_list)
+    issue_review_meta_list = sorted(issue_review_meta_list, key=lambda x: x['data_timestamp'], reverse=True)
     for item_meta in issue_review_meta_list:
-        item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
-    
+        item_meta["data_date_str"] = datetime2str(item_meta["data_timestamp"])
+        
     context = {
         "issue_meta": issue_meta,
         "issue_review_meta_list": issue_review_meta_list,
@@ -527,14 +547,18 @@ def investment_issue_review_records(item_id):
 def investment_issue_review(item_id):
     # 取得issue的基本資訊
     issue_meta = MDB_client["users"]["following_issues"].find_one({"_id": ObjectId(item_id)})
+    # 若該issue不存在，則返回404頁面    
+    if issue_meta is None:
+        return render_template("404.html")
+    
     issue_meta["upload_date_str"] = datetime2str(issue_meta["upload_timestamp"])
     issue_meta["_id"] = str(issue_meta["_id"])
     
     # 取得issue_review的meta_list
     issue_review_meta = MDB_client["published_content"]["issue_review"].find_one({"issue_id": ObjectId(item_id)}, sort=[("upload_timestamp", -1)])
+    
     if issue_review_meta is not None:
-        issue_review_meta["upload_date_str"] = datetime2str(issue_review_meta["upload_timestamp"])
-        
+        issue_review_meta["data_date_str"] = datetime2str(issue_review_meta["data_timestamp"])
         # 取得參考報告列表
         ref_report_id_list = issue_review_meta.get("ref_report_id", [])
         added_report_id_list = issue_review_meta.get("added_report_id", [])
@@ -551,36 +575,56 @@ def investment_issue_review(item_id):
             item_meta["date_str"] = datetime2str(item_meta["data_timestamp"])
             item_meta["title"] = beautify_report_title(item_meta["title"])
             item_meta["source"] = beautify_broker_name(item_meta["source"])
-            
-        context = {
-            "issue_meta": issue_meta,
-            "issue_review_meta": issue_review_meta,
-            "added_report_meta_list": added_report_meta_list,
-            "other_report_meta_list": other_report_meta_list,
-        }
-        return render_template("investment_issue_review.html", **context)
-    
-    # 若無issue_review_meta，則返回404頁面
+            item_meta["is_viewed"] = any(view_record["user_id"] == ObjectId(current_user.get_id()) for view_record in item_meta.get("view_by", []))
     else:
-        return render_template("404.html")
-    
-    
+        issue_review_meta = {}
+        added_report_meta_list = []
+        other_report_meta_list = []
+        
+    context = {
+        "issue_meta": issue_meta,
+        "issue_review_meta": issue_review_meta,
+        "added_report_meta_list": added_report_meta_list,
+        "other_report_meta_list": other_report_meta_list,
+    }
+    return render_template("investment_issue_review.html", **context)
+
+# IPhone在新興市場（中國、印度...）的銷售情況
+@main.route("/investment_issue_setting/<item_id>", methods=['POST'])
+@issue_setting_perm.require(http_exception=403)
+def investment_issue_setting(item_id):
+    try:
+        # 從 POST 請求中獲取 JSON 數據
+        data = request.get_json()
+        issue = data.get('issue')
+        tickers = data.get('tickers') #在前端已經進行過處理，將tickers以逗號分隔後轉為list傳遞
+        if len(tickers) > 5:
+            raise ValueError("The number of tickers should not exceed 5.")
+        
+        # 更新issue的資訊
+        MDB_client["users"]["following_issues"].update_one({"_id": ObjectId(item_id)}, 
+                                                           {"$set": {"issue": issue, "tickers": tickers}})
+        
+        # 返回成功回應
+        #return redirect(url_for("main.investment_issue_review", item_id=item_id))
+        return jsonify({'status': 'success', 'message': 'Issue updated successfully!'})
+
+    except Exception as e:
+        # 如果出現錯誤，返回錯誤信息
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
 @main.route("/ticker_event_overview", methods=['GET', 'POST'])
 def ticker_event_overview():
     # Flask 無法自動將 URL 參數傳遞給函數參數中的 ticker_range，需手動從 request.args 中提取 ticker_range
     ticker_range = request.args.get('ticker_range', 'following')  # 將ticker_range從GET參數中獲取，默認為'following'
     
     if request.method == 'POST':
-        # 從表單獲取用戶輸入的時間範圍
-        start_date_str = request.form.get('start_date')
-        end_date_str = request.form.get('end_date')
-        
-        # 將字符串轉換為 datetime 對象
-        start_timestamp = str2datetime(start_date_str)
-        end_timestamp = str2datetime(end_date_str)
+        # 從表單獲取用戶輸入的時間範圍，將字符串轉換為 datetime 對象
+        start_timestamp = str2datetime(request.form.get('start_date'))
+        end_timestamp = str2datetime(request.form.get('end_date'))
     else:
         # 默認範圍
-        start_timestamp = datetime.now(timezone.utc) - timedelta(days=3)
+        start_timestamp = datetime.now(timezone.utc) - timedelta(days=7)
         end_timestamp = datetime.now(timezone.utc) + timedelta(days=30)
     
     event_meta_list = list(MDB_client["research_admin"]["ticker_event"].find({
@@ -593,8 +637,9 @@ def ticker_event_overview():
         following_ticker_meta_list = list(MDB_client["research_admin"]["ticker_info"].find({"following_users": ObjectId(current_user.get_id())}))
         following_ticker_list = [meta["ticker"] for meta in following_ticker_meta_list]
         event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["ticker"] in following_ticker_list]
-    print("Hi")
-    print(ticker_range)
+    
+    # 刪除earning_release（因與earning_call通常在同一天，沒必要重複顯示）
+    event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["event_type"] != "earnings_release"]
     for event_meta in event_meta_list:
         event_meta["event_type"] = event_meta["event_type"].replace("_", " ").title()
         event_meta["event_timestamp"] = event_meta["event_timestamp"].strftime('%Y-%m-%d %H:%M')

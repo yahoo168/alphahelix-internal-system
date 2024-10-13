@@ -38,18 +38,28 @@ def _get_recent_notifications(user_id, num_limit=10):
     
     return undisplayed_notification_num, recent_notification_meta_list
 
+# http://127.0.0.1:5000/main/notification_detail/670761bb601714b91e72c408
 @main.route('/notification_detail/<notification_id>', methods=['GET'])
 def notification_detail(notification_id):
     notification_meta = MDB_client["users"]["notifications"].find_one({"_id": ObjectId(notification_id)})
     # 若取得通知資訊，則將通知標示為已讀取，並顯示通知詳細資訊
     if notification_meta is not None:
         mark_notification_as_read(notification_id)
-        # 去除多餘換行符與空格（避免在HTML中出現多餘的空行或<br>）
-        notification_meta['message'] = notification_meta.get('message', '').replace('\n', ' ').strip()
+        # 除去多餘的不可見字符和換行符
+        notification_text = re.sub(r'[\r\t]+', '', notification_meta['message']).strip()
+        # 
+        notification_text = notification_text.replace('\n', '')
+        # # 將連續3個以上的換行符替換為2個<br>
+        # notification_text = re.sub(r'\n{3,}', '<br><br>', notification_text)
+        # notification_text = re.sub(r'\n{2}', '<br>', notification_text)
+        # # 將剩餘的換行符（單獨出現）替換為''，（避免在HTML中出現多餘的空行或<br>）
+        notification_meta['message'] = notification_text
+        
         return render_template("notification_detail.html", notification_meta=notification_meta)
     else:
         return render_template("404.html"), 404
-        
+        #notification_meta['message'] = re.sub(r'(<br\s*/?>){3,}', '<br><br>', notification_meta['message'])
+
 @main.route('/notifications_all/<user_id>', methods=['GET'])
 def get_all_notifications(user_id):
     """取得用戶未讀取的通知"""

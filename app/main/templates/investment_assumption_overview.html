@@ -3,10 +3,11 @@
   <h1 class="display-4">Investment Assumption Overview</h1>
   <hr class="my-4" />
   <a
-    class="btn btn-secondary btn"
-    href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
-    >議題追蹤</a
+    class="btn btn-outline-dark"
+    href="{{ url_for('main.investment_tracking_overview', tracking_type='following_issues') }}"
   >
+    投資議題總覽
+  </a>
 </div>
 <!-- 保留父模板 content 块中的内容 -->
 {{ super() }}

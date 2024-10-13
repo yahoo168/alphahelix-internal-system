@@ -4,8 +4,10 @@
   <head>
     {{ super() }}
     <!-- 本頁面標題 -->
-    <title>{% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{% endblock %}</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <title>
+      {% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{%
+      endblock %}
+    </title>
   </head>
 
   {% endblock %} {% block content %}
@@ -31,7 +33,12 @@
             <div class="col-md-4">
               <p class="card-text">
                 <strong>Ticker:</strong>
-                <span class="tag">{{item_meta["ticker"]}}</span>
+                <a
+                  class="tag"
+                  style="color: black"
+                  href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
+                  >{{ item_meta['ticker'] }}</a
+                >
               </p>
             </div>
             <div class="col-md-4">
@@ -97,13 +104,12 @@
         </div>
       </div>
 
-      <!-- 全文/多/空摘要（markdown） -->
+      <!-- 全文/多/空摘要-->
       <div class="card" id="summary_section">
-        <div id="summary_markdown" class="markdown-body"></div>
+        <p id="summary_overview">
+          {{ item_meta["summary"]|replace('\n+', '<br />') | safe }}
+        </p>
       </div>
-      <textarea id="summary_text" style="display: none">
-{{ item_meta["summary"] }}
-      </textarea>
 
       <!-- issue_summary -->
       {% for issue_meta in issue_meta_list %}
@@ -125,7 +131,8 @@
           >
           {% endif %}
         </h3>
-        {{ issue_meta["issue_content"].replace('\n', '<br />') | safe }}
+        {{ issue_meta["issue_content"].replace('\\n', '<br />').replace('\n',
+        '<br />') | safe }}
       </div>
       {% endfor %}
     </div>
@@ -190,8 +197,17 @@
     <div class="footer-spacing"></div>
 
     <script>
-      $(document).ready(function () {
-        $("#summary_markdown").html(marked.parse($("#summary_text").val()));
+      // $(document).ready(function () {
+      //   $("#summary_markdown").html(marked.parse($("#summary_text").val()));
+      // });
+
+      // 使用正則表達式找到「共識點」和「差異點」所在的行，並替換為<h3>標籤
+      // 辨識到「共識點」或「差異點」後，刪除其後面可能連接的':'或'：'
+      $("#summary_overview").html(function (_, html) {
+        return html.replace(
+          /(全文摘要|看多論點|看多论点|看空論點|看空论点)/g,
+          "<h3>$1</h3>"
+        );
       });
 
       $(function () {
