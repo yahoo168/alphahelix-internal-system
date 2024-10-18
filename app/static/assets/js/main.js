@@ -96,3 +96,98 @@ function wrapSubject(text) {
     return "<h5>" + p1 + "</h5>";
   });
 }
+
+function convertMarkdownText(ID) {
+  // 使用 jQuery 獲取指定的 <p> 元素
+  const $paragraph = $("#" + ID);
+
+  if ($paragraph.length === 0) {
+    console.error("Element with the given ID not found.");
+    return;
+  }
+
+  // 獲取純文字內容
+  let text = $paragraph.text().trim(); // 移除兩端的空白字符以避免不必要的問題
+  // 去除「```markdown」字串
+  text = text.replace(/```markdown/g, "");
+  text = text.replace(/```/g, "");
+
+  // 替換 **粗體** 或 __粗體__
+  text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/__(.*?)__/g, "<strong>$1</strong>");
+
+  // 替換 *斜體* 或 _斜體_
+  text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+  text = text.replace(/_(.*?)_/g, "<em>$1</em>");
+
+  // 替換 # 標題1 (h3)
+  text = text.replace(/^# (.*)/gm, "<h3>$1</h3>"); // 確保匹配行首的 `#`
+
+  // 替換 ## 標題2 (h4)
+  text = text.replace(/^## (.*)/gm, "<h4>$1</h4>");
+
+  // 替換 ### 標題3 (h5)
+  text = text.replace(/^### (.*)/gm, "<h5>$1</h5>");
+
+  // 將連續兩個或更多的 \n 替換為單個 \n
+  text = text.replace(/\n{2,}/g, "\n");
+
+  // 將文本拆分為每行並手動檢查每行
+  let lines = text.split("\n");
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].startsWith("- ") && !lines[i - 1].match(/^<\/?h[1-6]>/)) {
+      lines[i] = "<br>" + lines[i];
+    }
+  }
+
+  // 將行重新合併成字符串
+  text = lines.join("\n");
+
+  // 更新段落的 HTML 內容
+  $paragraph.html(text);
+}
+
+// 處理搜尋Ticker輸入事件的函數，包含模板生成邏輯
+// 在頁面內須定義好id=suggestion-template的模板，供函數複製並填入suggestionsSelector
+function TickerSearchSuggestion(
+  inputSelector,
+  suggestionsSelector,
+  apiUrl,
+  itemUrl
+) {
+  $(inputSelector).on("input", function () {
+    let query = $(this).val();
+    if (query.length > 0) {
+      $.ajax({
+        url: apiUrl,
+        method: "GET",
+        data: { query: query },
+        success: function (data) {
+          $(suggestionsSelector).empty(); // 清空建議列表
+          if (data.length > 0) {
+            data.forEach(function (item) {
+              // 使用模板創建和填充建議項目
+              let template = $("#suggestion-template").html(); // 從模板中獲取HTML
+              let suggestionElement = $(template); // 使用 jQuery 創建新元素
+
+              suggestionElement.find(".ticker-symbol").text(item.ticker); // 填充 ticker
+              suggestionElement.find(".company-name").text(item.company_name); // 填充公司名稱
+              suggestionElement.attr("data-ticker", item.ticker); // 設置 data-ticker 屬性
+              suggestionElement.attr("data-company-name", item.company_name); // 設置 data-company-name 屬性
+              //將ticker加入指定的URL
+              let newItemUrl = itemUrl + item.ticker;
+              suggestionElement.attr("href", newItemUrl); // 設置連結
+              // 插入填充好的建議項目
+              $(suggestionsSelector).append(suggestionElement);
+            });
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("搜尋建議請求失敗: ", error);
+        },
+      });
+    } else {
+      $(suggestionsSelector).empty(); // 如果輸入框為空，清空建議列表
+    }
+  });
+}

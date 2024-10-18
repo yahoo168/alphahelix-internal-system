@@ -15,7 +15,7 @@
 
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title"><strong>User Profile</strong></h5>
+              <h5 class="card-title"><strong>Persornal Profile</strong></h5>
               <p class="card-text">
                 <strong>Employee id</strong>: {{ employee_id }}
               </p>
@@ -52,7 +52,10 @@
                 </div>
               </div>
               <p class="card-text">
-                <strong>Permissions</strong>: {{ current_user.roles }}
+                <strong>Permissions</strong>: {% for role in current_user.roles
+                %}
+                <span class="tag">{{ role }}</span>
+                {% endfor %}
               </p>
               <form
                 action="{{ url_for('main.set_user_setting') }}"
@@ -82,7 +85,9 @@
                   name="send_report_to_email"
                   value="no"
                 />
-                <button type="submit" class="btn btn-outline-dark">更新設定</button>
+                <button type="submit" class="btn btn-outline-dark">
+                  更新設定
+                </button>
                 <a
                   href="{{ url_for('main.render_static_html', page='change_password') }}"
                   class="btn btn-outline-dark"
@@ -95,9 +100,10 @@
           <!-- 其他資訊 -->
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title"><strong>Other Info</strong></h5>
+              <h5 class="card-title"><strong>Research Profile</strong></h5>
               <p class="card-text">
-                <i class="bi bi-bookmark-check"></i></i><strong>已閱讀的報告數量</strong>: {{user_viewed_report_num}}
+                <i class="bi bi-book"></i>
+                <strong>已閱讀的報告數量</strong>: {{user_viewed_report_num}}
               </p>
             </div>
           </div>

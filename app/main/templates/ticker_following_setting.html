@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+
+    <style>
+      .cancel {
+        font-size: 12px; /* 縮小X */
+        color: white;
+        text-decoration: none;
+      }
+
+      .cancel:hover {
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4"><strong>追蹤設定</strong></h1>
+      <hr class="my-4" />
+      <p class="lead"></p>
+    </div>
+
+    <div class="container mt-2 mx-6">
+      {% include "_flash_alert_model.html" %}
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">個股查詢</h5>
+          <input
+            type="text"
+            id="ticker-search"
+            class="form-control"
+            placeholder="輸入股票代號或公司名稱"
+          />
+          <div id="suggestions" class="list-group mt-2"></div>
+        </div>
+      </div>
+    </div>
+    <!-- suggestion-template（隱藏樣式：供TickerSearchSuggestion調用） -->
+    <template id="suggestion-template">
+      <a
+        href="#"
+        class="list-group-item list-group-item-action"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 15px;
+          border: 1px solid #ced4da;
+          border-radius: 0.25rem;
+          background-color: white;
+          color: #495057;
+          text-decoration: none;
+          margin-bottom: 5px;
+        "
+        data-ticker=""
+        data-company-name=""
+      >
+        <span
+          class="ticker-symbol"
+          style="font-size: 16px; color: #495057"
+        ></span>
+        <strong
+          class="company-name"
+          style="font-size: 16px; color: #495057; text-align: right"
+        ></strong>
+      </a>
+    </template>
+
+    <!-- 美股追蹤清單 -->
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">美股追蹤清單</h5>
+          {% for ticker in US_following_ticker_list %}
+          <a
+            class="tag true-tag mr-2 my-2"
+            href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+            >{{ticker}}
+            <i class="cancel bi bi-x-circle-fill" data-ticker="{{ticker}}"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 台股追蹤清單 -->
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">台股追蹤清單</h5>
+          {% for ticker in TW_following_ticker_list %}
+          <a
+            class="tag true-tag mr-2 my-2"
+            href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+            >{{ticker}}
+            <i class="cancel bi bi-x-circle-fill" data-ticker="{{ticker}}"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 主題追蹤清單 -->
+  </body>
+  {% endblock %} {% block scripts %} {{super()}}
+
+  <script>
+    $(document).ready(function () {
+      // 搜尋Ticker
+      TickerSearchSuggestion(
+        (inputSelector = "#ticker-search"), // 輸入框選擇器
+        (suggestionsSelector = "#suggestions"), // 建議列表選擇器
+        (apiUrl = "{{ url_for('main.ticker_search_suggestion') }}"), // 後端 API 的 URL
+        (itemUrl = "{{ url_for('main.follow_ticker', ticker='') }}")
+      );
+
+      handleCancelFollow(); // 函數名稱：處理取消追蹤事件
+    });
+
+    // 處理取消追蹤事件的函數
+    function handleCancelFollow() {
+      $(".cancel").on("click", function (e) {
+        e.preventDefault();
+        var ticker = $(this).data("ticker");
+
+        $.ajax({
+          type: "POST",
+          url: "{{url_for('main.cancel_follow_ticker')}}",
+          data: JSON.stringify({ ticker: ticker }),
+          contentType: "application/json",
+          success: function (response) {
+            alert("追蹤取消成功：" + ticker);
+            // 可以選擇隱藏或移除該標籤
+            $(e.target).closest(".tag").remove();
+          },
+          error: function (error) {
+            console.log("Error:", error);
+            alert("Failed to cancel following.");
+          },
+        });
+      });
+    }
+  </script>
+  {% endblock %}
+</html>

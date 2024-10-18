@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %} {% block head %}
+  <head>
+    {{ super() }}
+    <!-- 本頁面標題 -->
+    <title>
+      {% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{%
+      endblock %}
+    </title>
+    
+    <style>
+      p,
+      h3,
+      h4,
+      h5 {
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron text-center">
+      <h1 class="display-4"><strong>個股報告</strong></h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-4">
+      <!-- 報告資訊 -->
+      <div class="card mb-4">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">標題: {{item_meta["title"]}}</h3>
+          <a href="{{item_meta['url']}}" target="_blank" class="btn btn-dark"
+            >查看原文</a
+          >
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>Ticker:</strong>
+                <a
+                  class="tag"
+                  style="color: black"
+                  href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
+                  >{{ item_meta['ticker'] }}</a
+                >
+              </p>
+            </div>
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>報告來源:</strong>
+                <span>{{item_meta["source"]}}</span>
+              </p>
+            </div>
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>發布日期:</strong><span>{{item_meta["data_date_str"]}}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 目錄導引 -->
+      <div class="card">
+        <h3
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          目錄
+          <i
+            type="button"
+            class="bi bi-question-circle button-like"
+            data-container="body"
+            data-toggle="popover"
+            data-placement="top"
+            data-content="議題並非本篇報告的段落主題，而是依據研究員事先設定的「投資議題」摘要本篇報告。點擊連結可跳轉至該段落內容"
+          ></i>
+        </h3>
+
+        <div class="card-body" id="table_of_sections">
+          <ul class="list-unstyled">
+            <li>
+              <i class="bi bi-star-fill" style="font-size: 12px"></i>
+              <a href="#summary_section">重點摘要</a>
+            </li>
+            {% for issue_meta in issue_meta_list %}
+            <li>
+              <i class="bi bi-circle-fill" style="font-size: 12px"></i>
+              議題 {{ loop.index }}: {% if issue_meta["issue_content"] %}
+              <a href="#issue_{{ loop.index }}">{{ issue_meta["issue"] }}</a>
+              {% else %}
+              <a href="{{ issue_meta['issue_id'] }}"
+                >{{ issue_meta["issue"] }}</a
+              >
+              {% endif %}
+            </li>
+            {% endfor %}
+            <!-- 新增「不包含以下主題」的導引 -->
+            {% if hidden_issue_meta_list|length > 0 %}
+            <li>
+              <i class="bi bi-star-fill" style="font-size: 12px"></i>
+              其他議題:
+              <a href="#" data-toggle="modal" data-target="#hiddenIssuesModal"
+                >查看</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- 全文/多/空摘要-->
+      <div class="card" id="summary_section">
+        <p id="summary_overview">
+          {{ item_meta["summary"]|replace('\n+', '<br />') | safe }}
+        </p>
+      </div>
+
+      <!-- issue_summary -->
+      {% for issue_meta in issue_meta_list %}
+      <div class="card" id="issue_{{ loop.index }}">
+        <h3>
+          {{ issue_meta["issue"] }}
+          <!-- 返回目錄按鈕 -->
+          <a
+            class="btn btn-outline-secondary btn-sm float-end"
+            href="#table_of_sections"
+            >返回目錄</a
+          >
+          <!-- 若有內容則顯示前往按鈕 -->
+          {% if issue_meta["issue_content"] %}
+          <a
+            class="btn btn-outline-primary btn-sm float-end me-2"
+            href="{{ url_for('main.investment_issue_review', item_id=issue_meta['issue_id']) }}"
+            >前往議題</a
+          >
+          {% endif %}
+        </h3>
+        {{ issue_meta["issue_content"].replace('\\n', '<br />').replace('\n',
+        '<br />') | safe }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 顯示不包含的 issue 列表 （Hidden Issues Modal）-->
+    <div
+      class="modal fade"
+      id="hiddenIssuesModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="hiddenIssuesModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="hiddenIssuesModalLabel">
+              本報告不包含以下投資議題：
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            {% if hidden_issue_meta_list|length > 0 %}
+            <ul style="list-style-type: none; padding-left: 0; margin: 0">
+              {% for issue_meta in hidden_issue_meta_list %}
+              <li>
+                <i class="bi bi-x-circle"></i>
+                <a
+                  href="{{ url_for('main.investment_issue_review', item_id=issue_meta['issue_id']) }}"
+                >
+                  {{ issue_meta["issue"] }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p>沒有不包含的議題。</p>
+            {% endif %}
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-dismiss="modal"
+            >
+              返回
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 在頁尾添加額外的間距 -->
+    <div class="footer-spacing"></div>
+
+    <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+    <script>
+      // 使用正則表達式找到「共識點」和「差異點」所在的行，並替換為<h3>標籤
+      // 辨識到「共識點」或「差異點」後，刪除其後面可能連接的':'或'：'
+      $("#summary_overview").html(function (_, html) {
+        return html.replace(
+          /(全文摘要|看多論點|看多论点|看空論點|看空论点)/g,
+          "<h3>$1</h3>"
+        );
+      });
+
+      $(function () {
+        $('[data-toggle="popover"]').popover();
+      });
+
+      //convertMarkdownText("summary_overview");
+    </script>
+  </body>
+  {% endblock %}
+</html>

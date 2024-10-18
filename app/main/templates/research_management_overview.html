@@ -25,16 +25,23 @@
       <h1 class="display-4">Research Management</h1>
       <hr class="my-4" />
       <p class="lead">
+        <!-- 個股追蹤設定 -->
+        <a
+          href="{{url_for('main.ticker_following_setting')}}"
+          class="btn btn-outline-dark"
+          >追蹤設定</a
+        >
+        <!-- 建立個股 -->
         <a
           href="{{url_for('main.create_ticker_info_page')}}"
-          class="btn btn-dark"
+          class="btn btn-outline-dark"
           >建立個股</a
         >
-
+        <!-- 說明文件(notion) -->
         <a
           href="https://finance-jeff.notion.site/8f97220a0df544a297626d203755dd0c?pvs=4"
           target="_blank"
-          class="btn btn-dark"
+          class="btn btn-outline-dark"
           >說明文件</a
         >
       </p>
@@ -49,7 +56,7 @@
             <thead>
               <tr>
                 <th scope="col">Ticker</th>
-                <th scope="col">Follow</th>
+                <!-- <th scope="col">Follow</th> -->
                 <th scope="col">Profit Rating</th>
                 <th scope="col">Risk Rating</th>
                 <th scope="col">Researcher</th>
@@ -77,21 +84,21 @@
                   </a>
                 </td>
                 <!-- Follow Stock-->
-                {% if item_meta['is_following'] == True %}
+                <!-- {% if item_meta['is_following'] == True %}
                 <td data-sort="1">
                   <i
                     class="bi bi-suit-heart-fill heart-red button-like follow-item"
                     data-item_id="{{item_meta['_id']}}"
                   ></i>
                 </td>
-                {% else %}
-                <td data-sort="0">
+                {% else %} -->
+                <!-- <td data-sort="0">
                   <i
                     class="bi bi-suit-heart button-like follow-item"
                     data-item_id="{{item_meta['_id']}}"
                   ></i>
                 </td>
-                {% endif %}
+                {% endif %} -->
 
                 <!-- Profit Rating -->
                 <td>{{item_meta["profit_rating"]}}</td>

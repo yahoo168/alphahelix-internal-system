@@ -60,7 +60,7 @@
               {% for ticker in issue_meta['tickers'] %}
               <a
                 class="tag"
-                style="color:black"
+                style="color: black"
                 href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
                 >{{ ticker }}</a
               >
@@ -81,13 +81,7 @@
               {% endif %}
             </p>
           </div>
-          <!-- 本Issue上傳日期 -->
-          <!-- <div class="col-md-4">
-            <p class="card-text">
-              <strong>起始日期:</strong>
-              <span>{{ issue_meta['data_date_str'] }}</span>
-            </p>
-          </div> -->
+
           <!-- 本Issue狀態 -->
           <div class="col-md-6">
             <p class="card-text">
@@ -243,52 +237,12 @@
           >回到導引列</a
         >
       </div>
-      <div class="card-body">
-        <!-- Table with hoverable rows -->
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Title</th>
-              <th scope="col">Date</th>
-              <th scope="col">Tag</th>
-              <th scope="col">Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item_meta in added_report_meta_list %}
-            <tr>
-              <th scope="row">{{loop.index}}</th>
 
-              <td
-                scope="row"
-                style="
-                  text-align: left;
-                  max-width: 500px;
-                  white-space: nowrap;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  color: #333;
-                  font-weight: bold;
-                "
-              >
-                <a
-                  href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
-                  class="{% if item_meta['is_viewed'] %} read-title {% endif %}"
-                  >{{ item_meta['title'] }}</a
-                >
-              </td>
+      <!-- 新增參考報告（table） -->
+      {% from 'macros/stock_document_table.html' import
+      render_stock_document_table %}
+      {{render_stock_document_table(added_report_meta_list) }}
 
-              <td style="white-space: nowrap">{{ item_meta['date_str'] }}</td>
-              <td>
-                <span class="tag true-tag">{{ item_meta['ticker'] }}</span>
-              </td>
-              <td style="text-align: center">{{ item_meta['source'] }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
     </div>
   </div>
   <!-- 在頁尾添加額外的間距 -->

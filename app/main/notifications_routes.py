@@ -1,7 +1,7 @@
 import re
 import pytz
-
 from flask import request, jsonify, render_template, redirect, url_for, flash, session, g
+from flask_login import login_required, current_user
 from bson import ObjectId
 from app.utils.mongodb_tools import MDB_client
 from app.utils.utils import *
@@ -46,13 +46,9 @@ def notification_detail(notification_id):
     if notification_meta is not None:
         mark_notification_as_read(notification_id)
         # 除去多餘的不可見字符和換行符
-        notification_text = re.sub(r'[\r\t]+', '', notification_meta['message']).strip()
-        # 
+        notification_text = re.sub(r'[\r\t]+', '', notification_meta['message']).strip() 
+        # 將換行符（單獨出現）替換為''，（避免在HTML中出現多餘的空行或<br>）
         notification_text = notification_text.replace('\n', '')
-        # # 將連續3個以上的換行符替換為2個<br>
-        # notification_text = re.sub(r'\n{3,}', '<br><br>', notification_text)
-        # notification_text = re.sub(r'\n{2}', '<br>', notification_text)
-        # # 將剩餘的換行符（單獨出現）替換為''，（避免在HTML中出現多餘的空行或<br>）
         notification_meta['message'] = notification_text
         
         return render_template("notification_detail.html", notification_meta=notification_meta)
@@ -82,11 +78,11 @@ def get_all_notifications(user_id):
     
     return render_template("notifications_overview.html", **context)
 
-@main.route('/notifications/display/<user_id>', methods=['POST'])
-def mark_notification_as_displayed(user_id):
+@main.route('/notifications/display/', methods=['POST'])
+def mark_notification_as_displayed():
     """將指定用戶的通知標示為已展示"""
     MDB_client["users"]["notifications"].update_many(
-        {"user_id": ObjectId(user_id), "is_displayed": False},
+        {"user_id": ObjectId(current_user.get_id()), "is_displayed": False},
         {"$set": {"is_displayed": True}}
     )
     return jsonify({"status": "success"}), 200 

@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 
 import logging
 import pandas as pd
-import re
+import os, re
 
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
@@ -18,7 +18,7 @@ from app import redis_instance
 # 引入權限設定
 from app import portfolio_info_access_role
 from app import ticker_setting_perm, issue_setting_perm
-
+from app import cache
 
 from . import main
 
@@ -112,7 +112,7 @@ def update_ticker_following_status():
         )
 
     return jsonify({"status": "success"})
-    
+
 @main.route('/ticker_internal_info/<ticker>')
 def ticker_internal_info(ticker):
     item_meta = pool_list_db.get_latest_ticker_info_meta_list(ticker_list=[ticker])[0]
@@ -141,88 +141,62 @@ def ticker_internal_info(ticker):
         "profit_rating": profit_rating,
         "risk_rating": risk_rating,
         "investment_thesis": investment_thesis,
-        
         "internal_stock_report_meta_list": internal_stock_report_meta_list,
         
     }
     return render_template('ticker_internal_info.html', **context)
 
+# http://127.0.0.1:5000/main/ticker_market_info_TW/2330_TT
+@main.route('/ticker_market_info_TW/<ticker>')
+@login_required
+def ticker_market_info_TW(ticker):
+    # 取得近期報告列表（近N篇）
+    stock_report_meta_list = list(MDB_client["raw_content"]["raw_stock_report_auto"].find({"tickers": ticker,
+                                                                                           "is_deleted": False}, 
+                                                                                          sort=[("data_timestamp", -1)],
+                                                                                          limit=100))
+    # 券商報告
+    for item_meta in stock_report_meta_list:
+        item_meta = beautify_document_for_display(item_meta)
+        item_meta["read_url"] = url_for("main.stock_document_page", market="TW", doc_type="stock_report", doc_id=item_meta["_id"])
+    
+    stock_memo_meta_list = list(MDB_client["raw_content"]["raw_stock_memo"].find({"tickers": ticker,
+                                                                                  "is_deleted": False}, 
+                                                                                 sort=[("data_timestamp", -1)], 
+                                                                                 limit=100))
+    # 券商法說
+    for item_meta in stock_memo_meta_list:
+        beautify_document_for_display(item_meta)
+        item_meta["title"] = item_meta["source"] if item_meta["source"] else "Unknown"
+        item_meta["read_url"] = url_for("main.stock_document_page", market="TW", doc_type="stock_memo", doc_id=item_meta["_id"])
+    
+    context = {
+        "ticker": ticker,
+        "ticker_num": ticker.split("_")[0], #去除台股的後綴
+        "stock_report_meta_list": stock_report_meta_list,
+        "stock_memo_meta_list": stock_memo_meta_list,
+    }
+    return render_template('ticker_market_info_TW.html', **context)
+
+# http://127.0.0.1:5000/main/ticker_market_info/AAPL
 @main.route('/ticker_market_info/<ticker>')
 @login_required
-# @cache.cached(timeout=60)  #緩存60秒
+@cache.cached(timeout=60)  #緩存60秒
 def ticker_market_info(ticker):
-    # 初始化變量，避免未定義錯誤
-    stock_report_review_date = ''
-    bullish_argument_list = []
-    bearish_argument_list = []
-    bullish_outlook_diff = ''
-    bearish_outlook_diff = ''
-    stock_info_date = TODAY_DATE_STR
-    stock_info_daily = ''
-    stock_report_meta_list = []
-    issue_meta_list = []
-        
-    # 取得近期報告的多空觀點彙整（stock_report_review）
-    stock_report_review_meta = MDB_client["published_content"]["stock_report_review"].find_one({"ticker": ticker}, sort=[("data_timestamp", -1)])
-    if stock_report_review_meta:
-        stock_report_review_date = datetime2str(stock_report_review_meta["data_timestamp"])
-        stock_report_review = stock_report_review_meta.get("stock_report_review", {})
-        bullish_argument_list = stock_report_review.get("bullish_outlook", [])
-        bearish_argument_list = stock_report_review.get("bearish_outlook", [])
-        bullish_outlook_diff = stock_report_review.get("bullish_outlook_diff", '')
-        bearish_outlook_diff = stock_report_review.get("bearish_outlook_diff", '')
-
-    # 取得近期新聞摘要(stock_info_daily)
-    shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker}, sort=[("data_timestamp", -1)])
-    if shorts_summary_meta:
-        stock_info_date = datetime2str(shorts_summary_meta["data_timestamp"])
-        stock_info_daily = shorts_summary_meta.get("shorts_summary", '')
-
-    # 取得近期報告列表（近N篇）
-    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"tickers": ticker}, sort=[("data_timestamp", -1)], limit=30))
-    for stock_report_meta in stock_report_meta_list:
-        stock_report_meta["title"] = stock_report_meta["title"].replace("_", " ")[:-4][:80]
-        stock_report_meta["data_timestamp"] = datetime2str(stock_report_meta["data_timestamp"])
-        stock_report_meta["upload_timestamp"] = datetime2str(stock_report_meta["upload_info"]["upload_timestamp"])
-        
-        source_trans_dict = {"gs": "Goldman Sachs", 
-                             "jpm": "J.P. Morgan", 
-                             "citi": "Citi", 
-                             "barclays": "Barclays",
-                             "seeking_alpha": "Seeking Alpha",}
-        
-        stock_report_meta["source"] = source_trans_dict.get(stock_report_meta["source"], stock_report_meta["source"])
-        stock_report_meta["_id"] = str(stock_report_meta["_id"])
-
-    # 取得用戶上傳的追蹤問題列表（近10個）
-    issue_id_list = [meta["_id"] for meta in MDB_client["users"]["following_issues"].find({"tickers": ticker}, {"_id": 1}).limit(10)]
+    # 若ticker為台股，則導向台股頁面（與美股頁面格式不同）
+    if ticker.endswith("_TT"):
+        return redirect(url_for("main.ticker_market_info_TW", ticker=ticker))
     
-    for issue_id in issue_id_list:
-        issue_meta = MDB_client["published_content"]["issue_review"].find_one({"issue_id": issue_id}, 
-                                                                                sort=[("upload_timestamp", -1)])
-        if issue_meta:
-            issue_meta["data_timestamp"] = datetime2str(issue_meta["data_timestamp"])
-            issue_meta["upload_timestamp"] = datetime2str(issue_meta["upload_timestamp"])    
-            issue_meta["ref_report_num"] =  len(issue_meta.get("ref_report_id", []))
-            issue_meta["added_report_num"] =  len(issue_meta.get("added_report_id", []))
-            issue_meta_list.append(issue_meta)
-        
-    # 在 render_template 中使用 **context 將字典展開為關鍵字參數
+    # 取得近期報告列表（近N篇）
+    stock_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"tickers": ticker}, sort=[("data_timestamp", -1)], limit=100))
+    for item_meta in stock_report_meta_list:
+        beautify_document_for_display(item_meta)
+        # 將文章連結導向內部摘要頁面
+        item_meta["read_url"] = url_for("main.stock_document_page", market="US", doc_type="stock_report", doc_id=item_meta["_id"])
+
     context = {
         'ticker': ticker,
-        'stock_report_review_date': stock_report_review_date,
-        
-        'bullish_argument_list': bullish_argument_list,
-        'bearish_argument_list': bearish_argument_list,
-        
-        'bullish_outlook_diff': bullish_outlook_diff,
-        'bearish_outlook_diff': bearish_outlook_diff,
-        
-        'stock_info_date': stock_info_date,
-        'stock_info_daily': stock_info_daily,
-        
         'stock_report_meta_list': stock_report_meta_list,
-        'item_meta_list': issue_meta_list,
     }
     return render_template('ticker_market_info.html', **context)
          
@@ -266,6 +240,29 @@ def ticker_setting_info(ticker):
     }
     return render_template('ticker_setting_info.html', **context)
 
+@main.route('/issue_search_suggestion', methods=['POST'])
+@login_required
+def issue_search_suggestion():
+    # 取得前端傳來的查詢字串
+    query = request.json.get('query')
+    # 构建查询条件：在 `issue` 或 `ticker` 字段中查找包含 `query` 的值
+    # $regex 运算符： 通过 $regex 运算符在 issue 或 ticker 字段中进行模糊匹配。"$options": "i" 选项使查询不区分大小写
+    # 用 $or 运算符来查找 issue 或 ticker 字段中包含 query 的记录
+    search_filter = {
+        "$or": [
+            {"issue": {"$regex": query, "$options": "i"}},  # `i`选项用于不区分大小写的匹配
+            {"tickers": {"$regex": query, "$options": "i"}}
+        ],
+        "is_active": True,
+    }
+    # 在 MongoDB 中查找符合条件的文档
+    results = MDB_client["users"]["following_issues"].find(search_filter)
+    # 将结果转换为列表并提取必要的字段
+    suggestions = [
+        {"issue_id": str(result["_id"]), "issue": result["issue"], "tickers": result.get("tickers", [])}
+        for result in results
+    ]    
+    return jsonify(suggestions)
 
 @main.route('/upload_investment_assumption', methods=['POST'])
 @login_required
@@ -307,29 +304,6 @@ def get_assumption_issues():
 
     return jsonify({"status": "success", "linked_issues": response_data})
 
-@main.route('/issue_search_suggestion', methods=['POST'])
-@login_required
-def issue_search_suggestion():
-    # 取得前端傳來的查詢字串
-    query = request.json.get('query')
-    # 构建查询条件：在 `issue` 或 `ticker` 字段中查找包含 `query` 的值
-    # $regex 运算符： 通过 $regex 运算符在 issue 或 ticker 字段中进行模糊匹配。"$options": "i" 选项使查询不区分大小写
-    # 用 $or 运算符来查找 issue 或 ticker 字段中包含 query 的记录
-    search_filter = {
-        "$or": [
-            {"issue": {"$regex": query, "$options": "i"}},  # `i`选项用于不区分大小写的匹配
-            {"tickers": {"$regex": query, "$options": "i"}}
-        ],
-        "is_active": True,
-    }
-    # 在 MongoDB 中查找符合条件的文档
-    results = MDB_client["users"]["following_issues"].find(search_filter)
-    # 将结果转换为列表并提取必要的字段
-    suggestions = [
-        {"issue_id": str(result["_id"]), "issue": result["issue"], "tickers": result.get("tickers", [])}
-        for result in results
-    ]    
-    return jsonify(suggestions)
 
 @main.route('/save_selected_issues', methods=['POST'])
 @login_required
@@ -392,56 +366,6 @@ def update_issue_status():
     MDB_client["users"]["following_issues"].update_one({"_id": ObjectId(issue_id)}, {"$set": {"is_active": is_active,
                                                                                               "updated_timestamp:": datetime.now()}})
     return jsonify({"status": "success"})
-
-#http://127.0.0.1:5000/main/report_summary_page/66fbcf6212144cbb9199bd7a
-@main.route("/report_summary_page/<report_id>")
-@login_required
-def report_summary_page(report_id):
-    stock_report_meta = MDB_client["preprocessed_content"]["stock_report"].find_one({"_id": ObjectId(report_id)})
-    
-    # 若報告id對應的資料不存在，則返回404頁面
-    if not stock_report_meta:
-        return render_template('404.html')
-    
-    # 若當前用戶尚未查看過此報告，則更新view_by字段，將當前用戶的id及當前閱讀時間，加入view_by
-    is_viewed = any(view_record["user_id"] == ObjectId(current_user.get_id()) for view_record in stock_report_meta.get("view_by", []))
-    if not is_viewed:
-        MDB_client["preprocessed_content"]["stock_report"].update_one(
-            { "_id": ObjectId(report_id) },
-            
-            {
-                "$addToSet": { 
-                    "view_by": { "user_id": ObjectId(current_user.get_id()), 
-                                "timestamp": datetime.now(timezone.utc) }
-                },
-            }, upsert=False  # 不需要創建新的文檔，僅更新現有文檔
-        )
-
-    # 去除文件的副檔名，如'.pdf'，並進行格式美化：原title有許多'_'，將其拆解後重組
-    stock_report_meta["title"] = stock_report_meta["title"].split('.')[0].replace('_', ' ') 
-    # 個股報告的tickers只有一個，直接取第一位
-    stock_report_meta["ticker"] = stock_report_meta["tickers"][0]
-    stock_report_meta["date_str"] = datetime2str(stock_report_meta["data_timestamp"])
-    
-    issue_meta_list = []
-    hidden_issue_meta_list = []
-    for issue_meta in stock_report_meta.get("issue_summary", []):
-        # 將ObjectId轉為str，以便前端綁定於class
-        issue_meta["issue_id"] = str(issue_meta["issue_id"])
-        # 若issue_content字數大於10，則將其加入issue_meta_list，否則加入hidden_issue_meta_list
-        if len(issue_meta.get("issue_content", '')) >= 10:
-            issue_meta_list.append(issue_meta)
-        else:
-            hidden_issue_meta_list.append(issue_meta)
-        
-    # 券商名稱格式美化
-    stock_report_meta["source"] = beautify_broker_name(stock_report_meta["source"])
-    
-    return render_template('report_summary_page.html', 
-                        item_meta=stock_report_meta,
-                        issue_meta_list=issue_meta_list,
-                        hidden_issue_meta_list=hidden_issue_meta_list)
-    
 
 # 顯示following_issues以及investment_assumptions的總覽表格（以及追蹤按鈕）
 @main.route("/investment_tracking_overview/<tracking_type>")
@@ -572,10 +496,9 @@ def investment_issue_review(item_id):
         
         # 格式美化
         for item_meta in added_report_meta_list + other_report_meta_list:
-            item_meta["date_str"] = datetime2str(item_meta["data_timestamp"])
-            item_meta["title"] = beautify_report_title(item_meta["title"])
-            item_meta["source"] = beautify_broker_name(item_meta["source"])
-            item_meta["is_viewed"] = any(view_record["user_id"] == ObjectId(current_user.get_id()) for view_record in item_meta.get("view_by", []))
+            item_meta = beautify_document_for_display(item_meta)
+            item_meta["read_url"] = url_for("main.stock_document_page", market="US", doc_type="stock_report", doc_id=item_meta["_id"])
+            
     else:
         issue_review_meta = {}
         added_report_meta_list = []
@@ -616,97 +539,36 @@ def investment_issue_setting(item_id):
 @main.route("/ticker_event_overview", methods=['GET', 'POST'])
 def ticker_event_overview():
     # Flask 無法自動將 URL 參數傳遞給函數參數中的 ticker_range，需手動從 request.args 中提取 ticker_range
-    ticker_range = request.args.get('ticker_range', 'following')  # 將ticker_range從GET參數中獲取，默認為'following'
+    ticker_range = request.args.get('ticker_range', 'all')  # 將ticker_range從GET參數中獲取，默認為'all'
     
-    if request.method == 'POST':
-        # 從表單獲取用戶輸入的時間範圍，將字符串轉換為 datetime 對象
-        start_timestamp = str2datetime(request.form.get('start_date'))
-        end_timestamp = str2datetime(request.form.get('end_date'))
-    else:
-        # 默認範圍
+    # 默認模式：查詢最近7天至未來30天的事件
+    if request.method == 'GET':
         start_timestamp = datetime.now(timezone.utc) - timedelta(days=7)
         end_timestamp = datetime.now(timezone.utc) + timedelta(days=30)
-    
-    event_meta_list = list(MDB_client["research_admin"]["ticker_event"].find({
-        "is_deleted": False,
-        "event_timestamp": {"$gte": start_timestamp, "$lte": end_timestamp},
-    }))
-    
-    # 透過following_users查找用戶追蹤的ticker，並篩選出相關事件
-    if ticker_range == "following":
-        following_ticker_meta_list = list(MDB_client["research_admin"]["ticker_info"].find({"following_users": ObjectId(current_user.get_id())}))
-        following_ticker_list = [meta["ticker"] for meta in following_ticker_meta_list]
-        event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["ticker"] in following_ticker_list]
-    
-    # 刪除earning_release（因與earning_call通常在同一天，沒必要重複顯示）
-    event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["event_type"] != "earnings_release"]
-    for event_meta in event_meta_list:
-        event_meta["event_type"] = event_meta["event_type"].replace("_", " ").title()
-        event_meta["event_timestamp"] = event_meta["event_timestamp"].strftime('%Y-%m-%d %H:%M')
+        event_meta_list = pool_list_db.get_ticker_event_meta_list(start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         
-    event_meta_list.sort(key=lambda x: x["event_timestamp"])
+        # 透過following_users查找用戶追蹤的ticker，並篩選出相關事件
+        if ticker_range == "following":
+            following_ticker_list = pool_list_db.get_following_ticker_list(user_id=ObjectId(current_user.get_id()))
+            event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["ticker"] in following_ticker_list]
+    
+    # 查詢模式：從表單獲取用戶輸入的時間範圍，將字符串轉換為 datetime 對象
+    elif request.method == 'POST':
+        start_date_str, end_date_str = request.form.get('start_date'), request.form.get('end_date')
+        ticker = request.form.get('ticker')
+        # 判斷用戶的查詢條件是否為空，若為空則將其設置為None
+        start_timestamp = str2datetime(start_date_str) if start_date_str else None
+        end_timestamp = str2datetime(end_date_str) if end_date_str else None
+        ticker_list = [ticker] if ticker else None
+        
+        event_meta_list = pool_list_db.get_ticker_event_meta_list(start_timestamp=start_timestamp, end_timestamp=end_timestamp, ticker_list=ticker_list)
+    
+    for item_meta in event_meta_list:
+        item_meta["linked_document_num"] = len(item_meta.get("linked_documents", []))
+        # 判斷事件是已經發生 / 即將發生（可能有誤差，因此處以UTC時間為準，但收錄時可能包含各種時區）
+        item_meta["is_upcoming"] = item_meta["event_timestamp"].replace(tzinfo=timezone.utc) > datetime.now(timezone.utc)
+        
     return render_template("ticker_event_overview.html", event_meta_list=event_meta_list)
-
-@main.route("/ticker_news_review", methods=['GET', 'POST'])
-def ticker_news_review():
-    ticker = request.form.get('ticker')
-    start_date = request.form.get('start_date')
-    end_date = request.form.get('end_date')
-    
-    start_timestamp = str2datetime(start_date)
-    end_timestamp = str2datetime(end_date)
-    
-    news_meta_list = list(MDB_client["preprocessed_content"]["stock_news_summary"].find({"ticker": ticker, "data_timestamp": {"$gte": start_timestamp, "$lte": end_timestamp}
-                                                                                                }, sort=[("data_timestamp", -1)], projection={"_id": 0, "ticker": 1, "data_timestamp": 1, "content": 1}))
-    
-    for item_meta in news_meta_list:
-        item_meta["date"] = datetime2str(item_meta["data_timestamp"])
-        
-    return render_template("ticker_news_review.html", ticker=ticker, start_date=start_date, end_date=end_date, item_meta_list=news_meta_list)
-
-@main.route("/ticker_news_overviews", methods=['GET', 'POST'])
-@login_required
-def ticker_news_overviews():
-    # 取得用戶的追蹤股票列表
-    following_ticker_meta_list = list(MDB_client["research_admin"]["ticker_info"].find({"following_users": ObjectId(current_user.get_id())}))
-    following_ticker_list = [meta["ticker"] for meta in following_ticker_meta_list]
-    # 取得用戶追蹤股票的新聞摘要
-    end_timestamp = datetime.now(timezone.utc)
-    start_timestamp = end_timestamp - timedelta(days=14)
-
-    raw_news_meta_list = list(MDB_client["preprocessed_content"]["stock_news_summary"].find({"ticker": {"$in": following_ticker_list}, "data_timestamp": {"$gte": start_timestamp, "$lte": end_timestamp}
-                                                                                                }, sort=[("data_timestamp", -1)], projection={"_id": 0, "ticker": 1, "data_timestamp": 1, "content": 1}))
-    if len(raw_news_meta_list) > 0:
-        # 使用 groupby('data_timestamp') 按照 data_timestamp 进行分组、使用 apply 函数对每个分组创建一个字典，将 ticker 作为键，content 作为值。
-        # 使用 to_dict() 方法将结果转换为字典格式。
-        news_summary_meta_list = pd.DataFrame(raw_news_meta_list).groupby('data_timestamp').apply(
-            lambda group: {
-                "data_timestamp": group['data_timestamp'].iloc[0],
-                "content": dict(zip(group['ticker'], group['content']))
-            }).tolist()
-
-        news_summary_meta_list.sort(key=lambda x: x['data_timestamp'], reverse=True)
-        # 計算所有新聞的總字數
-        url_pattern = re.compile(r'https?://\S+') # 定義正則表達式來匹配URL
-        weekday_list = ['(一)', '(二)', '(三)', '(四)', '(五)', '(六)', '(日)']
-        for item_meta in news_summary_meta_list:    
-            # 去除 URL 並計算所有新聞的總字數
-            word_count = sum(len(url_pattern.sub('', news)) for news in item_meta["content"].values())
-            item_meta["read_mins"] = str(round(word_count / 1000, 1)) + " mins"
-            # 格式化日期字符串
-            date_str = datetime2str(item_meta['data_timestamp'])
-            weekday_str = weekday_list[item_meta['data_timestamp'].weekday()]
-            # 用於id定位（ticker導引列）
-            item_meta["date_str"] = date_str
-            # 用於前端顯示（包含星期）
-            item_meta["date_with_weekday"] = f"{date_str} {weekday_str}"
-        
-    # 若無新聞，則返回空列表（避免報錯）
-    else:
-        news_summary_meta_list = []
-        
-    return render_template("ticker_news_overviews.html", item_meta_list=news_summary_meta_list)
-
 
 @main.route('/<page>')
 @login_required

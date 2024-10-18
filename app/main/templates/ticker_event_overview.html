@@ -17,24 +17,24 @@
 
     <div class="container mt-2 mx-6">
       <div class="alert alert-info" role="alert">
-        預設為顯示最近7日到未來30日，已追蹤個股的事件列表，如須查詢其餘條件請使用右側功能
+        預設為顯示最近7日到未來30日，系統涵蓋的所有事件列表，如須查詢特定條件請使用右側功能
       </div>
       <!-- flash alert（顯示事件文檔上傳結果） -->
       {% include "_flash_alert_model.html" %}
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Incoming Event List</h3>
+            <h3 class="card-title">Event List</h3>
             <div class="dropdown ml-auto">
               <button
-                class="btn btn-light dropdown-toggle"
+                class="btn btn-info dropdown-toggle"
                 type="button"
                 id="dropdownMenuButton"
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
               >
-                查詢歷史事件
+                條件查詢
               </button>
               <div
                 class="dropdown-menu dropdown-menu-right"
@@ -43,6 +43,9 @@
               >
                 <div class="container mt-2 mx-6">
                   <h3 class="card-title">Search</h3>
+                  <div class="alert alert-primary" role="alert">
+                    以下三個條件皆為選填，可全部留空（即查看所有事件）
+                  </div>
                   <hr class="my-4" />
                   <form
                     action="{{ url_for('main.ticker_event_overview') }}"
@@ -57,7 +60,6 @@
                           class="form-control"
                           id="start_date"
                           name="start_date"
-                          required
                         />
                       </div>
                       <div class="form-group col-md-6">
@@ -67,23 +69,41 @@
                           class="form-control"
                           id="end_date"
                           name="end_date"
-                          required
                         />
                       </div>
-                      <div class="form-group col-md-6">
-                        <button type="submit" class="btn btn-secondary">
-                          Search
-                        </button>
+                      <div class="form-group col-md-12">
+                        <label for="ticker">Ticker</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="ticker"
+                          name="ticker"
+                        />
                       </div>
+                    </div>
+                    <div class="form-group">
+                      <button type="submit" class="btn btn-outline-dark">
+                        Search
+                      </button>
                     </div>
                   </form>
                 </div>
               </div>
             </div>
             <a
-              class="btn btn-info ml-3"
-              href="{{ url_for('main.ticker_event_overview', ticker_range='all') }}"
-              >查看所有個股</a
+              class="btn btn-info ml-2"
+              href="{{ url_for('main.ticker_event_overview', ticker_range='following') }}"
+              >只看追蹤股</a
+            >
+            <a
+              class="btn btn-dark ml-2"
+              href="{{url_for('main.render_static_html', page='ticker_event_upload')}}"
+              >新增事件</a
+            >
+            <a
+              class="btn btn-dark ml-2"
+              href="{{ url_for('main.ticker_event_overview') }}"
+              ><i class="bi bi-arrow-clockwise"></i>預設</a
             >
           </div>
 
@@ -94,28 +114,50 @@
                 <th scope="col">#</th>
                 <th scope="col">Timestamp</th>
                 <th scope="col">Ticker</th>
-                <th scope="col">Event Type</th>
                 <th scope="col">Event</th>
+                <th scope="col">Docs</th>
                 <th scope="col">Upload</th>
+                <th scope="col">Download</th>
               </tr>
             </thead>
             <tbody>
               {% for item_meta in event_meta_list %}
               <tr>
                 <th scope="row">{{loop.index}}</th>
-                <td scope="row">{{item_meta["event_timestamp"]}}</td>
+                <!-- event timestamp -->
+                {% if item_meta["is_upcoming"] %}
+                <td scope="row" style="white-space: nowrap">
+                  {{ item_meta["event_time_str"] }}
+                </td>
+                {% else %}
+                <td scope="row" style="color: lightgray; white-space: nowrap">
+                  {{ item_meta["event_time_str"] }}
+                </td>
+                {% endif %}
+
+                <!-- event ticker -->
                 <td scope="row">
                   <a
-                    class="tag"
-                    style="color: black"
+                    class="tag true-tag"
                     href="{{ url_for('main.ticker_market_info', ticker=item_meta['ticker']) }}"
                     >{{ item_meta['ticker'] }}</a
                   >
                 </td>
-                <td scope="row">{{item_meta["event_type"]}}</td>
-                <td scope="row" style="text-align: left">
+                <!-- event title （若有上傳文件，則可點擊頁面）-->
+                 {% if item_meta["linked_document_num"] > 0 %}
+                <td scope="row" style="text-align: center">
+                  <a>{{item_meta["event_title"]}}</a>
+                </td>
+                {% else %}
+                <td scope="row" style="text-align: center">
                   {{item_meta["event_title"]}}
                 </td>
+                {% endif %}
+
+                <!-- event document num -->
+                <td>{{item_meta["linked_document_num"]}}</td>
+
+                <!-- event document upload -->
                 <td scope="row">
                   <a
                     class="bi bi-file-arrow-up button-like"
@@ -127,7 +169,7 @@
                   <!-- Modal -->
                   <div
                     class="modal fade"
-                    id="uploadModal{{loop.index}}"
+                    id="uploadModal{{ loop.index }}"
                     tabindex="-1"
                     role="dialog"
                     aria-labelledby="uploadModalLabel"
@@ -141,8 +183,8 @@
                             id="uploadModalLabel"
                             style="text-align: left"
                           >
-                            上傳： ({{item_meta["ticker"]}}) -
-                            {{item_meta["event_title"]}}
+                            文件上傳： ({{ item_meta["ticker"] }}) - {{
+                            item_meta["event_title"] }}
                           </h5>
                           <button
                             type="button"
@@ -153,27 +195,62 @@
                             <span aria-hidden="true">&times;</span>
                           </button>
                         </div>
-                        <form
-                          action="{{ url_for('main.upload_event_document') }}"
-                          method="POST"
-                          enctype="multipart/form-data"
-                        >
-                          <div class="modal-body">
+
+                        <div class="modal-body">
+                          <p style="text-align: left">已上傳文件：</p>
+                          <ul
+                            style="
+                              padding-left: 0;
+                              list-style: none;
+                              margin-bottom: 20px;
+                            "
+                          >
+                            {% for doc in item_meta["linked_documents"] %}
+                            <li class="card" style="text-align: left">
+                              {{ doc['title'] }}
+                            </li>
+                            {% endfor %}
+                          </ul>
+                          <div class="my-4"></div>
+                          <form
+                            action="{{ url_for('main.upload_event_document') }}"
+                            method="POST"
+                            enctype="multipart/form-data"
+                          >
                             <input
                               type="hidden"
                               name="event_id"
-                              value="{{item_meta['_id']}}"
+                              value="{{ item_meta['_id'] }}"
                             />
                             <input
                               type="hidden"
                               name="ticker"
-                              value="{{item_meta['ticker']}}"
+                              value="{{ item_meta['ticker'] }}"
                             />
                             <input
                               type="hidden"
-                              name="event_timestamp"
-                              value="{{item_meta['event_timestamp']}}"
+                              name="event_time_str"
+                              value="{{ item_meta['event_time_str'] }}"
                             />
+                            <div class="form-group" style="text-align: left">
+                              <label for="document_type">Document Type</label>
+                              <select
+                                class="form-control"
+                                id="document_type"
+                                name="document_type"
+                                required
+                              >
+                                <!-- <option value="" disabled selected>Select a document type</option> -->
+                                <option value="transcript">
+                                  Transcript || 逐字稿
+                                </option>
+                                <option value="slide">
+                                  Slide || 活動投影片
+                                </option>
+                                <option value="news">News || 相關新聞</option>
+                              </select>
+                            </div>
+
                             <div class="form-group">
                               <input
                                 type="file"
@@ -184,25 +261,35 @@
                                 required
                               />
                             </div>
-                          </div>
-                          <div class="modal-footer">
-                            <button
-                              type="button"
-                              class="btn btn-secondary"
-                              data-dismiss="modal"
-                            >
-                              取消
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                              上傳
-                            </button>
-                          </div>
-                        </form>
+
+                            <div class="modal-footer">
+                              <button
+                                type="button"
+                                class="btn btn-secondary"
+                                data-dismiss="modal"
+                              >
+                                取消
+                              </button>
+                              <button type="submit" class="btn btn-primary">
+                                上傳
+                              </button>
+                            </div>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </td>
+                <!-- link to seekingalpha (transcripts) -->
+                <td scope="row">
+                  <a
+                    class="bi bi-arrow-down-circle button-like"
+                    href="https://seekingalpha.com/symbol/{{item_meta['ticker']}}/earnings/transcripts"
+                    target="_blank"
+                  ></a>
+                </td>
               </tr>
+
               {% endfor %}
             </tbody>
           </table>

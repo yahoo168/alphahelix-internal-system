@@ -139,6 +139,10 @@ ticker_setting_perm = Permission(ticker_setting_role)
 issue_setting_role = RoleNeed('issue_setting_role')
 issue_setting_perm = Permission(issue_setting_role)
 
+# 文件的編輯、刪除權限
+document_edit_role = RoleNeed('document_edit_role')
+document_edit_perm = Permission(document_edit_role)
+
 us_internal_stock_report_upload_role = RoleNeed('us_internal_stock_report_upload_role')
 us_internal_stock_report_upload_perm = Permission(us_internal_stock_report_upload_role)
 
@@ -169,7 +173,7 @@ def get_roles_permission_dict():
         
         "tw_data_subscriber": [],
         
-        "admin": [portfolio_info_access_role, ticker_setting_role, issue_setting_role,
+        "admin": [portfolio_info_access_role, ticker_setting_role, document_edit_role, issue_setting_role,
                   us_internal_stock_report_upload_role, system_edit_role, us_market_stock_report_upload_role],
     }
     return role_permissions_dict

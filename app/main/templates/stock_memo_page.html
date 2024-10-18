@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <head>
+    {{ super() }}
+    <!-- 本頁面標題 -->
+    <title>{% block title %}{{ ticker }} - Memo{% endblock %}</title>
+  </head>
+
+  {% endblock %} {% block content %}
+  <body>
+    <div class="container mt-4">
+      <div class="card mb-4">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">Call Memo</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>Ticker:</strong>
+                <a
+                  class="tag"
+                  style="color: black"
+                  href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+                  >{{ ticker }}</a
+                >
+              </p>
+            </div>
+            
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>發布日期:</strong><span>{{data_date_str}}</span>
+              </p>
+            </div>
+
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>券商來源:</strong>
+                <span>{{source}}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <p id="memoContent" class="card-text">
+            {{content.replace('\n', "<br />") | safe}}
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
+
+{% block scripts %} {{ super() }}
+<script>
+  $("#memoContent").each(function () {
+    // 获取段落中的原始 HTML 内容
+    let rawText = $(this).html();
+
+    // 调用 linkifyText 函数，将文本中的 URL 替换为超链接
+    let newText = linkifyText(rawText);
+
+    // 更新 <p> 标签的 HTML 内容，插入处理后的文本
+    $(this).html(newText);
+  });
+</script>
+{% endblock %}

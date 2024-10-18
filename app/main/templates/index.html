@@ -1,62 +1,226 @@
 <!DOCTYPE html>
-{% extends "_main_base.html" %} {% block content %}
-<body>
-  <div class="jumbotron">
-    <h1 class="display-4">Alphahelix Internal System</h1>
-    <hr class="my-4" />
-    <p class="lead">一站式整合投資研究流程：研究工具、資料上傳、部位追蹤...</p>
-  </div>
-  <br />
-  <br />
-  <!-- 功能選擇 -->
-  <div class=".container mt-5 mb-5 mx-4">
-    <div class="row">
-      <div class="col-md-4 mb-3">
-        <a
-          href="{{url_for('main.research_management_overview')}}"
-          class="btn btn-light custom-high-button btn-block"
-          >研究管理
-        </a>
-      </div>
-      <div class="col-md-4 mb-3">
-        <a
-          href="{{url_for('main.render_static_html', page='research_tools_overview')}}"
-          class="btn btn-secondary custom-high-button btn-block"
-          >研究工具
-        </a>
-      </div>
-      <div class="col-md-4 mb-3">
-        <a
-          href="{{url_for('main.render_static_html', page='data_upload_overview')}}"
-          class="btn btn-light custom-high-button btn-block"
-          >資料上傳
-        </a>
-      </div>
-    </div>
+{% extends "_main_base.html" %} {% block head %}
+<head>
+  {{ super() }}
+  <style>
+    /* 自定義滿版橫幅區塊 */
+    .full-width-banner {
+      width: 100%;
+      padding: 150px 20px;
+      background: linear-gradient(
+        to right,
+        rgb(110, 167, 167),
+        rgb(30, 48, 94)
+      );
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+    }
 
+    /* 搜索框樣式 */
+    .search-box {
+      max-width: 800px;
+      margin: 30px auto;
+      position: relative; /* 必須設置相對定位，便於suggestions定位 */
+    }
+
+    .search-input {
+      height: 60px;
+      width: 80%;
+      border-top-left-radius: 30px;
+      border-bottom-left-radius: 30px;
+      padding: 15px;
+      font-size: 20px;
+    }
+
+    .search-button {
+      height: 60px !important;
+      width: 20% !important;
+      border-top-right-radius: 30px;
+      border-bottom-right-radius: 30px;
+      font-size: 20px;
+      padding: 0 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .search-button i {
+      font-size: 24px;
+    }
+
+    .function-card {
+      border-radius: 15px;
+      box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2),
+        0px 12px 24px rgba(0, 0, 0, 0.15);
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    .function-card-dark {
+      background-color: #4a4a4a;
+    }
+
+    .function-card-blue {
+      background-color: #7a7a7a;
+    }
+
+    .function-card-light {
+      background-color: #e0e0e0;
+      color: #333333;
+    }
+
+    .function-card-gray {
+      background-color: #9a9a9a;
+    }
+
+    .card-body {
+      font-size: 1.5rem;
+    }
+
+    .card-footer {
+      background: rgba(255, 255, 255, 0.1);
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+      border-radius: 15px;
+    }
+  </style>
+  {% endblock %}
+</head>
+{% block content %}
+<body>
+  <!-- 自定義滿版橫幅區塊 -->
+  <div class="full-width-banner">
+    <h1 class="display-4">Alphahelix Internal System</h1>
+    <hr class="my-4" style="border-color: #ffffff; width: 80%" />
+    <!-- 搜索框 -->
+    <div class="search-box">
+      <form class="form-inline d-flex justify-content-center">
+        <div class="input-group" style="width: 100%">
+          <input
+            id="allTextSearch"
+            type="text"
+            class="form-control search-input"
+            placeholder="# 搜尋功能開發中，僅供測試..."
+            aria-label="Search"
+          />
+
+          <div class="input-group-append">
+            <button class="btn btn-light search-button" type="submit">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+        <!-- 用於填入TickerSearchSuggestion回傳的建議列表 -->
+        <div
+          id="suggestions"
+          class="list-group mt-2"
+          style="width: 100%; position: absolute; top: 100%; z-index: 1000"
+        ></div>
+      </form>
+    </div>
+  </div>
+  <!-- 主頁面內容 -->
+  <div class="container-fluid px-4">
     <div class="row">
-      <div class="col-md-4 mb-3">
+      <div class="col-lg-3 col-md-6 col-sm-12">
         <a
-          href="{{url_for('main.render_static_html', page='quant_and_trading_overview')}}"
-          class="btn btn-secondary custom-high-button btn-block"
-          >量化與交易
+          href="{{url_for('main.ticker_news_overview')}}"
+          class="text-white text-decoration-none"
+        >
+          <div class="card function-card function-card-dark text-white">
+            <div class="card-body">新聞總結</div>
+            <div
+              class="card-footer d-flex align-items-center justify-content-between"
+            >
+              <ul class="list-inline d-flex justify-content-between mb-0">
+                <li class="list-inline-item">
+                  <a href="#" class="text-white"
+                    >Test 1</a
+                  >
+                </li>
+                <li class="list-inline-item">
+                  <a href="#" class="text-white"
+                    >Test 2</a
+                  >
+                </li>
+                <li class="list-inline-item">
+                  <a href="#" class="text-white"
+                    >Test 3</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
         </a>
       </div>
-      <div class="col-md-4 mb-3">
-        <a
-          href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
-          class="btn btn-light custom-high-button btn-block"
-          >公司行政
-        </a>
+
+      <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="card function-card function-card-blue text-white">
+          <div class="card-body">投資議題</div>
+          <div
+            class="card-footer d-flex align-items-center justify-content-between"
+          ></div>
+        </div>
       </div>
-      <div class="col-md-4 mb-3">
-        <a
-          href="{{url_for('main.render_static_html', page='system_manage_overview')}}"
-          class="btn btn-secondary custom-high-button btn-block"
-          >後台管理
-        </a>
+
+      <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="card function-card function-card-gray text-white">
+          <div class="card-body">研究文件</div>
+          <div
+            class="card-footer d-flex align-items-center justify-content-between"
+          ></div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="card function-card function-card-light">
+          <div class="card-body">個股事件</div>
+          <div
+            class="card-footer d-flex align-items-center justify-content-between"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
+  <!-- suggestion-template（隱藏樣式：供TickerSearchSuggestion調用） -->
+  <template id="suggestion-template">
+    <a
+      href="#"
+      class="list-group-item list-group-item-action p-3"
+      data-ticker=""
+      data-company-name=""
+      style="
+        width: 70%;
+        border-radius: 30px;
+        margin-bottom: 5px;
+        display: flex;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <span
+        class="ticker-symbol"
+        style="flex: 1; font-size: 20px; color: #333; text-align: left"
+      ></span>
+      <strong
+        class="company-name"
+        style="flex: 2; font-size: 20px; text-align: right; color: #333"
+      ></strong>
+    </a>
+  </template>
 </body>
+{% endblock %} {% block scripts %} {{super()}}
+<script>
+  // 默認將sidebar設為active (不使用$(document).ready，避免延遲)
+  $("#sidebar").addClass("active");
+
+  TickerSearchSuggestion(
+    (inputSelector = "#allTextSearch"), // 輸入框選擇器
+    (suggestionsSelector = "#suggestions"), // 建議列表選擇器
+    (apiUrl = "{{ url_for('main.ticker_search_suggestion') }}"), // 後端 API 的 URL
+    (itemUrl = "{{ url_for('main.ticker_market_info', ticker='') }}")
+  );
+</script>
 {% endblock %}

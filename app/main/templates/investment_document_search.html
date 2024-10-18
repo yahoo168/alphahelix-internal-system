@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %}
+  <head>
+    {% block head %} {{super()}}
+    <title>{% block title %} Document Search {% endblock %}</title>
+
+    <style>
+      #modalContent {
+        white-space: pre-wrap; /* 保持换行符，并自动换行 */
+        word-wrap: break-word; /* 长单词换行 */
+        overflow-wrap: break-word; /* 长单词换行 */
+      }
+      .modal-dialog {
+        max-width: 50%; /* 调整模态框最大宽度，使其适应屏幕比例 */
+        max-height: 70%; /* 模态框最大高度 */
+        resize: both; /* 允许模态框调整大小 */
+        overflow: auto; /* 允许内容滚动 */
+      }
+      .modal-content {
+        height: 100%;
+      }
+      .modal-resizable {
+        position: relative;
+      }
+    </style>
+
+    {% endblock %}
+  </head>
+  {% block content %}
+  <body>
+    <div class="container mt-5">
+      <h1>研究文件查詢</h1>
+      {% include "_flash_alert_model.html" %}
+      <form
+        action="{{ url_for('main.investment_document_search') }}"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <div class="form-group">
+          <label for="ticker">Ticker</label>
+          <input
+            type="text"
+            class="form-control"
+            id="ticker"
+            name="ticker"
+            required
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="start_date">Start Date (optional)</label>
+            <input
+              type="date"
+              class="form-control"
+              id="start_date"
+              name="start_date"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="end_date">End Date (optional)</label>
+            <input
+              type="date"
+              class="form-control"
+              id="end_date"
+              name="end_date"
+            />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline-info">Search</button>
+        <a
+          href="{{ url_for('main.investment_document_search', recent_days='7', market='US', doc_type='stock_report') }}"
+          class="btn btn-outline-dark"
+        >
+          近7日美股報告
+        </a>
+
+        <a
+          href="{{ url_for('main.investment_document_search', recent_days='7', market='TW', doc_type='stock_report') }}"
+          class="btn btn-outline-dark"
+        >
+          近7日台股報告
+        </a>
+
+        <a
+          href="{{ url_for('main.investment_document_search', recent_days='7', market='TW', doc_type='industry_report') }}"
+          class="btn btn-outline-dark"
+        >
+          近7日行業報告
+        </a>
+      </form>
+    </div>
+
+    <br />
+
+    <div class="container mt-2">
+      <div class="card">
+        <div class="card-body">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Date</th>
+                <th scope="col">Title</th>
+                <th scope="col">Tags</th>
+                <th scope="col">Type</th>
+                <th scope="col">Source</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in document_meta_list %}
+              <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td style="white-space: nowrap">
+                  {{ item_meta['data_date_str'] }}
+                </td>
+                <td
+                  scope="row"
+                  style="
+                    max-width: 500px;
+                    white-space: nowrap;
+                    text-align: left;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    color: #333;
+                    font-weight: bold;
+                  "
+                >
+                  <a
+                    href="{{item_meta['read_url']}}"
+                    target="_blank"
+                    class="{% if item_meta['is_viewed'] %} read-title {% endif %}"
+                    >{{ item_meta['title'] }}</a
+                  >
+                </td>
+                <td>
+                  {% for ticker in item_meta['tickers'] %}
+                  <a
+                    class="tag true-tag"
+                    href="{{url_for('main.ticker_market_info', ticker=ticker)}}"
+                    >{{ ticker }}</a
+                  >
+                  {% endfor %}
+                </td>
+                <td>{{ item_meta['doc_type'] }}</td>
+                <td>{{ item_meta['source'] }}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    data-toggle="modal"
+                    data-target="#metadataModal"
+                    data-doc_type="{{ item_meta['doc_type'] }}"
+                    data-market="{{ item_meta['market'] }}"
+                    data-doc_id="{{ item_meta['_id'] }}"
+                    data-title="{{ item_meta['title'] }}"
+                    data-data_timestamp="{{ item_meta['data_timestamp'] }}"
+                    data-data_source="{{ item_meta['source'] }}"
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="metadataModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="metadataModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="metadataModalLabel">Edit Meta Data</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="metadataForm">
+              <div class="form-group">
+                <label for="doc_type">Document Type</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="doc_type"
+                  name="doc_type"
+                  readonly
+                />
+              </div>
+              <div class="form-group">
+                <label for="market">Market</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="market"
+                  name="market"
+                  readonly
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="doc_id">Document ID</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="doc_id"
+                  name="doc_id"
+                  readonly
+                />
+              </div>
+              <div class="form-group">
+                <label for="title">Document Title</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                />
+              </div>
+              <div class="form-group">
+                <label for="datetime_str">Data Timestamp (UTC)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="datetime_str"
+                  name="datetime_str"
+                />
+              </div>
+              <div class="form-group">
+                <label for="data_source">Source</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="data_source"
+                  name="data_source"
+                />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              onclick="saveDocumentMeta()"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger"
+              onclick="deleteDocument()"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %} {% block scripts %} {{ super() }}
+
+  <script>
+    $(document).ready(function () {
+      // 確保 DOM 完全加載後再選取元素
+      var form = $("#metadataForm");
+      if (form.length === 0) {
+        console.error("表單 #metadataForm 未找到，請檢查表單的 ID 是否正確。");
+      } else {
+        console.log("表單已找到：", form);
+      }
+    });
+    $(document).ready(function () {
+      // metadataModal被觸發時，將隱藏在class中的資料填入表單
+      $("#metadataModal").on("show.bs.modal", function (event) {
+        var button = $(event.relatedTarget); // 触发按钮
+        var doc_type = button.data("doc_type");
+        var market = button.data("market");
+        var doc_id = button.data("doc_id");
+        var title = button.data("title");
+        var datetime_str = button.data("data_timestamp");
+        var data_source = button.data("data_source");
+
+        var modal = $(this);
+        modal.find("#doc_type").val(doc_type);
+        modal.find("#market").val(market);
+        modal.find("#doc_id").val(doc_id);
+        modal.find("#title").val(title);
+        modal.find("#datetime_str").val(datetime_str);
+        modal.find("#data_source").val(data_source);
+      });
+    });
+
+    function saveDocumentMeta() {
+      var form = $("#metadataForm");
+      var formData = {
+        doc_type: form.find("#doc_type").val(),
+        market: form.find("#market").val(),
+        doc_id: form.find("#doc_id").val(),
+        title: form.find("#title").val(),
+        datetime_str: form.find("#datetime_str").val(),
+        data_source: form.find("#data_source").val(),
+      };
+
+      $.ajax({
+        url: "{{ url_for('main.edit_investment_document_metadata') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        success: function (response) {
+          if (response.status === "success") {
+            console.log("Updated Successfully:", response);
+            $("#metadataModal").modal("hide");
+            location.reload();
+          } else {
+            console.error("Updated Fail", response.message);
+            alert("Operation Fail: Server Error");
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("Updated Fail");
+          alert("Operation Fail: Permission Denied");
+        },
+      });
+    }
+
+    function deleteDocument() {
+      // 顯示確認提示框
+      var confirmation = confirm("是否確認刪除本文件？");
+      if (!confirmation) {
+        return;
+      }
+      var form = $("#metadataForm");
+      var formData = {
+        doc_type: form.find("#doc_type").val(),
+        market: form.find("#market").val(),
+        doc_id: form.find("#doc_id").val(),
+      };
+
+      $.ajax({
+        url: "{{ url_for('main.delete_investment_document') }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(formData),
+        success: function (response) {
+          if (response.status === "success") {
+            console.log("Deleted Successfully:", response);
+            $("#metadataModal").modal("hide");
+            location.reload();
+          } else {
+            console.error("Deleted Fail", response.message);
+            alert("Operation Fail: Server Error");
+          }
+        },
+        error: function (xhr, status, error) {
+          console.error("Deleted Fail");
+          alert("Operation Fail: Permission Denied");
+        },
+      });
+    }
+  </script>
+  {% endblock %}
+</html>

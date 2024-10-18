@@ -23,7 +23,14 @@
       <h1 class="display-4">Event Upload</h1>
       <hr class="my-4" />
       <p class="lead"></p>
+      <a
+        class="btn btn-outline-dark"
+        href="{{url_for('main.ticker_event_overview')}}"
+      >
+        事件總覽
+      </a>
     </div>
+
     <div class="container mt-5">
       {% include "_flash_alert_model.html" %}
       <h2 class="card-title">Manual Upload</h2>

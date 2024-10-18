@@ -20,6 +20,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
+    <!-- font-awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <!-- bootstrap-icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    
+    <!-- self-defined JS -->
+    <script src="/static/assets/js/main.js"></script>
+    
     <style>
       /* 自定義高度的按鈕 */
       .custom-high-button {
@@ -66,6 +80,8 @@
         border-radius: 4px;
         padding: 2px 8px;
         font-size: 16px;
+        white-space: nowrap; 
+        /* 防止自動換行 */
       }
 
       .dark-tag {
@@ -181,14 +197,80 @@
       .read-title {
         color: purple; /* 已讀通知標題顏色，類似於Google已瀏覽過的網頁 */
       }
+
+      /* Sidebar styles */
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: -250px;
+        height: 100%;
+        width: 250px;
+        background-color: #343a40;
+        color: #fff;
+        transition: all 0.2s;
+        z-index: 1030;
+      }
+      #sidebar.active {
+        left: 0;
+      }
+
+      /* 當Sidebar active時，頁面內容向右偏移 */
+      #content {
+        transition: margin-left 0.3s ease;
+        margin-left: 0;
+      }
+
+      #sidebar.active ~ #content {
+        margin-left: 250px; /* 偏移與Sidebar寬度一致 */
+      }
+      #sidebar .nav-link {
+        color: #fff;
+      }
+
+      #sidebar .nav-link:hover,
+      .nav-link:hover {
+        background-color: #495057;
+        color: #333; /* 母頁面懸停顏色 */
+      }
+
+      .sidebar-toggle {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        cursor: pointer;
+        z-index: 1040;
+      }
+
+      /* 子頁面樣式 */
+      .submenu {
+        padding-left: 20px;
+        transition: height 0.3s ease !important;
+        overflow: hidden;
+      }
+      .submenu.collapse:not(.show) {
+        display: none;
+      }
+      .submenu.collapse.show {
+        display: block;
+        height: auto !important;
+      }
+
+      .submenu .nav-item {
+        padding-left: 20px;
+      }
+
+      /* 子頁面文字顏色 */
+      .submenu-link {
+        color: #007bff; /* 子頁面默認顏色 */
+      }
+      .submenu-link:hover {
+        color: #0056b3; /* 子頁面懸停顏色 */
+      }
     </style>
     {% block head %}{% endblock %}
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
-      <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
-        Alphahelix</a
-      >
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
           <!-- house-icon： Return to Home Page -->
@@ -308,26 +390,14 @@
               </ul>
             </div>
           </li>
-          <!-- People-icon: User Setting -->
-          <li class="nav-item">
-            <a href="/main/show_user_setting"
-              ><i class="nav-link bi bi-file-person-fill"></i>
-            </a>
-          </li>
-          <!-- Play-icon: For Testing -->
-          <li class="nav-item">
-            <a href="http://127.0.0.1:5000/main/pretrade_check_page"
-              ><i class="nav-link bi-ui-checks-grid"></i>
-            </a>
-          </li>
-          <!-- Logout-->
 
+          <!-- User Name:  User Setting -->
           <li class="nav-item">
-            <a class="nav-link" href="#">
+            <a class="nav-link" href="{{url_for('main.show_user_setting')}}">
               {{(current_user.username).replace('_', ' ').title()}}</a
             >
           </li>
-
+          <!-- Logout-->
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('auth.logout') }}">logout</a>
           </li>
@@ -335,12 +405,29 @@
       </div>
     </nav>
 
-    {% block content %}{% endblock %}
+    <!-- Sidebar -->
+    {% include "_sidebar.html" %}
+
+    <!-- Toggle Button -->
+    <div class="sidebar-toggle">
+      <i
+        class="fas fa-bars text-white"
+        id="toggleBtn"
+        style="font-size: 1.5rem"
+      ></i>
+    </div>
+    <!-- 頁面內容（包覆在同一個div中，以便配合sidebar調整） -->
+    <div id="content">{% block content %}{% endblock %}</div>
   </body>
 </html>
 
 <script>
   $(document).ready(function () {
+    // 點擊toggle按鈕，切換sidebar的active狀態
+    $("#toggleBtn").click(function () {
+      $("#sidebar").toggleClass("active");
+    });
+
     $("#notificationDropdown").on("click", function () {
       // 將通知圖示變回灰白色（检查并移除 "notification-icon-gold" 类）
       if ($("#notification_bell_icon").hasClass("notification-icon-gold")) {
@@ -349,9 +436,9 @@
       // 將通知右下角的數字隐藏（notification-badge）
       $(".notification-badge").hide();
 
-      const userId = $("#currentUserId").val();
+      // const userId = $("#currentUserId").val();
       // 会生成类似于 /main/notifications/display/ 的基础 URL。然后通过 JavaScript 动态地将 userId 追加到 URL 的末尾。
-      const apiUrl = `{{ url_for('main.mark_notification_as_displayed', user_id='') }}${userId}`;
+      const apiUrl = `{{ url_for('main.mark_notification_as_displayed') }}`;
       $.post(apiUrl, function (response) {
         console.log("All notifications marked as displayed");
       });

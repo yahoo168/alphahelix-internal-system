@@ -81,6 +81,45 @@
       >
     </div>
 
+    <!-- External Link Info -->
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-header">
+          <h5>外部網站（自動進入個股頁面）</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled">
+            <!-- SeekingAlpha -->
+            <li class="my-1">
+              <i class="bi bi-1-circle"></i>
+              <a
+                href="https://seekingalpha.com/symbol/{{ticker}}"
+                target="_blank"
+                >SeekingAlpha</a
+              >
+            </li>
+            <!-- 財報狗 -->
+            <li class="my-1">
+              <i class="bi bi-2-circle"></i>
+              <a
+                href="https://statementdog.com/analysis/{{ticker}}"
+                target="_blank"
+                >財報狗</a
+              >
+            </li>
+            <!-- 富途牛牛 -->
+            <li class="my-1">
+              <i class="bi bi-3-circle"></i>
+              <a
+                href="https://www.futunn.com/stock/{{ticker}}-US"
+                target="_blank"
+                >富途牛牛</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
     <!-- 新聞slide bar -->
     <!-- <div class="container mt-4">
       <h1>新聞內容 (<span id="current-date"></span>)</h1>
@@ -168,31 +207,38 @@
     <!-- {% include "_issue_review_model.html" %} -->
 
     <!-- 引入stock report模板 -->
-    {% include "_stock_report_table_model.html" %}
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-header"><h5>市場報告（近100篇）</h5></div>
+        {% from 'macros/stock_document_table.html' import
+        render_stock_document_table %}
+        {{render_stock_document_table(stock_report_meta_list) }}
+      </div>
+    </div>
 
     <!-- 在頁尾添加額外的間距 -->
     <div class="footer-spacing"></div>
 
     <script>
-      $(document).ready(function () {
-        // Process the stock info daily content
+      // $(document).ready(function () {
+      //   Process the stock info daily content
 
-        // Process the bullish and bearish outlook diff content
-        $("#bullish_outlook_diff_markdown").html(
-          marked.parse($("#bullish_outlook_diff_content").val())
-        );
-        $("#bearish_outlook_diff_markdown").html(
-          marked.parse($("#bearish_outlook_diff_content").val())
-        );
+      //   Process the bullish and bearish outlook diff content
+      //   $("#bullish_outlook_diff_markdown").html(
+      //     marked.parse($("#bullish_outlook_diff_content").val())
+      //   );
+      //   $("#bearish_outlook_diff_markdown").html(
+      //     marked.parse($("#bearish_outlook_diff_content").val())
+      //   );
 
-        // Process each issue review diff content
-        $('textarea[id^="issue_review_diff_content_"]').each(function () {
-          var index = $(this).attr("id").split("_").pop();
-          $("#issue_review_diff_markdown_" + index).html(
-            marked.parse($(this).val())
-          );
-        });
-      });
+      //   Process each issue review diff content
+      //   $('textarea[id^="issue_review_diff_content_"]').each(function () {
+      //     var index = $(this).attr("id").split("_").pop();
+      //     $("#issue_review_diff_markdown_" + index).html(
+      //       marked.parse($(this).val())
+      //     );
+      //   });
+      // });
 
       $(document).ready(function () {
         var today = new Date();

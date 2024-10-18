@@ -2,14 +2,14 @@
   <!-- <h1 class="display-6">市場報告</h1> -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">近期報告列表 (近3個月)</h5>
+      <h5 class="card-title">近期報告列表 (近100篇)</h5>
       <!-- Table with hoverable rows -->
       <table class="table table-hover">
         <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col">Title</th>
-            <th scope="col">Report Date</th>
+            <th scope="col">Date</th>
             <th scope="col">Source</th>
           </tr>
         </thead>
@@ -19,12 +19,24 @@
             <th scope="row">{{loop.index}}</th>
             <td style="text-align: left">
               <a
-                href="{{ url_for('main.report_summary_page', report_id=item_meta['_id']) }}"
-                >{{ item_meta['title'] }}</a
+                href="{{ url_for('main.stock_document_summary_page', doc_type='stock_report', doc_id=item_meta['_id'])}}"
               >
+                {{ item_meta['title'] }}
+              </a>
             </td>
-            <td>{{item_meta['data_timestamp']}}</td>
-            <td style="text-align: left">{{item_meta['source']}}</td>
+            <td
+              style="
+                max-width: 300px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              {{item_meta['data_timestamp']}}
+            </td>
+            <td style="text-align: left; white-space: nowrap">
+              {{item_meta['source']}}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

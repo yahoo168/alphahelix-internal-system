@@ -8,12 +8,22 @@
       {% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{%
       endblock %}
     </title>
+
+    <style>
+      p,
+      h3,
+      h4,
+      h5 {
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+    </style>
   </head>
 
   {% endblock %} {% block content %}
   <body>
     <div class="jumbotron text-center">
-      <h1 class="display-4"><strong>個股報告</strong></h1>
+      <h1 class="display-4"><strong>個股財報會議</strong></h1>
       <hr class="my-4" />
     </div>
 
@@ -30,7 +40,7 @@
         </div>
         <div class="card-body">
           <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
               <p class="card-text">
                 <strong>Ticker:</strong>
                 <a
@@ -41,13 +51,8 @@
                 >
               </p>
             </div>
-            <div class="col-md-4">
-              <p class="card-text">
-                <strong>報告來源:</strong>
-                <span>{{item_meta["source"]}}</span>
-              </p>
-            </div>
-            <div class="col-md-4">
+
+            <div class="col-md-6">
               <p class="card-text">
                 <strong>發布日期:</strong><span>{{item_meta["date_str"]}}</span>
               </p>
@@ -76,7 +81,11 @@
           <ul class="list-unstyled">
             <li>
               <i class="bi bi-star-fill" style="font-size: 12px"></i>
-              <a href="#summary_section">重點摘要</a>
+              <a href="#summary_overview_section">重點摘要</a>
+            </li>
+            <li>
+              <i class="bi bi-star-fill" style="font-size: 12px"></i>
+              <a href="#analyst_QA_summary_section">分析師提問</a>
             </li>
             {% for issue_meta in issue_meta_list %}
             <li>
@@ -105,36 +114,61 @@
       </div>
 
       <!-- 全文/多/空摘要-->
-      <div class="card" id="summary_section">
-        <p id="summary_overview">
-          {{ item_meta["summary"]|replace('\n+', '<br />') | safe }}
-        </p>
+      <div class="card" id="summary_overview_section">
+        <div class="card-header">
+          <h3>重點摘要</h3>
+        </div>
+        <div class="card-body">
+          <p id="summary_overview" class="card-text">
+            {{ item_meta["summary"] | safe }}
+          </p>
+        </div>
+      </div>
+
+      <!-- 分析師提問摘要-->
+      <div class="card">
+        <div class="card-header">
+          <h3>分析師提問</h3>
+        </div>
+
+        <div class="card-body" id="analyst_QA_summary_section">
+          <p id="analyst_QA_summary" class="card-text">
+            {{ item_meta["analyst_QA_summary"] | safe }}
+          </p>
+        </div>
       </div>
 
       <!-- issue_summary -->
-      {% for issue_meta in issue_meta_list %}
-      <div class="card" id="issue_{{ loop.index }}">
-        <h3>
-          {{ issue_meta["issue"] }}
-          <!-- 返回目錄按鈕 -->
-          <a
-            class="btn btn-outline-secondary btn-sm float-end"
-            href="#table_of_sections"
-            >返回目錄</a
-          >
-          <!-- 若有內容則顯示前往按鈕 -->
-          {% if issue_meta["issue_content"] %}
-          <a
-            class="btn btn-outline-primary btn-sm float-end me-2"
-            href="{{ url_for('main.investment_issue_review', item_id=issue_meta['issue_id']) }}"
-            >前往議題</a
-          >
-          {% endif %}
-        </h3>
-        {{ issue_meta["issue_content"].replace('\\n', '<br />').replace('\n',
-        '<br />') | safe }}
+      <div class="card">
+        <div class="card-header">
+          <h3>投資議題</h3>
+        </div>
+        <div class="card-body">
+          {% for issue_meta in issue_meta_list %}
+          <div class="card-text" id="issue_{{ loop.index }}">
+            <h5>
+              {{ issue_meta["issue"] }}
+              <!-- 返回目錄按鈕 -->
+              <a
+                class="btn btn-outline-secondary btn-sm float-end"
+                href="#table_of_sections"
+                >返回目錄</a
+              >
+              <!-- 若有內容則顯示前往按鈕 -->
+              {% if issue_meta["issue_content"] %}
+              <a
+                class="btn btn-outline-primary btn-sm float-end me-2"
+                href="{{ url_for('main.investment_issue_review', item_id=issue_meta['issue_id']) }}"
+                >前往議題</a
+              >
+              {% endif %}
+            </h5>
+            {{ issue_meta["issue_content"].replace('\\n', '<br />').replace('\n',
+            '<br />') | safe }}
+          </div>
+          {% endfor %}
+        </div>
       </div>
-      {% endfor %}
     </div>
 
     <!-- 顯示不包含的 issue 列表 （Hidden Issues Modal）-->
@@ -150,7 +184,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="hiddenIssuesModalLabel">
-              本報告不包含以下投資議題：
+              本文件不包含以下投資議題：
             </h5>
             <button
               type="button"
@@ -196,22 +230,12 @@
     <!-- 在頁尾添加額外的間距 -->
     <div class="footer-spacing"></div>
 
+    <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
     <script>
-      // $(document).ready(function () {
-      //   $("#summary_markdown").html(marked.parse($("#summary_text").val()));
-      // });
-
-      // 使用正則表達式找到「共識點」和「差異點」所在的行，並替換為<h3>標籤
-      // 辨識到「共識點」或「差異點」後，刪除其後面可能連接的':'或'：'
-      $("#summary_overview").html(function (_, html) {
-        return html.replace(
-          /(全文摘要|看多論點|看多论点|看空論點|看空论点)/g,
-          "<h3>$1</h3>"
-        );
-      });
-
       $(function () {
         $('[data-toggle="popover"]').popover();
+        convertMarkdownText("summary_overview");
+        convertMarkdownText("analyst_QA_summary");
       });
     </script>
   </body>

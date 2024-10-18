@@ -1,0 +1,267 @@
+<div id="sidebar">
+  <ul class="nav flex-column">
+    <li class="nav-item" style="height: 60px"></li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+        <span>
+          <i
+            class="fa-solid fa-house"
+            style="width: 20px; text-align: center"
+          ></i>
+          首頁
+        </span>
+      </a>
+    </li>
+
+    <!-- 研究管理（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        href="{{url_for('main.research_management_overview')}}"
+      >
+        <span>
+          <i
+            class="fa-solid fa-book"
+            style="width: 20px; text-align: center"
+          ></i>
+          研究管理
+        </span>
+      </a>
+    </li>
+
+    <!-- 公司行政（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
+      >
+        <span>
+          <i
+            class="fa-solid fa-folder"
+            style="width: 20px; text-align: center"
+          ></i>
+          公司行政
+        </span>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#researchToolsSubmenu"
+        aria-expanded="false"
+      >
+        <span>
+          <i
+            class="fa-solid fa-gear"
+            style="width: 20px; text-align: center"
+          ></i>
+          研究工具
+        </span>
+        <i class="bi bi-caret-down-fill"></i>
+      </a>
+      <ul class="nav flex-column collapse submenu" id="researchToolsSubmenu">
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('main.ticker_news_overview')}}">
+            新聞總結
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.render_static_html', page='investment_document_search')}}"
+          >
+            研究文件查詢
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('main.ticker_event_overview')}}">
+            個股事件
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+          >
+            投資議題
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+          >
+            投資假設
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('main.note_search_page')}}">
+            研究筆記
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!-- 量化與交易（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#quantAndTradingSubmenu"
+        aria-expanded="false"
+      >
+        <span>
+          <i
+            class="fa-solid fa-temperature-quarter"
+            style="width: 20px; text-align: center"
+          ></i>
+          量化與交易
+        </span>
+        <i class="bi bi-caret-down-fill"></i>
+      </a>
+      <ul class="nav flex-column collapse submenu" id="quantAndTradingSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.render_static_html', page='pretrade_check_page')}}"
+            >交易檢核</a
+          >
+        </li>
+      </ul>
+    </li>
+
+    <!-- 資料上傳（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#dataUploadSubmenu"
+        aria-expanded="false"
+      >
+        <span>
+          <i
+            class="fa-solid fa-cloud-arrow-up"
+            style="width: 20px; text-align: center"
+          ></i>
+          資料上傳
+        </span>
+        <i class="bi bi-caret-down-fill"></i>
+      </a>
+      <ul class="nav flex-column collapse submenu" id="dataUploadSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.render_static_html', page='internal_stock_report_upload')}}"
+            >內部研報上傳</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.render_static_html', page='market_stock_report_upload')}}"
+            >美股研報上傳</a
+          >
+        </li>
+    
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.render_static_html', page='ticker_event_upload')}}"
+            >個股事件上傳</a
+          >
+        </li>
+
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.market_stock_report_upload_record')}}"
+            >上傳紀錄查詢</a
+          >
+        </li>
+      </ul>
+    </li>
+
+    <!-- 用戶資訊（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#UserPageSubmenu"
+        aria-expanded="false"
+      >
+        <span>
+          <i
+            class="fa-solid fa-user"
+            style="width: 20px; text-align: center"
+          ></i>
+          用戶資訊
+        </span>
+        <i class="bi bi-caret-down-fill"></i>
+      </a>
+      <ul class="nav flex-column collapse submenu" id="UserPageSubmenu">
+        <li class="nav-item">
+          <a
+            class="nav-link submenu-link"
+            href="{{url_for('main.show_user_setting')}}"
+            >個人資訊</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link submenu-link"
+            href="{{url_for('main.get_all_notifications', user_id=current_user._id)}}"
+            >通知總覽</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link submenu-link"
+            href="{{url_for('main.ticker_following_setting')}}"
+            >追蹤設定</a
+          >
+        </li>
+      </ul>
+    </li>
+
+    <!-- 後台管理（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#backendManagementSubmenu"
+        aria-expanded="false"
+      >
+        <span>
+          <i
+            class="fa-solid fa-bars-progress"
+            style="width: 20px; text-align: center"
+          ></i>
+          後台管理
+        </span>
+        <i class="bi bi-caret-down-fill"></i>
+      </a>
+      <ul
+        class="nav flex-column collapse submenu"
+        id="backendManagementSubmenu"
+      >
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('auth.user_register')}}"
+            >建立用戶</a
+          >
+        </li>
+        <!-- 功能測試 -->
+        <li class="nav-item">
+          <a class="nav-link" href="http://127.0.0.1:5000/main/ticker_market_info_TW/2330_TT">功能測試</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>

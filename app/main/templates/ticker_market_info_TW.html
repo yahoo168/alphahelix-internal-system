@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %}
+
+  <head>
+    {{ super() }}
+    <!-- 本頁面標題 -->
+    <title>{% block title %}Market Stock Info: {{ticker}}{% endblock %}</title>
+  </head>
+
+  {% block head %}
+  <head>
+    {{ super() }}
+    <style>
+      .custom-container {
+        max-width: 70%; /* 設定容器的最大寬度 */
+        margin: 0 auto; /* 水平居中 */
+      }
+    </style>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron">
+      <h1 class="display-4">{{ticker}}</h1>
+      <hr class="my-4" />
+      <a
+        class="btn btn-outline-dark btn"
+        href="{{url_for('main.ticker_internal_info', ticker=ticker)}}"
+        >內部報告</a
+      >
+      <a
+        class="btn btn-outline-dark btn"
+        href="{{url_for('main.ticker_setting_info', ticker=ticker)}}"
+        >個股設定</a
+      >
+    </div>
+
+    <!-- External Link Info (上方表格) -->
+    <div class="container custom-container mt-2">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header">
+              <h5>外部網站（自動進入個股頁面）</h5>
+            </div>
+            <div class="card-body">
+              <ul class="list-unstyled">
+                <!-- 財報狗 -->
+                <li class="my-1">
+                  <i class="bi bi-1-circle"></i>
+                  <a
+                    href="https://statementdog.com/analysis/{{ticker_num}}"
+                    target="_blank"
+                    >財報狗</a
+                  >
+                </li>
+                <!-- 玩股網 -->
+                <li class="my-1">
+                  <i class="bi bi-2-circle"></i>
+                  <a
+                    href="https://www.wantgoo.com/stock/{{ticker_num}}"
+                    target="_blank"
+                    >玩股網</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% from 'macros/stock_document_table.html' import
+    render_stock_document_table %}
+
+    <!-- 引入法說memo模板 (下方左右表格) -->
+    <div class="container custom-container mt-2">
+      <div class="row">
+        <!-- 券商Memo -->
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header">
+              <h5>券商Memo</h5>
+            </div>
+            <br />
+
+            {{ render_stock_document_table(stock_memo_meta_list, show_tag=False,
+            show_source=False) }}
+          </div>
+        </div>
+
+        <!-- 市場報告 -->
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">
+              <h5>市場報告</h5>
+            </div>
+            {{ render_stock_document_table(stock_report_meta_list,
+            show_tag=False) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 在頁尾添加額外的間距 -->
+    <div class="footer-spacing"></div>
+  </body>
+  {% endblock %}
+</html>
