@@ -76,8 +76,9 @@
           近7日美股報告
         </a>
 
+        <!-- 此處不指定doc type（以便搜尋各類型台股文件） -->
         <a
-          href="{{ url_for('main.investment_document_search', recent_days='7', market='TW', doc_type='stock_report') }}"
+          href="{{ url_for('main.investment_document_search', recent_days='7', market='TW') }}"
           class="btn btn-outline-dark"
         >
           近7日台股報告
@@ -119,7 +120,7 @@
                 <td
                   scope="row"
                   style="
-                    max-width: 500px;
+                    max-width: 400px;
                     white-space: nowrap;
                     text-align: left;
                     overflow: hidden;

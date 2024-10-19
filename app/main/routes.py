@@ -65,7 +65,7 @@ def research_management_overview():
     ticker_info_meta_list = pool_list_db.get_latest_ticker_info_meta_list()
     id_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
     
-    user_id = ObjectId(current_user.get_id())
+    # user_id = ObjectId(current_user.get_id())
     # 判斷用戶是否有portfolio_info_access權限（顯示投資組合資訊
 
     # 待改：判斷用戶是否有portfolio_info_access權限（顯示投資組合資訊）
@@ -83,9 +83,10 @@ def research_management_overview():
         item_meta["profit_rating"] = item_meta["investment_ratings"].get("profit_rating", '-').replace("_", " ").title()
         item_meta["risk_rating"] = item_meta["investment_ratings"].get("risk_rating", '-').replace("_", " ").title()
         item_meta["tracking_level"] = item_meta["tracking_status"].get("tracking_level")
+        
         # 確保following_users為list（因經過dict轉換，有可能為空字串，導致報錯）
-        following_user_meta_list = item_meta.get("following_users", [])
-        item_meta["is_following"] = isinstance(following_user_meta_list, list) and (user_id in following_user_meta_list)
+        #following_user_meta_list = item_meta.get("following_users", [])
+        #item_meta["is_following"] = isinstance(following_user_meta_list, list) and (user_id in following_user_meta_list)
         
     return render_template('research_management_overview.html', 
                            has_portfolio_info_access=has_portfolio_info_access,
@@ -133,7 +134,7 @@ def ticker_internal_info(ticker):
     
     for internal_stock_report_meta in internal_stock_report_meta_list:
         internal_stock_report_meta["data_timestamp"] = datetime2str(internal_stock_report_meta["data_timestamp"])
-        internal_stock_report_meta["author"] = id_to_username_mapping_dict[internal_stock_report_meta["uploader_id"]].replace("_", " ").title()
+        internal_stock_report_meta["author"] = id_to_username_mapping_dict[internal_stock_report_meta["upload_info"]["uploader"]].replace("_", " ").title()
         
     context = {
         "ticker": ticker,
@@ -167,7 +168,7 @@ def ticker_market_info_TW(ticker):
     # 券商法說
     for item_meta in stock_memo_meta_list:
         beautify_document_for_display(item_meta)
-        item_meta["title"] = item_meta["source"] if item_meta["source"] else "Unknown"
+        item_meta["title"] = item_meta["beautified_source"] if item_meta["source"] else "Unknown"
         item_meta["read_url"] = url_for("main.stock_document_page", market="TW", doc_type="stock_memo", doc_id=item_meta["_id"])
     
     context = {
@@ -547,7 +548,7 @@ def ticker_event_overview():
         end_timestamp = datetime.now(timezone.utc) + timedelta(days=30)
         event_meta_list = pool_list_db.get_ticker_event_meta_list(start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         
-        # 透過following_users查找用戶追蹤的ticker，並篩選出相關事件
+        # 查找用戶追蹤的ticker，並篩選出相關事件
         if ticker_range == "following":
             following_ticker_list = pool_list_db.get_following_ticker_list(user_id=ObjectId(current_user.get_id()))
             event_meta_list = [event_meta for event_meta in event_meta_list if event_meta["ticker"] in following_ticker_list]

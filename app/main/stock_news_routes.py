@@ -7,8 +7,10 @@ import re
 
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
+
 from app.utils.mongodb_tools import MDB_client
 from app.utils.utils import *
+from app.utils.alphahelix_database_tools import pool_list_db
 
 from app import redis_instance
 # 引入權限設定
@@ -39,8 +41,8 @@ def ticker_news_review():
 @login_required
 def ticker_news_overview():
     # 取得用戶的追蹤股票列表
-    following_ticker_meta_list = list(MDB_client["research_admin"]["ticker_info"].find({"following_users": ObjectId(current_user.get_id())}))
-    following_ticker_list = [meta["ticker"] for meta in following_ticker_meta_list]
+    following_ticker_list = pool_list_db.get_following_ticker_list(user_id=ObjectId(current_user.get_id()))
+    
     # 取得用戶追蹤股票的新聞摘要
     end_timestamp = datetime.now(timezone.utc)
     start_timestamp = end_timestamp - timedelta(days=14)
@@ -57,7 +59,7 @@ def ticker_news_overview():
             }).tolist()
 
         news_summary_meta_list.sort(key=lambda x: x['data_timestamp'], reverse=True)
-        # 計算所有新聞的總字數
+        
         url_pattern = re.compile(r'https?://\S+') # 定義正則表達式來匹配URL
         weekday_list = ['(一)', '(二)', '(三)', '(四)', '(五)', '(六)', '(日)']
         for item_meta in news_summary_meta_list:    

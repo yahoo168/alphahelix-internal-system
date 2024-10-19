@@ -104,10 +104,8 @@ def get_stock_document_meta_list(doc_type, ticker=None, market=None, start_times
             doc_type=doc_type,
             doc_id=item_meta["_id"]
         )
-        
+
     return doc_meta_list
-
-
 
 # http://127.0.0.1:5000/main/stock_document_search
 # 搜尋所有投資文件
@@ -133,9 +131,7 @@ def investment_document_search():
             logging.error(f"Invalid recent_days value: {recent_days}")
     else:
         start_timestamp = str2datetime(start_date) if start_date else None
-    
-    # print(f"ticker: {ticker}, start: {start_timestamp}, end: {end_timestamp}, recent_days: {recent_days}, doc_type: {doc_type}, market: {market}")
-    
+        
     # 獲取文件元數據
     document_meta_list = []
     if doc_type:
@@ -143,6 +139,8 @@ def investment_document_search():
             doc_type=doc_type, ticker=ticker, market=market,
             start_timestamp=start_timestamp, end_timestamp=end_timestamp
         )
+    
+    # 若未指定文件類型，則查詢預設類型的文件（報告 + memo）
     else:
         stock_report_meta_list = get_stock_document_meta_list(
             doc_type="stock_report", ticker=ticker, market=market,
@@ -202,6 +200,7 @@ def stock_document_page(market, doc_type, doc_id):
     # 若為stock memo，轉址至stock_memo_page（memo格式與report / transcript不同）
     if doc_type == "stock_memo":
         return redirect(url_for('main.stock_memo_page', doc_id=doc_id))
+    
     # 若為stock report，則根據market不同，導向不同的頁面    
     elif (doc_type == "stock_report") and (market == "US"):
         html_template = "stock_report_page.html"

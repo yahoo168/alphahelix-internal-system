@@ -78,11 +78,56 @@
       font-size: 1.5rem;
     }
 
-    .card-footer {
-      background: rgba(255, 255, 255, 0.1);
-      border-bottom-left-radius: 15px;
-      border-bottom-right-radius: 15px;
-      border-radius: 15px;
+    .function-card-link-btn {
+      border-radius: 20px;
+      padding: 10px 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      color: white;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .function-card-link-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Dark card button styles */
+    .function-card-dark-btn {
+      background-color: #3a3a3a;
+    }
+
+    .function-card-dark-btn:hover {
+      background-color: #2a2a2a;
+    }
+
+    /* Blue card button styles */
+    .function-card-blue-btn {
+      background-color: #5a5a5a;
+    }
+
+    .function-card-blue-btn:hover {
+      background-color: #4a4a4a;
+    }
+
+    /* Light card button styles */
+    .function-card-light-btn {
+      background-color: #cccccc;
+      color: #333333;
+    }
+
+    .function-card-light-btn:hover {
+      background-color: #bbbbbb;
+      color: #333333;
+    }
+
+    /* Gray card button styles */
+    .function-card-gray-btn {
+      background-color: #7a7a7a;
+    }
+
+    .function-card-gray-btn:hover {
+      background-color: #6a6a6a;
     }
   </style>
   {% endblock %}
@@ -120,65 +165,87 @@
       </form>
     </div>
   </div>
-  <!-- 主頁面內容 -->
+
+  <!-- 功能頁面：快速導引 -->
   <div class="container-fluid px-4">
     <div class="row">
       <div class="col-lg-3 col-md-6 col-sm-12">
-        <a
-          href="{{url_for('main.ticker_news_overview')}}"
-          class="text-white text-decoration-none"
-        >
-          <div class="card function-card function-card-dark text-white">
-            <div class="card-body">新聞總結</div>
-            <div
-              class="card-footer d-flex align-items-center justify-content-between"
-            >
-              <ul class="list-inline d-flex justify-content-between mb-0">
-                <li class="list-inline-item">
-                  <a href="#" class="text-white"
-                    >Test 1</a
-                  >
-                </li>
-                <li class="list-inline-item">
-                  <a href="#" class="text-white"
-                    >Test 2</a
-                  >
-                </li>
-                <li class="list-inline-item">
-                  <a href="#" class="text-white"
-                    >Test 3</a
-                  >
-                </li>
-              </ul>
-            </div>
+        <div class="card function-card function-card-dark text-white">
+          <div class="card-body">
+            <i class="fa-solid fa-file" style="margin-right: 8px"></i
+            >本週研究報告
           </div>
-        </a>
+          <div
+            class="card-footer d-flex align-items-center justify-content-between"
+          >
+            <a
+              href="{{ url_for('main.investment_document_search', recent_days='7', market='US', doc_type='stock_report') }}"
+              class="btn function-card-link-btn function-card-dark-btn mr-2"
+              >美股報告</a
+            >
+            <!-- 此處不指定doc type（以便搜尋各類型台股文件） -->
+            <a
+              href="{{ url_for('main.investment_document_search', recent_days='7', market='TW') }}"
+              class="btn function-card-link-btn function-card-dark-btn mr-2"
+              >台股報告</a
+            >
+            <a
+              href="{{ url_for('main.investment_document_search', recent_days='7', market='TW', doc_type='industry_report') }}"
+              class="btn function-card-link-btn function-card-dark-btn"
+              >行業報告</a
+            >
+          </div>
+        </div>
       </div>
 
       <div class="col-lg-3 col-md-6 col-sm-12">
-        <div class="card function-card function-card-blue text-white">
-          <div class="card-body">投資議題</div>
+        <div
+          class="card function-card function-card-blue text-white text-decoration-none"
+        >
+          <div class="card-body">
+            <i class="fa-solid fa-newspaper" style="margin-right: 8px"></i>
+            新聞彙整
+          </div>
           <div
             class="card-footer d-flex align-items-center justify-content-between"
-          ></div>
+          >
+            <a
+              class="btn function-card-link-btn function-card-blue-btn"
+              href="{{url_for('main.ticker_news_overview')}}"
+            >
+              每日新聞
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="card function-card function-card-light text-dark">
+          <div class="card-body">待添加</div>
+          <div
+            class="card-footer d-flex align-items-center justify-content-between"
+          >
+            <a
+              href="#link1"
+              class="btn function-card-link-btn function-card-light-btn"
+              >待添加</a
+            >
+          </div>
         </div>
       </div>
 
       <div class="col-lg-3 col-md-6 col-sm-12">
         <div class="card function-card function-card-gray text-white">
-          <div class="card-body">研究文件</div>
+          <div class="card-body">待添加</div>
           <div
             class="card-footer d-flex align-items-center justify-content-between"
-          ></div>
-        </div>
-      </div>
-
-      <div class="col-lg-3 col-md-6 col-sm-12">
-        <div class="card function-card function-card-light">
-          <div class="card-body">個股事件</div>
-          <div
-            class="card-footer d-flex align-items-center justify-content-between"
-          ></div>
+          >
+            <a
+              href="#link1"
+              class="btn function-card-link-btn function-card-gray-btn"
+              >待添加</a
+            >
+          </div>
         </div>
       </div>
     </div>
