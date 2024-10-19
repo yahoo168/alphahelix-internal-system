@@ -54,7 +54,8 @@
 
             <div class="col-md-6">
               <p class="card-text">
-                <strong>發布日期:</strong><span>{{item_meta["date_str"]}}</span>
+                <strong>發布日期:</strong
+                ><span>{{item_meta["data_date_str"]}}</span>
               </p>
             </div>
           </div>
@@ -138,7 +139,8 @@
         </div>
       </div>
 
-      <!-- issue_summary -->
+      <!-- Issue Summary （若有issue才會顯示）-->
+      {% if issue_meta_list|length > 0 %}
       <div class="card">
         <div class="card-header">
           <h3>投資議題</h3>
@@ -169,6 +171,7 @@
           {% endfor %}
         </div>
       </div>
+      {% endif %}
     </div>
 
     <!-- 顯示不包含的 issue 列表 （Hidden Issues Modal）-->

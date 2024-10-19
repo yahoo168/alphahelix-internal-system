@@ -1,10 +1,8 @@
-from flask import request, jsonify, render_template, redirect, url_for, flash, send_file
+from flask import flash, request, jsonify, render_template, redirect, url_for, flash, send_file
 from flask import current_app as app
 from flask_login import login_required, current_user
 
 import logging
-import pandas as pd
-import os, re
 
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
@@ -51,8 +49,6 @@ def _get_collection_by_doc_type(doc_type, market="US"):
     
     return collection
 
-from flask import flash, url_for
-import logging
 
 def get_stock_document_meta_list(doc_type, ticker=None, market=None, start_timestamp=None, end_timestamp=None, max_num=100):
     # 若沒有market且ticker為None，報錯並退出
@@ -89,6 +85,7 @@ def get_stock_document_meta_list(doc_type, ticker=None, market=None, start_times
     # 執行查詢，按時間戳降序排序並限制最大數量
     try:
         doc_meta_list = list(collection.find(query).sort("data_timestamp", -1).limit(max_num))
+    
     except Exception as e:
         logging.error(f"Database query failed: {e}")
         flash("Failed to retrieve documents from the database", "danger")
@@ -140,17 +137,27 @@ def investment_document_search():
             start_timestamp=start_timestamp, end_timestamp=end_timestamp
         )
     
-    # 若未指定文件類型，則查詢預設類型的文件（報告 + memo）
+    # 若未指定文件類型，則依照市場類別查詢預設類型的文件
+    # - 美股：Report + Transcript
+    # - 台股：Report + Memo
     else:
         stock_report_meta_list = get_stock_document_meta_list(
-            doc_type="stock_report", ticker=ticker, market=market,
-            start_timestamp=start_timestamp, end_timestamp=end_timestamp
-        )
-        stock_memo_meta_list = get_stock_document_meta_list(
-            doc_type="stock_memo", ticker=ticker, market=market,
-            start_timestamp=start_timestamp, end_timestamp=end_timestamp
-        )
-        document_meta_list = stock_report_meta_list + stock_memo_meta_list
+                doc_type="stock_report", ticker=ticker, market=market,
+                start_timestamp=start_timestamp, end_timestamp=end_timestamp
+            )
+        if market == "US":
+            transcript_meta_list = get_stock_document_meta_list(
+                doc_type="transcript", ticker=ticker, market=market,
+                start_timestamp=start_timestamp, end_timestamp=end_timestamp
+            )
+            document_meta_list = stock_report_meta_list + transcript_meta_list
+            
+        elif market == "TW":    
+            stock_memo_meta_list = get_stock_document_meta_list(
+                doc_type="stock_memo", ticker=ticker, market=market,
+                start_timestamp=start_timestamp, end_timestamp=end_timestamp
+            )
+            document_meta_list = stock_report_meta_list + stock_memo_meta_list
 
     # 按照時間戳排序，並格式化顯示
     document_meta_list.sort(key=lambda x: x["data_timestamp"], reverse=True)
@@ -319,3 +326,30 @@ def delete_investment_document():
     except Exception as e:
         print(e)
         return jsonify({'status': 'error', 'message': str(e)})
+    
+@main.route('/get_stock_shorts_summary', methods=['GET'])
+def get_stock_shorts_summary():
+    ticker, date_str = request.args.get('ticker'), request.args.get('date')
+    redis_key = f"stock_news_daily {ticker} {date_str}"
+    redis_value = redis_instance.get(redis_key)
+    # 若redis中無此日期的新聞，則從mongodb中取得
+    if redis_value is None:
+        date_datetime = str2datetime(date_str)
+        shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker,
+                                                                                             "data_timestamp": date_datetime},
+                                                                                            sort=[("data_timestamp", -1)])
+        logging.info(shorts_summary_meta)
+        if shorts_summary_meta:
+            stock_news_daily = shorts_summary_meta.get("content", '')
+            
+        else:
+            stock_news_daily = ''
+        # 將新聞存入redis中，並設置過期時間為60秒
+        redis_instance.set(redis_key, stock_news_daily, ex=60)
+        
+    # 若redis中有此日期的新聞，則直接取得（redis中的資料為bytes，需轉為utf-8）
+    else:
+        logging.info("redis_value is not None")
+        stock_news_daily = redis_value.decode('utf-8')
+    
+    return jsonify({"date": date_str, "stock_news_daily": stock_news_daily})

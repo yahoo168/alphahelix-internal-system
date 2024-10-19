@@ -31,37 +31,9 @@ logger = logging.getLogger(__name__)
 def dashboard():
     return render_template('index.html', title='Dashboard')
 
-@main.route('/get_stock_shorts_summary', methods=['GET'])
-def get_stock_shorts_summary():
-    ticker, date_str = request.args.get('ticker'), request.args.get('date')
-    redis_key = f"stock_news_daily {ticker} {date_str}"
-    redis_value = redis_instance.get(redis_key)
-    # 若redis中無此日期的新聞，則從mongodb中取得
-    if redis_value is None:
-        date_datetime = str2datetime(date_str)
-        shorts_summary_meta = MDB_client["preprocessed_content"]["shorts_summary"].find_one({"ticker": ticker,
-                                                                                             "data_timestamp": date_datetime},
-                                                                                            sort=[("data_timestamp", -1)])
-        logging.info(shorts_summary_meta)
-        if shorts_summary_meta:
-            stock_news_daily = shorts_summary_meta.get("content", '')
-            
-        else:
-            stock_news_daily = ''
-        # 將新聞存入redis中，並設置過期時間為60秒
-        redis_instance.set(redis_key, stock_news_daily, ex=60)
-        
-    # 若redis中有此日期的新聞，則直接取得（redis中的資料為bytes，需轉為utf-8）
-    else:
-        logging.info("redis_value is not None")
-        stock_news_daily = redis_value.decode('utf-8')
-    
-    return jsonify({"date": date_str, "stock_news_daily": stock_news_daily})
-
-
-@main.route("/research_management_overview")
+@main.route("/coverage_overview")
 @login_required
-def research_management_overview():
+def coverage_overview():
     ticker_info_meta_list = pool_list_db.get_latest_ticker_info_meta_list()
     id_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
     
@@ -83,36 +55,20 @@ def research_management_overview():
         item_meta["profit_rating"] = item_meta["investment_ratings"].get("profit_rating", '-').replace("_", " ").title()
         item_meta["risk_rating"] = item_meta["investment_ratings"].get("risk_rating", '-').replace("_", " ").title()
         item_meta["tracking_level"] = item_meta["tracking_status"].get("tracking_level")
-        
-        # 確保following_users為list（因經過dict轉換，有可能為空字串，導致報錯）
-        #following_user_meta_list = item_meta.get("following_users", [])
-        #item_meta["is_following"] = isinstance(following_user_meta_list, list) and (user_id in following_user_meta_list)
-        
-    return render_template('research_management_overview.html', 
+                
+    return render_template('coverage_overview.html', 
                            has_portfolio_info_access=has_portfolio_info_access,
                            pool_list_meta_list=ticker_info_meta_list)
 
-@main.route("/update_ticker_following_status", methods=['POST'])
-def update_ticker_following_status():
-    data = request.json
-    item_id, follow_status = data.get('item_id'), data.get('follow_status')
-    collection = MDB_client["research_admin"]["ticker_info"]
-    user_id = ObjectId(current_user.get_id())
-    
-    if follow_status:
-        # 如果 follow_status 为 True，添加 user_id 到 following_users
-        collection.update_one(
-            {"_id": ObjectId(item_id)},
-            {"$addToSet": {"following_users": ObjectId(user_id)}}  # 使用 $addToSet 防止重复添加
-        )
-    else:
-        # 如果 follow_status 为 False，从 following_users 中移除 user_id
-        collection.update_one(
-            {"_id": ObjectId(item_id)},
-            {"$pull": {"following_users": ObjectId(user_id)}}  # 使用 $pull 移除 user_id
-        )
-
-    return jsonify({"status": "success"})
+@main.route('/internal_investment_report_overview')
+def internal_investment_report_overview():
+    stock_report_meta_list = pool_list_db.get_internal_stock_report_meta_list()
+    for item_meta in stock_report_meta_list:
+        item_meta["report_type"] = item_meta["report_type"].title()
+        item_meta["title"] = os.path.splitext(item_meta["title"])[0].replace("_", " ")
+        
+    return render_template('internal_investment_report_overview.html', 
+                           stock_report_meta_list=stock_report_meta_list)
 
 @main.route('/ticker_internal_info/<ticker>')
 def ticker_internal_info(ticker):
@@ -128,13 +84,11 @@ def ticker_internal_info(ticker):
     investment_thesis = item_meta.get("investment_ratings", {}).get("investment_thesis", '')
     
     # 取得最近的內部報告
-    internal_stock_report_meta_list = pool_list_db.get_internal_stock_report(ticker=ticker)
-    internal_stock_report_meta_list.sort(key=lambda x: x["data_timestamp"], reverse=True)
-    id_to_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
+    stock_report_meta_list = pool_list_db.get_internal_stock_report_meta_list(ticker=ticker)
     
-    for internal_stock_report_meta in internal_stock_report_meta_list:
-        internal_stock_report_meta["data_timestamp"] = datetime2str(internal_stock_report_meta["data_timestamp"])
-        internal_stock_report_meta["author"] = id_to_username_mapping_dict[internal_stock_report_meta["upload_info"]["uploader"]].replace("_", " ").title()
+    for item_meta in stock_report_meta_list:
+        item_meta["report_type"] = item_meta["report_type"].title()
+        item_meta["title"] = os.path.splitext(item_meta["title"])[0].replace("_", " ")
         
     context = {
         "ticker": ticker,
@@ -142,7 +96,7 @@ def ticker_internal_info(ticker):
         "profit_rating": profit_rating,
         "risk_rating": risk_rating,
         "investment_thesis": investment_thesis,
-        "internal_stock_report_meta_list": internal_stock_report_meta_list,
+        "stock_report_meta_list": stock_report_meta_list,
         
     }
     return render_template('ticker_internal_info.html', **context)
@@ -578,4 +532,3 @@ def render_static_html(page):
 
 if __name__ == '__main__':
     app.run(debug=True)
-    

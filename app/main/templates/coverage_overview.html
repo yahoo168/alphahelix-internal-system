@@ -22,7 +22,7 @@
   {% endblock %} {% block content %}
   <body>
     <div class="jumbotron">
-      <h1 class="display-4">Research Management</h1>
+      <h1 class="display-4">Coverage</h1>
       <hr class="my-4" />
       <p class="lead">
         <!-- 個股追蹤設定 -->
@@ -178,7 +178,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
 
 <script>
-  apiURL = "{{url_for('main.update_ticker_following_status')}}";
-  handleFollowItem(apiURL);
+  $("#Table").DataTable({
+    paging: true, // 启用分页
+    ordering: true, // 启用排序
+    info: true, // 启用表格信息
+    searching: true, // 启用搜索
+    pageLength: 50, // 设置每页显示 50 条记录
+  });
 </script>
 {% endblock %}

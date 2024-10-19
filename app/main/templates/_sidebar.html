@@ -13,11 +13,14 @@
       </a>
     </li>
 
-    <!-- 研究管理（母頁面） -->
+    <!-- 研究管理(母頁面) -->
     <li class="nav-item">
       <a
-        class="nav-link"
-        href="{{url_for('main.research_management_overview')}}"
+        class="nav-link d-flex justify-content-between align-items-center"
+        href="#"
+        data-toggle="collapse"
+        data-target="#researchManagement"
+        aria-expanded="false"
       >
         <span>
           <i
@@ -26,25 +29,28 @@
           ></i>
           研究管理
         </span>
+        <i class="bi bi-caret-down-fill"></i>
       </a>
+      <ul class="nav flex-column collapse submenu" id="researchManagement">
+        <!-- Coverage -->
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('main.coverage_overview')}}"
+            >Coverage</a
+          >
+        </li>
+
+        <!-- 研究紀錄 -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.internal_investment_report_overview')}}"
+            >研究紀錄</a
+          >
+        </li>
+      </ul>
     </li>
 
-    <!-- 公司行政（母頁面） -->
-    <li class="nav-item">
-      <a
-        class="nav-link"
-        href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
-      >
-        <span>
-          <i
-            class="fa-solid fa-folder"
-            style="width: 20px; text-align: center"
-          ></i>
-          公司行政
-        </span>
-      </a>
-    </li>
-
+    <!-- 研究工具（母頁面） -->
     <li class="nav-item">
       <a
         class="nav-link d-flex justify-content-between align-items-center"
@@ -63,17 +69,19 @@
         <i class="bi bi-caret-down-fill"></i>
       </a>
       <ul class="nav flex-column collapse submenu" id="researchToolsSubmenu">
-        <li class="nav-item">
-          <a class="nav-link" href="{{url_for('main.ticker_news_overview')}}">
-            新聞總結
-          </a>
-        </li>
+        <!-- 研究文件查詢 -->
         <li class="nav-item">
           <a
             class="nav-link"
             href="{{url_for('main.render_static_html', page='investment_document_search')}}"
           >
             研究文件查詢
+          </a>
+        </li>
+        <!-- 新聞總結 -->
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('main.ticker_news_overview')}}">
+            新聞總結
           </a>
         </li>
 
@@ -168,7 +176,7 @@
             >美股研報上傳</a
           >
         </li>
-    
+
         <li class="nav-item">
           <a
             class="nav-link"
@@ -185,6 +193,22 @@
           >
         </li>
       </ul>
+    </li>
+
+    <!-- 公司行政（母頁面） -->
+    <li class="nav-item">
+      <a
+        class="nav-link"
+        href="{{url_for('main.render_static_html', page='company_admin_overview')}}"
+      >
+        <span>
+          <i
+            class="fa-solid fa-folder"
+            style="width: 20px; text-align: center"
+          ></i>
+          公司行政
+        </span>
+      </a>
     </li>
 
     <!-- 用戶資訊（母頁面） -->
@@ -259,7 +283,11 @@
         </li>
         <!-- 功能測試 -->
         <li class="nav-item">
-          <a class="nav-link" href="http://127.0.0.1:5000/main/ticker_market_info_TW/2330_TT">功能測試</a>
+          <a
+            class="nav-link"
+            href="http://127.0.0.1:5000/main/ticker_market_info_TW/2330_TT"
+            >功能測試</a
+          >
         </li>
       </ul>
     </li>

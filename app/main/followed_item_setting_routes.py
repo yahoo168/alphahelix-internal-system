@@ -76,3 +76,25 @@ def ticker_search_suggestion():
     results = [{"ticker": result["ticker"], "company_name": result.get("company_name", "")} for result in search_results]
     
     return jsonify(results)
+
+# @main.route("/update_ticker_following_status", methods=['POST'])
+# def update_ticker_following_status():
+#     data = request.json
+#     item_id, follow_status = data.get('item_id'), data.get('follow_status')
+#     collection = MDB_client["research_admin"]["ticker_info"]
+#     user_id = ObjectId(current_user.get_id())
+    
+#     if follow_status:
+#         # 如果 follow_status 为 True，添加 user_id 到 following_users
+#         collection.update_one(
+#             {"_id": ObjectId(item_id)},
+#             {"$addToSet": {"following_users": ObjectId(user_id)}}  # 使用 $addToSet 防止重复添加
+#         )
+#     else:
+#         # 如果 follow_status 为 False，从 following_users 中移除 user_id
+#         collection.update_one(
+#             {"_id": ObjectId(item_id)},
+#             {"$pull": {"following_users": ObjectId(user_id)}}  # 使用 $pull 移除 user_id
+#         )
+
+#     return jsonify({"status": "success"})

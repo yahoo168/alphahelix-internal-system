@@ -179,20 +179,20 @@
             class="card-footer d-flex align-items-center justify-content-between"
           >
             <a
-              href="{{ url_for('main.investment_document_search', recent_days='7', market='US', doc_type='stock_report') }}"
+              href="{{ url_for('main.investment_document_search', recent_days='7', market='US') }}"
               class="btn function-card-link-btn function-card-dark-btn mr-2"
-              >美股報告</a
+              >美股</a
             >
             <!-- 此處不指定doc type（以便搜尋各類型台股文件） -->
             <a
               href="{{ url_for('main.investment_document_search', recent_days='7', market='TW') }}"
               class="btn function-card-link-btn function-card-dark-btn mr-2"
-              >台股報告</a
+              >台股</a
             >
             <a
               href="{{ url_for('main.investment_document_search', recent_days='7', market='TW', doc_type='industry_report') }}"
               class="btn function-card-link-btn function-card-dark-btn"
-              >行業報告</a
+              >行業研究</a
             >
           </div>
         </div>
