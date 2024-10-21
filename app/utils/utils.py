@@ -49,6 +49,8 @@ def beautify_broker_name(name):
                     "esun": "玉山投顧",
                     "yuanfu": "元富投顧",
                     "haitong": "海通國際",
+                    
+                    "statementdog": "財報狗",
                     }
     
     return trans_dict.get(name, name)
