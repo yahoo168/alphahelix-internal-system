@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% extends "_main_base.html" %} {% block head %}
+  <head>
+    {{ super() }}
+    <title>
+      {% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{%
+      endblock %}
+    </title>
+
+    <style>
+      .mfp-interpretation {
+        font-size: 18px;
+        color: #333;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 5px;
+        text-align: left;
+        box-sizing: border-box;
+        word-wrap: break-word;
+        white-space: normal;
+        display: inline-block;
+      }
+      .img-dynamic {
+        object-fit: cover;
+        width: 100%;
+        height: 250px;
+      }
+      .image-nav {
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+      }
+      .image-nav a {
+        margin-right: 10px;
+        color: #007bff;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .image-nav a:hover {
+        text-decoration: underline;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.min.js"></script>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="jumbotron text-center">
+      <h1 class="display-4"><strong>行業報告</strong></h1>
+      <hr class="my-4" />
+    </div>
+
+    <div class="container mt-4">
+      <!-- 圖片目錄導引 -->
+      <div class="image-nav">
+        <strong>圖片目錄：</strong>
+        <ul>
+          {% for image_meta in item_meta['image_summary'] %}
+          <li>
+            <a
+              href="javascript:void(0)"
+              class="image-link"
+              data-target="{{ loop.index }}"
+            >
+              圖{{ loop.index }}: {{ image_meta['caption'] }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- 圖片展示區 -->
+      <div class="row">
+        {% for image_meta in item_meta['image_summary'] %}
+        <div
+          class="col-lg-4 col-md-4 col-sm-12 mb-3"
+          id="image{{ loop.index }}"
+        >
+          <a
+            href="{{ image_meta['url'] }}"
+            class="image-popup"
+            data-interpretation="{{ image_meta['interpretation'] }}"
+            data-index="{{ loop.index }}"
+          >
+            <div class="card">
+              <img
+                src="{{ image_meta['url'] }}"
+                class="card-img-top img-dynamic"
+                alt="{{ image_meta['caption'] }}"
+              />
+              <div class="card-body">
+                <h5 class="card-title">
+                  圖{{loop.index}}：{{ image_meta['caption'] }}
+                </h5>
+              </div>
+            </div>
+          </a>
+        </div>
+        {% if loop.index % 3 == 0 %}
+      </div>
+      <div class="row">{% endif %} {% endfor %}</div>
+    </div>
+
+    <div class="footer-spacing"></div>
+
+    <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+    <script>
+      $(document).ready(function () {
+        // 初始化所有圖片彈出視窗
+        $(".image-popup").magnificPopup({
+          type: "image",
+          gallery: {
+            enabled: true,
+          },
+          callbacks: {
+            open: function () {
+              var interpretation = this.currItem.el.attr("data-interpretation");
+              updateInterpretation(interpretation);
+            },
+            change: function () {
+              var interpretation = this.currItem.el.attr("data-interpretation");
+              updateInterpretation(interpretation);
+            },
+            close: function () {
+              $(".mfp-interpretation").remove();
+            },
+          },
+          closeOnContentClick: false,
+          closeOnBgClick: false,
+          closeBtnInside: true,
+        });
+
+        function updateInterpretation(interpretation) {
+          $(".mfp-interpretation").remove();
+          $('<div class="mfp-interpretation">' + interpretation + "</div>")
+            .appendTo(".mfp-content")
+            .css({
+              width: $(".mfp-img").width() + "px",
+              "margin-top": "5px",
+            });
+        }
+
+        // 點擊目錄中的連結時，觸發對應圖片的彈出
+        $(".image-link").click(function () {
+          var targetIndex = $(this).data("target");
+          // 找到對應 index 的圖片連結，並模擬點擊以打開彈出視窗
+          $('.image-popup[data-index="' + targetIndex + '"]').click();
+        });
+      });
+    </script>
+  </body>
+  {% endblock %}
+</html>

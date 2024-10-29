@@ -29,7 +29,7 @@
 
     <style>
       /* 使用 Flexbox 布局，使标题和按钮在同一行显示 */
-      .header-row {
+      /* .header-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -51,7 +51,7 @@
         top: 30px;
         font-size: 15px;
         transform: translateX(-50%);
-        white-space: nowrap; /* 防止文本換行 */
+        white-space: nowrap;
       }
 
       .card {
@@ -61,7 +61,7 @@
         padding: 16px;
         margin-bottom: 16px;
         background-color: #fff;
-      }
+      } */
     </style>
   </head>
   {% endblock %} {% block content %}
@@ -120,93 +120,18 @@
         </div>
       </div>
     </div>
-    <!-- 新聞slide bar -->
-    <!-- <div class="container mt-4">
-      <h1>新聞內容 (<span id="current-date"></span>)</h1>
-      <div id="timeline" class="container"></div>
-      <br /><br />
-      <p id="stock_news_daily"></p>
-      <hr class="my-4" />
-    </div> -->
 
-    <!-- 市場觀點 -->
-    <!-- <div class="container mt-4">
-      <h1 class="display-6">市場觀點</h1>
-      <div class="alert alert-info" role="alert">
-        以下觀點涵蓋近10篇研究報告
-        <strong>（更新日期：{{stock_report_review_date}}）</strong>
+    <!-- 個股事件文件（使用stock report模板） -->
+    <div class="container mt-2 mx-6">
+      <div class="card">
+        <div class="card-header"><h5>財報會議摘要</h5></div>
+        {% from 'macros/stock_document_table.html' import
+        render_stock_document_table %}
+        {{render_stock_document_table(event_doc_meta_list, show_tag=False, show_source=False) }}
       </div>
-      <div class="row">
-        <div class="col-md-6 left-container">
-          <h2>Bullish Outlook</h2>
-          <ol class="list-group">
-            {% for argument in bullish_argument_list %}
-            <li class="list-group-item">
-              <strong>{{loop.index}}.</strong> {{argument}}
-            </li>
-            {% endfor %}
-          </ol>
-          <br />
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-toggle="collapse"
-            data-target="#bullish_outlook_diff"
-            aria-expanded="false"
-            aria-controls="bullish_outlook_diff"
-          >
-            觀點變化
-          </button>
-          <br />
-          <div class="collapse" id="bullish_outlook_diff">
-            <div
-              class="card card-body"
-              id="bullish_outlook_diff_markdown"
-            ></div>
-            <textarea id="bullish_outlook_diff_content" style="display: none">
-{{bullish_outlook_diff}}</textarea
-            >
-          </div>
-        </div>
-        <div class="col-md-6 right-container">
-          <h2>Bearish Outlook</h2>
-          <ol class="list-group">
-            {% for argument in bearish_argument_list %}
-            <li class="list-group-item">
-              <strong>{{loop.index}}.</strong> {{argument}}
-            </li>
-            {% endfor %}
-          </ol>
-          <br />
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-toggle="collapse"
-            data-target="#bearish_outlook_diff"
-            aria-expanded="false"
-            aria-controls="bearish_outlook_diff"
-          >
-            觀點變化
-          </button>
-          <br />
-          <div class="collapse" id="bearish_outlook_diff">
-            <div
-              class="card card-body"
-              id="bearish_outlook_diff_markdown"
-            ></div>
-            <textarea id="bearish_outlook_diff_content" style="display: none">
-{{bearish_outlook_diff}}</textarea
-            >
-          </div>
-        </div>
-      </div>
-      <br />
-    </div> -->
+    </div>
 
-    <!-- 引入issue review模板 -->
-    <!-- {% include "_issue_review_model.html" %} -->
-
-    <!-- 引入stock report模板 -->
+    <!-- 市場報告（使用stock report模板） -->
     <div class="container mt-2 mx-6">
       <div class="card">
         <div class="card-header"><h5>市場報告（近100篇）</h5></div>
@@ -220,26 +145,6 @@
     <div class="footer-spacing"></div>
 
     <script>
-      // $(document).ready(function () {
-      //   Process the stock info daily content
-
-      //   Process the bullish and bearish outlook diff content
-      //   $("#bullish_outlook_diff_markdown").html(
-      //     marked.parse($("#bullish_outlook_diff_content").val())
-      //   );
-      //   $("#bearish_outlook_diff_markdown").html(
-      //     marked.parse($("#bearish_outlook_diff_content").val())
-      //   );
-
-      //   Process each issue review diff content
-      //   $('textarea[id^="issue_review_diff_content_"]').each(function () {
-      //     var index = $(this).attr("id").split("_").pop();
-      //     $("#issue_review_diff_markdown_" + index).html(
-      //       marked.parse($(this).val())
-      //     );
-      //   });
-      // });
-
       $(document).ready(function () {
         var today = new Date();
         var startDate = new Date();

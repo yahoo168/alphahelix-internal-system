@@ -55,7 +55,9 @@ def coverage_overview():
         item_meta["profit_rating"] = item_meta["investment_ratings"].get("profit_rating", '-').replace("_", " ").title()
         item_meta["risk_rating"] = item_meta["investment_ratings"].get("risk_rating", '-').replace("_", " ").title()
         item_meta["tracking_level"] = item_meta["tracking_status"].get("tracking_level")
-                
+    
+    # Sort the list by ticker (alphabetically)
+    ticker_info_meta_list.sort(key=lambda x: x["ticker"])
     return render_template('coverage_overview.html', 
                            has_portfolio_info_access=has_portfolio_info_access,
                            pool_list_meta_list=ticker_info_meta_list)
@@ -136,7 +138,7 @@ def ticker_market_info_TW(ticker):
 # http://127.0.0.1:5000/main/ticker_market_info/AAPL
 @main.route('/ticker_market_info/<ticker>')
 @login_required
-@cache.cached(timeout=60)  #緩存60秒
+# @cache.cached(timeout=60)  #緩存60秒
 def ticker_market_info(ticker):
     # 若ticker為台股，則導向台股頁面（與美股頁面格式不同）
     if ticker.endswith("_TT"):
@@ -149,8 +151,19 @@ def ticker_market_info(ticker):
         # 將文章連結導向內部摘要頁面
         item_meta["read_url"] = url_for("main.stock_document_page", market="US", doc_type="stock_report", doc_id=item_meta["_id"])
 
+    # 取得近期財報會議逐字稿
+    event_doc_meta_list = list(MDB_client["preprocessed_content"]["event_document"].find({"tickers": ticker}, sort=[("data_timestamp", -1)], limit=100))
+    for item_meta in event_doc_meta_list:
+        # 查找文件對應的個股事件，並以事件標題替換原文件標題
+        event_id = item_meta.get("event_id")
+        event_meta = MDB_client["research_admin"]["ticker_event"].find_one({"_id": event_id})
+        item_meta["title"] = event_meta.get("event_title", item_meta["title"])
+        beautify_document_for_display(item_meta)
+        item_meta["read_url"] = url_for("main.stock_document_page", market="US", doc_type="transcript", doc_id=item_meta["_id"])
+        
     context = {
         'ticker': ticker,
+        'event_doc_meta_list': event_doc_meta_list,
         'stock_report_meta_list': stock_report_meta_list,
     }
     return render_template('ticker_market_info.html', **context)
@@ -343,6 +356,9 @@ def investment_tracking_overview(tracking_type):
     
     # 取得所有active的item_meta_list
     item_meta_list = list(collection.find({"is_active": True}))
+    # 依照upload_timestamp排序（最新的在最前面）
+    item_meta_list.sort(key=lambda x: x['upload_timestamp'], reverse=True)
+    
     for item_meta in item_meta_list:
         item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
         item_meta["updated_timestamp"] = datetime2str(item_meta["updated_timestamp"])
@@ -350,7 +366,6 @@ def investment_tracking_overview(tracking_type):
         item_meta["item_type"] = tracking_type
         item_meta["uploader"] = id_mapping_dict[item_meta["uploader"]]["username"]
         item_meta["is_following"] = (ObjectId(user_id) in item_meta.get("following_users", []))
-        item_meta["followers_num"] = len(item_meta.get("following_users", []))
         
     return render_template(html_template, item_meta_list=item_meta_list)
 
@@ -496,9 +511,9 @@ def ticker_event_overview():
     # Flask 無法自動將 URL 參數傳遞給函數參數中的 ticker_range，需手動從 request.args 中提取 ticker_range
     ticker_range = request.args.get('ticker_range', 'all')  # 將ticker_range從GET參數中獲取，默認為'all'
     
-    # 默認模式：查詢最近7天至未來30天的事件
+    # 默認模式：查詢最近3天至未來30天的事件
     if request.method == 'GET':
-        start_timestamp = datetime.now(timezone.utc) - timedelta(days=7)
+        start_timestamp = datetime.now(timezone.utc) - timedelta(days=3)
         end_timestamp = datetime.now(timezone.utc) + timedelta(days=30)
         event_meta_list = pool_list_db.get_ticker_event_meta_list(start_timestamp=start_timestamp, end_timestamp=end_timestamp)
         

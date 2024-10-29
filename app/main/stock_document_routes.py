@@ -215,14 +215,30 @@ def stock_document_page(market, doc_type, doc_id):
     elif doc_type == "transcript":
         html_template = "stock_transcript_page.html"
     
-    # 若為行業報告或台股個股報告，添加瀏覽紀錄後，直接導向原文連結（因未經過預處理）
-    elif (doc_type == "stock_report" and market == "TW") or (doc_type == "industry_report"):    
+    # 若為台股個股報告，添加瀏覽紀錄後，直接導向原文連結（因未經過預處理）
+    elif (doc_type == "stock_report" and market == "TW"):
         doc_meta = collection.find_one({"_id": ObjectId(doc_id)})
         if not doc_meta:
             return render_template('404.html')
         add_document_view_record(doc_type, doc_id, current_user.get_id(), market="TW")
         return redirect(doc_meta["url"])
-        
+    
+    # 行業報告：測試轉接功能（先判斷是否有摘要，再決定返回的url為何）     
+    elif doc_type == "industry_report":
+        # 查詢原始文件的 meta 資訊
+        doc_meta = collection.find_one({"_id": ObjectId(doc_id)})
+        processed_info = doc_meta.get("processed_info", {})
+        # 檢查是否已提取摘要或圖片
+        if processed_info.get("is_summary_extracted", False) or processed_info.get("is_image_extracted", False):
+            # 若已提取任一項，查詢預處理後的內容並渲染頁面
+            collection = MDB_client["preprocessed_content"]["industry_report"]
+            html_template = "industry_report_page.html"
+            # processed_doc_meta = MDB_client["preprocessed_content"]["industry_report"].find_one({"_id": ObjectId(doc_id)})
+            # return render_template("industry_report_page.html", item_meta=processed_doc_meta)
+        else:
+            # 否則導向原始文件的 URL
+            return redirect(doc_meta["url"])
+    
     # 若doc_type不為上述三者，則返回404頁面 
     else:
         return render_template('404.html')
@@ -234,7 +250,11 @@ def stock_document_page(market, doc_type, doc_id):
         return render_template('404.html')
     
     # 個股報告的tickers只有一個，直接取第一位
-    doc_meta["ticker"] = doc_meta["tickers"][0]
+    if doc_meta["tickers"]:
+        doc_meta["ticker"] = doc_meta["tickers"][0]
+    else:
+        doc_meta["ticker"] = ''
+    
     doc_meta = beautify_document_for_display(doc_meta)
     
     issue_meta_list, hidden_issue_meta_list = [], []
@@ -246,6 +266,9 @@ def stock_document_page(market, doc_type, doc_id):
             issue_meta_list.append(issue_meta)
         else:
             hidden_issue_meta_list.append(issue_meta)
+    
+    # 過濾掉低分圖片
+    doc_meta["image_summary"] = [img for img in doc_meta.get("image_summary", []) if img["score"] >= 70]
     
     return render_template(html_template, 
                         item_meta=doc_meta,

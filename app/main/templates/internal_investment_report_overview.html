@@ -14,7 +14,7 @@
   <body>
     {% block content %}
     <div class="jumbotron">
-      <h1 class="display-4"><strong>研究紀錄</strong></h1>
+      <h1 class="display-4"><strong>內部研究紀錄</strong></h1>
       <hr class="my-4" />
       <a
         class="btn btn-outline-dark"
@@ -26,7 +26,6 @@
     <div class="container mt-2 mx-6">
       <div class="card">
         <div class="card-body">
-          <div class="card-header"><h5>報告列表</h5></div>
           <div class="card-body">
             {% from 'macros/stock_document_table.html' import
             render_internal_stock_report_table %}

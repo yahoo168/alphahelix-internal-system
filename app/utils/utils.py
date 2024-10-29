@@ -49,7 +49,7 @@ def beautify_broker_name(name):
                     "esun": "玉山投顧",
                     "yuanfu": "元富投顧",
                     "haitong": "海通國際",
-                    
+                    "horizon": "宏遠",
                     "statementdog": "財報狗",
                     }
     

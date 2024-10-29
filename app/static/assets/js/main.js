@@ -7,6 +7,7 @@ function handleFollowItem(apiUrl) {
     info: true, // 启用表格信息
     searching: true, // 启用搜索
     pageLength: 50, // 设置每页显示 50 条记录
+    order: [[3, 'desc']], // 强制根据第4列（upload timestamp）进行逆序排序
   });
 
   $(document).on("click", ".follow-item", function () {
@@ -34,10 +35,10 @@ function handleFollowItem(apiUrl) {
         .removeClass("bi-suit-heart")
         .addClass("bi-suit-heart-fill heart-red");
 
-      // 更新 followers_num
-      var followerNumElem = $("#follower_num_" + itemId);
-      var currentFollowers = parseInt(followerNumElem.text());
-      followerNumElem.text(currentFollowers + 1);
+      // // 更新 followers_num
+      // var followerNumElem = $("#follower_num_" + itemId);
+      // var currentFollowers = parseInt(followerNumElem.text());
+      // followerNumElem.text(currentFollowers + 1);
 
       // 更新 Follow 列的 data-sort 属性
       clickedIcon.closest("td").attr("data-sort", "1");
@@ -47,8 +48,8 @@ function handleFollowItem(apiUrl) {
     }
 
     // 强制 DataTables 重新计算排序并刷新表格
-    var row = clickedIcon.closest("tr");
-    table.row(row).invalidate().draw(false); // 使该行无效并重新读取数据，保留当前分页
+    // var row = clickedIcon.closest("tr");
+    // table.row(row).invalidate().draw(false); // 使该行无效并重新读取数据，保留当前分页
 
     // 发送 AJAX 请求到后端
     $.ajax({

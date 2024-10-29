@@ -87,9 +87,11 @@ show_source=True) %}
     {% for item_meta in doc_meta_list %}
     <tr>
       <th scope="row">{{loop.index}}</th>
-      <td>{{ item_meta['data_date_str'] }}</td>
-      <td>{{ item_meta['author'] }}</td>
-
+      <!-- Date -->
+      <td style="white-space: nowrap">{{ item_meta['data_date_str'] }}</td>
+      <!-- Author -->
+      <td style="white-space: nowrap">{{ item_meta['author'] }}</td>
+      <!-- Tickers -->
       <td>
         {% for ticker in item_meta['tickers'] %}
         <a
@@ -99,10 +101,12 @@ show_source=True) %}
         >
         {% endfor %}
       </td>
-
-      <td><span class="tag">{{ item_meta['report_type'] }}</span></td>
-
-      <td>
+      <!-- Report Type -->
+      <td style="white-space: nowrap">
+        <span class="tag">{{ item_meta['report_type'] }}</span>
+      </td>
+      <!-- Title -->
+      <td style="white-space: nowrap">
         <a href="{{ item_meta['url'] }}" target="_blank"
           >{{ item_meta['title'] }}</a
         >

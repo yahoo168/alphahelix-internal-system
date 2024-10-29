@@ -16,10 +16,8 @@ from urllib.parse import urlparse
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# REDIS_URL = "rediss://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-44-214-29-16.compute-1.amazonaws.com:9029"
-
 # Mini方案的Redis可能會定期變更（在Heroku上會自動更新），但Local須手動更新
-REDIS_URL = "redis://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-3-224-233-154.compute-1.amazonaws.com:17649"
+REDIS_URL = "rediss://:pbd1c919e60c9b9e06d1319c520f313a722c6eb9e319dbc8dfcc19497c40397bb@ec2-54-163-124-151.compute-1.amazonaws.com:32260"
 REDIS_URL = os.environ.get('REDIS_URL', REDIS_URL)
 url = urlparse(REDIS_URL)
 
