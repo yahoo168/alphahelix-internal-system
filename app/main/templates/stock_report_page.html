@@ -8,7 +8,7 @@
       {% block title %}{{ item_meta["ticker"] }}: {{ item_meta["title"] }}{%
       endblock %}
     </title>
-    
+
     <style>
       p,
       h3,
@@ -59,7 +59,8 @@
             </div>
             <div class="col-md-4">
               <p class="card-text">
-                <strong>發布日期:</strong><span>{{item_meta["data_date_str"]}}</span>
+                <strong>發布日期:</strong
+                ><span>{{item_meta["data_date_str"]}}</span>
               </p>
             </div>
           </div>
@@ -117,7 +118,8 @@
       <!-- 全文/多/空摘要-->
       <div class="card" id="summary_section">
         <p id="summary_overview">
-          {{ item_meta["summary"]|replace('\n+', '<br />') | safe }}
+          {{ item_meta["text_summaries"]["full_text_summary"]|replace('\n+',
+          '<br />') | safe }}
         </p>
       </div>
 
@@ -219,9 +221,8 @@
 
       $(function () {
         $('[data-toggle="popover"]').popover();
+        // convertMarkdownText("summary_overview");
       });
-
-      //convertMarkdownText("summary_overview");
     </script>
   </body>
   {% endblock %}
