@@ -356,9 +356,6 @@ def investment_tracking_overview(tracking_type):
     
     # 取得所有active的item_meta_list
     item_meta_list = list(collection.find({"is_active": True}))
-    # 依照upload_timestamp排序（最新的在最前面）
-    item_meta_list.sort(key=lambda x: x['upload_timestamp'], reverse=True)
-    
     for item_meta in item_meta_list:
         item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
         item_meta["updated_timestamp"] = datetime2str(item_meta["updated_timestamp"])
@@ -397,8 +394,9 @@ def update_investment_tracking_status(tracking_type):
 
     return jsonify({"status": "success"})
 
-@main.route("/investment_assumption_review/<item_id>")
-def investment_assumption_review(item_id):
+# 待改：改為歷史紀錄
+@main.route("/investment_assumption_review_records/<item_id>")
+def investment_assumption_review_records(item_id):
     item_meta_list = list(MDB_client["published_content"]["assumption_review"].find({"assumption_id": ObjectId(item_id)}))
     item_title = ''
     if item_meta_list:
@@ -408,34 +406,27 @@ def investment_assumption_review(item_id):
     for item_meta in item_meta_list:
         item_meta["upload_timestamp"] = datetime2str(item_meta["upload_timestamp"])
     
-    # if item_meta_list:
-    #     _item_meta_list = [item_meta for _ in range(10)]
-    
     context = {
         "item_meta_list": item_meta_list,
         "item_title": item_title,
     }
     
+    return render_template("investment_assumption_review_records.html", **context)
+
+@main.route("/investment_assumption_review/<item_id>")
+def investment_assumption_review(item_id):
+    assumption_meta = MDB_client["users"]["investment_assumptions"].find_one({"_id": ObjectId(item_id)})
+    
+    review_meta = MDB_client["published_content"]["assumption_review"].find_one({"assumption_id": ObjectId(item_id)}, sort=[("data_timestamp", -1)])
+    review_meta["data_date_str"] = datetime2str(review_meta["data_timestamp"])
+    
+    context = {
+        "assumption_meta": assumption_meta,
+        "review_meta": review_meta,
+    }
+    
     return render_template("investment_assumption_review.html", **context)
 
-@main.route("/investment_issue_review_records/<item_id>")
-def investment_issue_review_records(item_id):
-    # 取得issue的基本資訊
-    issue_meta = MDB_client["users"]["following_issues"].find_one({"_id": ObjectId(item_id)})
-    issue_meta["upload_date_str"] = datetime2str(issue_meta["upload_timestamp"])
-    
-    # 取得issue_review的meta_list
-    issue_review_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(item_id)}))
-    issue_meta["review_num"] = len(issue_review_meta_list)
-    issue_review_meta_list = sorted(issue_review_meta_list, key=lambda x: x['data_timestamp'], reverse=True)
-    for item_meta in issue_review_meta_list:
-        item_meta["data_date_str"] = datetime2str(item_meta["data_timestamp"])
-        
-    context = {
-        "issue_meta": issue_meta,
-        "issue_review_meta_list": issue_review_meta_list,
-    }
-    return render_template("investment_issue_review_records.html", **context)
 
 @main.route("/investment_issue_review/<item_id>")
 def investment_issue_review(item_id):
@@ -481,6 +472,25 @@ def investment_issue_review(item_id):
         "other_report_meta_list": other_report_meta_list,
     }
     return render_template("investment_issue_review.html", **context)
+
+@main.route("/investment_issue_review_records/<item_id>")
+def investment_issue_review_records(item_id):
+    # 取得issue的基本資訊
+    issue_meta = MDB_client["users"]["following_issues"].find_one({"_id": ObjectId(item_id)})
+    issue_meta["upload_date_str"] = datetime2str(issue_meta["upload_timestamp"])
+    
+    # 取得issue_review的meta_list
+    issue_review_meta_list = list(MDB_client["published_content"]["issue_review"].find({"issue_id": ObjectId(item_id)}))
+    issue_meta["review_num"] = len(issue_review_meta_list)
+    issue_review_meta_list = sorted(issue_review_meta_list, key=lambda x: x['data_timestamp'], reverse=True)
+    for item_meta in issue_review_meta_list:
+        item_meta["data_date_str"] = datetime2str(item_meta["data_timestamp"])
+        
+    context = {
+        "issue_meta": issue_meta,
+        "issue_review_meta_list": issue_review_meta_list,
+    }
+    return render_template("investment_issue_review_records.html", **context)
 
 # IPhone在新興市場（中國、印度...）的銷售情況
 @main.route("/investment_issue_setting/<item_id>", methods=['POST'])

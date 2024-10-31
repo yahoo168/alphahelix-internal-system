@@ -258,7 +258,7 @@ def stock_document_page(market, doc_type, doc_id):
     doc_meta = beautify_document_for_display(doc_meta)
     
     issue_meta_list, hidden_issue_meta_list = [], []
-    for issue_meta in doc_meta.get("text_summaries", {}).get("issue_summaries", []):
+    for issue_meta in doc_meta.get("issue_summaries", []):
         # 將ObjectId轉為str，以便前端綁定於class
         issue_meta["issue_id"] = str(issue_meta["issue_id"])
         # 若issue_content字數大於10（AI可能產生部分無效字串），則判定文件存在該issue相關內容

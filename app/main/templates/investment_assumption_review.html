@@ -1,167 +1,161 @@
 <!DOCTYPE html>
-{% extends "_main_base.html" %}
+{% extends "_main_base.html" %} {% block head %}
 <head>
-  <!-- Bootstrap CSS -->
-  <link
-    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  {{ super() }}
+  <!-- 本頁面標題 -->
+  <title>{% block title %}{{ review_meta['assumption'] }}{% endblock %}</title>
+  <style>
+    p,
+    h3,
+    h4,
+    h5 {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
-
+{% endblock %}
 <body>
   {% block content %}
-  <div class="jumbotron text-center">
-    <h1>Assumption Review</h1>
+  <!-- 此處雖然非實際的目錄導引位置，但定位於此瀏覽時較為便利 -->
+  <div class="jumbotron text-center" id="table_of_sections">
+    <h1 class="display-4"><strong>投資議題</strong></h1>
     <hr class="my-4" />
     <a
-      class="btn btn-secondary btn"
-      href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
-      >回到目錄</a
+      class="btn btn-outline-dark"
+      href="{{ url_for('main.investment_tracking_overview', tracking_type='following_issues') }}"
     >
+      投資議題總覽
+    </a>
     <a
-      class="btn btn-secondary btn"
-      href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
-      >議題追蹤</a
+      class="btn btn-outline-dark"
+      href="{{ url_for('main.investment_tracking_overview', tracking_type='investment_assumptions') }}"
     >
+      投資假設總覽
+    </a>
   </div>
 
-  <div class="container mt-2 mx-6">
-    <h3 class="display-6"><strong>{{item_title[:100]}}</strong></h3>
+  <div class="container mt-2">
+    <h3 class="display-6"><strong></strong></h3>
+
+    <!-- Issue基本資訊 -->
     <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h3 class="mb-0">
+          假設: 「{{ review_meta['investment_assumption'] }}」
+        </h3>
+        <!-- 使用 d-flex justify-content-end 將按鈕推到右邊並保持對齊 -->
+        <div class="d-flex justify-content-end">
+          <a
+            href="{{ url_for('main.investment_assumption_review_records', item_id=assumption_meta['_id']) }}"
+            class="btn btn-outline-primary btn-sm ml-2"
+            >查看歷史紀錄</a
+          >
+        </div>
+      </div>
+
       <div class="card-body">
-        <!-- Table with hoverable rows -->
-        <div class="container mt-2 mx-6">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">Upload Date</th>
-                <th scope="col">Risk Score</th>
-                <th scope="col">Review Type</th>
-                <th scope="col">Status</th>
-                <th scope="col">Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item_meta in item_meta_list %}
-              <tr>
-                <td class="align-middle">
-                  {{ item_meta['upload_timestamp'] }}
-                </td>
-                <td class="align-middle">{{ item_meta['risk_score'] }}</td>
-                <td class="align-middle">Regular</td>
-                <td class="align-middle">None</td>
-                <td class="align-middle">
-                  <button
-                    class="btn btn-link"
-                    type="button"
-                    data-toggle="modal"
-                    data-target="#modal{{ loop.index }}"
-                  >
-                    <i class="bi bi-eye button-like"></i>
-                  </button>
-                </td>
-              </tr>
+        <div class="row">
+          <div class="col-md-12">
+            <p class="card-text">
+              <!-- Tickers -->
+              <strong>Tickers:</strong>
+              {% for ticker in assumption_meta['tickers'] %}
+              <a
+                class="tag"
+                style="color: black"
+                href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+                >{{ ticker }}</a
+              >
               {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal templates for each item -->
-  {% for item_meta in item_meta_list %}
-  <div
-    class="modal fade"
-    id="modal{{ loop.index }}"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="modalLabel{{ loop.index }}"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalLabel{{ loop.index }}">
-            <strong>{{item_meta['upload_timestamp']}} - Review</strong>
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          {{ item_meta.get("assumption_review", "").replace('\n', '<br />') |
-          safe }}
-        </div>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn btn-info">Check</button>
-          <button
-            type="button"
-            class="btn btn-warning show-input-btn"
-            data-index="{{ loop.index }}"
-          >
-            Comment
-          </button>
-          <button type="button" class="btn btn-dark" data-dismiss="modal">
-            Close
-          </button>
-        </div>
-        <!-- Hidden input fields -->
-        <div
-          id="inputField{{ loop.index }}"
-          class="input-field"
-          style="display: none; padding: 10px"
-        >
-          <label for="comment{{ loop.index }}">Add Comment</label>
-          <textarea
-            id="comment{{ loop.index }}"
-            class="form-control"
-            rows="3"
-            placeholder="Enter your comment here..."
-          ></textarea>
-          <label for="fileUpload{{ loop.index }}" style="margin-top: 10px"
-            >Upload Report</label
-          >
-          <input
-            type="file"
-            id="fileUpload{{ loop.index }}"
-            class="form-control-file"
-          />
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary">Upload</button>
+            </p>
           </div>
-          
+        </div>
+        <br />
+        <div class="row">
+          <div class="col-md-4">
+            <!-- 本次彙整更新日期 -->
+            <p class="card-text">
+              <strong>更新日期:</strong>
+              {% if review_meta['data_date_str'] %}
+              <span>{{ review_meta['data_date_str'] }}</span>
+              {% else %}
+              <span class="text-muted tag">本假設尚未檢核</span>
+              {% endif %}
+            </p>
+          </div>
+
+          <!-- risk_score -->
+          <div class="col-md-4">
+            <p class="card-text">
+              <strong>風險分數:</strong>
+              <span>{{ review_meta['risk_score'] }}</span>
+            </p>
+          </div>
+
+          <!-- 狀態 -->
+          <div class="col-md-4">
+            <p class="card-text text-end">
+              <strong>持續更新:</strong>
+              <span class="tag true-tag"
+                >{{ assumption_meta['is_active'] }}</span
+              >
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 目錄導引 -->
+    <!-- <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="mb-0">目錄</h3>
+      </div>
+
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li><strong>議題追蹤</strong></li>
+          <li>
+            <i class="bi bi-1-circle"></i>
+            <a href="#issue_market_concensus_and_diff">共識與差異</a>
+          </li>
+        </ul>
+      </div>
+    </div> -->
+
+    <!-- Issue Review Record List -->
+    <div class="mt-4">
+      <!-- 市場共識與差異 -->
+      <div class="card mb-4" id="issue_market_concensus_and_diff">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">假設檢核</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <p id="assumption_review">
+            {{ review_meta.get('assumption_review') | safe }}
+          </p>
         </div>
       </div>
     </div>
   </div>
-  {% endfor %}
-
-  <!-- JavaScript to control the input field visibility -->
-  <script>
-    $(document).ready(function () {
-      $(".show-input-btn").click(function () {
-        var index = $(this).data("index");
-        showInputField(index);
-      });
-    });
-
-    function showInputField(index) {
-      var inputField = $("#inputField" + index);
-      inputField.toggle();
-    }
-  </script>
-
-  <!-- Bootstrap JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <!-- 在頁尾添加額外的間距 -->
+  <div class="footer-spacing"></div>
 
   {% endblock %}
 </body>
+
+{% block scripts %} {{ super() }}
+<script>
+  convertMarkdownText("assumption_review");
+</script>
+
+{% endblock %}
