@@ -5,21 +5,23 @@
   <!-- 本頁面標題 -->
   <title>{% block title %}{{ review_meta['assumption'] }}{% endblock %}</title>
   <style>
-    p,
-    h3,
+    /* 用於調整標題的間距 */
+    h1 h2 h3,
     h4,
     h5 {
-      margin-top: 20px;
-      margin-bottom: 20px;
+      margin-top: 25px;
+      margin-bottom: 10px;
     }
   </style>
+  <!-- 引入 Plotly 庫 -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 {% endblock %}
 <body>
   {% block content %}
   <!-- 此處雖然非實際的目錄導引位置，但定位於此瀏覽時較為便利 -->
   <div class="jumbotron text-center" id="table_of_sections">
-    <h1 class="display-4"><strong>投資議題</strong></h1>
+    <h1 class="display-4"><strong>投資假設</strong></h1>
     <hr class="my-4" />
     <a
       class="btn btn-outline-dark"
@@ -108,31 +110,13 @@
       </div>
     </div>
 
-    <!-- 目錄導引 -->
-    <!-- <div class="card mt-4">
-      <div class="card-header">
-        <h3 class="mb-0">目錄</h3>
-      </div>
-
-      <div class="card-body">
-        <ul class="list-unstyled">
-          <li><strong>議題追蹤</strong></li>
-          <li>
-            <i class="bi bi-1-circle"></i>
-            <a href="#issue_market_concensus_and_diff">共識與差異</a>
-          </li>
-        </ul>
-      </div>
-    </div> -->
-
-    <!-- Issue Review Record List -->
+    <!-- 近況分析 -->
     <div class="mt-4">
-      <!-- 市場共識與差異 -->
-      <div class="card mb-4" id="issue_market_concensus_and_diff">
+      <div class="card mb-4" id="#">
         <div
           class="card-header d-flex justify-content-between align-items-center"
         >
-          <h3 class="mb-0">假設檢核</h3>
+          <h3 class="mb-0">近況分析</h3>
           <a
             href="#table_of_sections"
             class="btn btn-outline-secondary btn-sm float-end"
@@ -140,11 +124,64 @@
           >
         </div>
         <div class="card-body">
-          <p id="assumption_review">
+          <div id="assumption_review">
             {{ review_meta.get('assumption_review') | safe }}
-          </p>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- 風險評分(risk_assessment) -->
+    <div class="mt-4">
+      <div class="card mb-4" id="#">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">風險評分</h3>
+          <a
+            href="#table_of_sections"
+            class="btn btn-outline-secondary btn-sm float-end"
+            >回到導引列</a
+          >
+        </div>
+        <div class="card-body">
+          <div id="risk_assessment">
+            {{ review_meta.get('risk_assessment') | safe }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Score Graph -->
+    <div class="card">
+      <h3 class="card-header d-flex justify-content-between align-items-center">
+        Risk Score Trend
+        <i
+          type="button"
+          class="bi bi-question-circle button-like"
+          data-container="body"
+          data-toggle="popover"
+          data-placement="top"
+          data-content="計算標準：80分以上代表假設已接近被推翻；70-79分表示假設存在重大疑慮；60-69分為存在部分風險；59分以下表示假設維持良好。"
+        ></i>
+      </h3>
+      <!-- 用於渲染圖表的容器 -->
+      <div id="line-chart"></div>
+
+      <!-- 嵌入 JSON 數據 -->
+      <script type="application/json" id="graph-data">
+        {{ graphJSON | safe }}
+      </script>
+
+      <!-- 使用 Plotly 的 JavaScript 來渲染圖表 -->
+      <script type="text/javascript">
+        // 從 <script> 標籤中讀取 JSON 數據
+        var graphData = JSON.parse($("#graph-data").text());
+        // 設定禁用工具欄的配置
+        var config = { displayModeBar: false };
+        // 使用 Plotly 渲染圖表
+        Plotly.newPlot("line-chart", graphData.data, graphData.layout, config);
+      </script>
     </div>
   </div>
   <!-- 在頁尾添加額外的間距 -->
@@ -155,7 +192,8 @@
 
 {% block scripts %} {{ super() }}
 <script>
+  $('[data-toggle="popover"]').popover();
   convertMarkdownText("assumption_review");
+  convertMarkdownText("risk_assessment");
 </script>
-
 {% endblock %}

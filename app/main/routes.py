@@ -5,6 +5,9 @@ from flask_login import login_required, current_user
 import logging
 import pandas as pd
 import os, re
+import plotly
+import plotly.graph_objs as go
+import json
 
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
@@ -417,12 +420,43 @@ def investment_assumption_review_records(item_id):
 def investment_assumption_review(item_id):
     assumption_meta = MDB_client["users"]["investment_assumptions"].find_one({"_id": ObjectId(item_id)})
     
-    review_meta = MDB_client["published_content"]["assumption_review"].find_one({"assumption_id": ObjectId(item_id)}, sort=[("data_timestamp", -1)])
-    review_meta["data_date_str"] = datetime2str(review_meta["data_timestamp"])
+    review_meta_list = list(MDB_client["published_content"]["assumption_review"].find({"assumption_id": ObjectId(item_id)}, 
+                                                                                          sort=[("data_timestamp", -1)]))
+    
+    for item_meta in review_meta_list:
+        item_meta["data_date_str"] = datetime2str(item_meta["data_timestamp"])
+        
+    review_meta = review_meta_list[0]
+    
+    # 模擬的數據
+    risk_score_raw_data = [{"date": item_meta["data_date_str"], "score": item_meta["risk_score"]} for item_meta in review_meta_list]
+    risk_score_df = pd.DataFrame(risk_score_raw_data)
+    #df['date'] = pd.to_datetime(df['date']).dt.date  # 去除時間，只保留日期部分
+    
+    # 使用 Plotly 創建圖表
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=risk_score_df['date'],
+        y=risk_score_df['score'],
+        mode='lines+markers',
+        name='Score'
+    ))
+    fig.update_layout(
+        # title='Risk Score',
+        xaxis_title='Data',
+        yaxis_title='Score',
+        # xaxis=dict(
+        #     tickformat='%Y-%m-%d'  # 設置日期格式
+        # )
+    )
+
+    # 將圖表轉換為 JSON 格式，傳遞到前端
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     
     context = {
         "assumption_meta": assumption_meta,
         "review_meta": review_meta,
+        "graphJSON": graphJSON,
     }
     
     return render_template("investment_assumption_review.html", **context)

@@ -7,7 +7,7 @@ function handleFollowItem(apiUrl) {
     info: true, // 启用表格信息
     searching: true, // 启用搜索
     pageLength: 50, // 设置每页显示 50 条记录
-    order: [[3, 'desc']], // 强制根据第4列（upload timestamp）进行逆序排序
+    order: [[3, "desc"]], // 强制根据第4列（upload timestamp）进行逆序排序
   });
 
   $(document).on("click", ".follow-item", function () {
@@ -98,17 +98,26 @@ function wrapSubject(text) {
   });
 }
 
-function convertMarkdownText(ID) {
-  // 使用 jQuery 獲取指定的 <p> 元素
-  const $paragraph = $("#" + ID);
+// Function to convert sentences starting with "主題" into <h5> tags
+function wrapSubject(text) {
+  return text.replace(/(主題\d*：.*?)(<br>|$)/g, function (match, p1, p2) {
+    // 保留 <br> 或行尾符號
+    return "<h5>" + p1 + "</h5>" + (p2 === "<br>" ? "<br>" : "");
+  });
+}
 
-  if ($paragraph.length === 0) {
+function convertMarkdownText(ID) {
+  // 使用 jQuery 獲取指定的容器元素
+  const $container = $("#" + ID);
+
+  if ($container.length === 0) {
     console.error("Element with the given ID not found.");
     return;
   }
 
   // 獲取純文字內容
-  let text = $paragraph.text().trim(); // 移除兩端的空白字符以避免不必要的問題
+  let text = $container.text().trim(); // 移除兩端的空白字符以避免不必要的問題
+
   // 去除「```markdown」字串
   text = text.replace(/```markdown/g, "");
   text = text.replace(/```/g, "");
@@ -121,14 +130,17 @@ function convertMarkdownText(ID) {
   text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
   text = text.replace(/_(.*?)_/g, "<em>$1</em>");
 
-  // 替換 # 標題1 (h3)
-  text = text.replace(/^# (.*)/gm, "<h3>$1</h3>"); // 確保匹配行首的 `#`
+  // 替換 ### 標題3 (h5)
+  text = text.replace(/^### (.*)/gm, "<h5>$1</h5>");
+  console.log("After replacing ###:", text);
 
   // 替換 ## 標題2 (h4)
   text = text.replace(/^## (.*)/gm, "<h4>$1</h4>");
+  console.log("After replacing ##:", text);
 
-  // 替換 ### 標題3 (h5)
-  text = text.replace(/^### (.*)/gm, "<h5>$1</h5>");
+  // 替換 # 標題1 (h3)
+  text = text.replace(/^# (.*)/gm, "<h3>$1</h3>");
+  console.log("After replacing #:", text);
 
   // 將連續兩個或更多的 \n 替換為單個 \n
   text = text.replace(/\n{2,}/g, "\n");
@@ -144,8 +156,15 @@ function convertMarkdownText(ID) {
   // 將行重新合併成字符串
   text = lines.join("\n");
 
-  // 更新段落的 HTML 內容
-  $paragraph.html(text);
+  // 替換換行符為 <br>
+  text = text.replace(/\n/g, "<br>");
+
+  // 調用 wrapSubject 函數
+  text = wrapSubject(text);
+  console.log("After wrapSubject:", text);
+
+  // 更新容器的 HTML 內容
+  $container.html(text);
 }
 
 // 處理搜尋Ticker輸入事件的函數，包含模板生成邏輯
