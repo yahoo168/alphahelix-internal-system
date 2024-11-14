@@ -31,6 +31,7 @@
         </span>
         <i class="bi bi-caret-down-fill"></i>
       </a>
+
       <ul class="nav flex-column collapse submenu" id="researchManagement">
         <!-- Coverage -->
         <li class="nav-item">
@@ -46,6 +47,26 @@
             href="{{url_for('main.internal_investment_report_overview')}}"
             >研究紀錄</a
           >
+        </li>
+
+        <!-- 投資議題 -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
+          >
+            投資議題
+          </a>
+        </li>
+
+        <!-- 投資假設 -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
+          >
+            投資假設
+          </a>
         </li>
       </ul>
     </li>
@@ -69,6 +90,17 @@
         <i class="bi bi-caret-down-fill"></i>
       </a>
       <ul class="nav flex-column collapse submenu" id="researchToolsSubmenu">
+        <!-- AI初次研究（prompt） -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="https://finance-jeff.notion.site/AI-Prompt-136f095fb5f280878213e3a245c14670"
+            target="_blank"
+          >
+            AI初次研究
+          </a>
+        </li>
+
         <!-- 研究文件查詢 -->
         <li class="nav-item">
           <a
@@ -78,6 +110,7 @@
             研究文件查詢
           </a>
         </li>
+
         <!-- 新聞總結 -->
         <li class="nav-item">
           <a class="nav-link" href="{{url_for('main.ticker_news_overview')}}">
@@ -90,22 +123,7 @@
             個股事件
           </a>
         </li>
-        <li class="nav-item">
-          <a
-            class="nav-link"
-            href="{{url_for('main.investment_tracking_overview', tracking_type='following_issues')}}"
-          >
-            投資議題
-          </a>
-        </li>
-        <li class="nav-item">
-          <a
-            class="nav-link"
-            href="{{url_for('main.investment_tracking_overview', tracking_type='investment_assumptions')}}"
-          >
-            投資假設
-          </a>
-        </li>
+
         <li class="nav-item">
           <a class="nav-link" href="{{url_for('main.note_search_page')}}">
             研究筆記
