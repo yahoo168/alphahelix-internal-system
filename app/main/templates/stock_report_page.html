@@ -10,12 +10,11 @@
     </title>
 
     <style>
-      p,
       h3,
       h4,
       h5 {
         margin-top: 20px;
-        margin-bottom: 20px;
+        /* margin-bottom: 20px; */
       }
     </style>
   </head>
@@ -118,8 +117,9 @@
       <!-- 全文/多/空摘要-->
       <div class="card" id="summary_section">
         <p id="summary_overview">
-          {{ item_meta["text_summaries"]["full_text_summary"]|replace('\n+',
-          '<br />') | safe }}
+          <!-- {{ item_meta["text_summaries"]["full_text_summary"]|replace('\n+',
+          '<br />') | safe }} -->
+          {{ item_meta["text_summaries"]["full_text_summary"]}}
         </p>
       </div>
 

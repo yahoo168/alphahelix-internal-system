@@ -26,6 +26,14 @@
         <div class="card-body">
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group">
+              <label for="author_type">Author Type</label>
+              <select class="form-control" id="author_type" name="author_type" required>
+                <option value="normal">Normal</option>
+                <option value="tracking">Tracking</option>
+              </select>
+            </div>
+
+            <div class="form-group">
               <label for="ticker">Ticker</label>
               <input
                 type="text"
@@ -98,5 +106,16 @@
 <script>
   var apiUrl = "{{ url_for('main.upload_market_stock_report') }}";
   UploadReport(apiUrl);
+
+  $(document).ready(function () {
+    $("#author_type").change(function () {
+      const tickerInput = $("#ticker");
+      if ($(this).val() === "tracking") {
+        tickerInput.removeAttr("required").attr("placeholder", "若報告來自追蹤作者，ticker可選擇是否留空");
+      } else {
+        tickerInput.attr("required", "required").attr("placeholder", "ex: AAPL(僅能填寫一個)");
+      }
+    });
+  });
 </script>
 {% endblock %}

@@ -37,9 +37,9 @@ def _upload_files_to_gcs_and_mdb(gcs_bucket_name, blob_meta_list, mongoDB_collec
 def _generate_blob_and_mongo_metadata(file_list, tickers, gcs_folder_name, specified_data_timestamp=None, extra_meta=None):
     blob_meta_list, mongoDB_meta_list = [], []
     
-    # 若tickers為str，則轉換為list
+    # 若tickers為非空的str (直接給定個股ticker)，則轉換為list
     if not isinstance(tickers, list):
-        tickers = [tickers]
+        tickers = [tickers] if tickers else []
         
     for file in file_list:
         # 若沒有明確指定data_timestamp，則以檔名前10位作為日期
@@ -59,12 +59,12 @@ def _generate_blob_and_mongo_metadata(file_list, tickers, gcs_folder_name, speci
         upload_timestamp_unix = int(upload_timestamp.timestamp())
         current_user_id_str = current_user.get_id()
         
-        # 生成blob名稱：若為單一個股報告，則以ticker為子資料夾名稱；若為行業報告，則不設子資料夾
+        # 生成blob名稱：若為單一個股報告，則以ticker為子資料夾名稱；若為行業報告（或暫無特定ticker的報告），則不設子資料夾
         # 在檔案名稱前加上上傳時間戳記，以避免重複檔名（會導致檔案覆蓋）
-        if len(tickers) == 1:
+        if len(tickers) >= 1:
             blob_name = os.path.join(gcs_folder_name, tickers[0], f"{upload_timestamp_unix}_{file.filename}")
         else:
-            blob_name = os.path.join(gcs_folder_name,f"{upload_timestamp_unix}_{file.filename}")
+            blob_name = os.path.join(gcs_folder_name, f"{upload_timestamp_unix}_{file.filename}")
             
         blob_meta = {
             "blob_name": blob_name,
@@ -138,7 +138,6 @@ def upload_internal_stock_report():
         
         blob_meta_list, mongoDB_meta_list = _generate_blob_and_mongo_metadata(file_list, tickers, gcs_folder_name, extra_meta=extra_meta)
         
-        
         mongoDB_collection = MDB_client["research_admin"]["internal_investment_report"]
         _upload_files_to_gcs_and_mdb(gcs_bucket_name, blob_meta_list, mongoDB_collection, mongoDB_meta_list)
         
@@ -158,12 +157,12 @@ def upload_internal_stock_report():
 #@us_market_stock_report_upload_perm.require(http_exception=403)
 @login_required
 def upload_market_stock_report():
-    ticker, source, file_list = request.form["ticker"], request.form["source"], request.files.getlist('files')
+    author_type, ticker, source, file_list = request.form["author_type"], request.form["ticker"], request.form["source"], request.files.getlist('files')
+
     # 檢查檔名是否符合規定
     file_name_list = [file.filename for file in file_list]
     # 若有檔名命名錯誤，紀錄在error_file_name_list，並跳轉回頁面顯示
     error_file_name_list = check_report_name_is_valid(file_name_list)
-    
     if len(error_file_name_list) > 0:
         return jsonify({
             'upload_success': False,
@@ -173,8 +172,19 @@ def upload_market_stock_report():
     # GSC file path
     gcs_bucket_name, gcs_folder_name = "investment_report", "US_stock_report"
     
+    # 依照author_type和source選擇author_level （1: 投資論壇（Seeking Alpha）、2: 券商投行、3: 追蹤作者、4: 特定專家）
+    if author_type == "normal":
+        if source == "seeking_alpha":
+            author_level = 1
+        else:
+            author_level = 2
+            
+    elif author_type == "tracking":
+        author_level = 3
+    
     extra_meta = {
-        "source": source
+        "source": source,
+        "author_level": author_level,
     }
     
     blob_meta_list, mongoDB_meta_list = _generate_blob_and_mongo_metadata(file_list, ticker, gcs_folder_name, extra_meta=extra_meta)

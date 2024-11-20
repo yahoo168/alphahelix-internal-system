@@ -132,36 +132,33 @@ function convertMarkdownText(ID) {
 
   // 替換 ### 標題3 (h5)
   text = text.replace(/^###\s*(.*)/gm, "<h5>$1</h5>");
-  console.log("After replacing ###:", text);
 
   // 替換 ## 標題2 (h4)
   text = text.replace(/^##\s*(.*)/gm, "<h4>$1</h5>");
-  console.log("After replacing ##:", text);
 
   // 替換 # 標題1 (h3)
   text = text.replace(/^#\s*(.*)/gm, "<h3>$1</h5>");
-  console.log("After replacing #:", text);
-
+  
   // 將連續兩個或更多的 \n 替換為單個 \n
   text = text.replace(/\n{2,}/g, "\n");
-
-  // 將文本拆分為每行並手動檢查每行
-  let lines = text.split("\n");
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i].startsWith("- ") && !lines[i - 1].match(/^<\/?h[1-6]>/)) {
-      lines[i] = "<br>" + lines[i];
-    }
-  }
-
-  // 將行重新合併成字符串
-  text = lines.join("\n");
 
   // 替換換行符為 <br>
   text = text.replace(/\n/g, "<br>");
 
+  // 將文本拆分為每行並手動檢查每行
+  // let lines = text.split("\n");
+  // for (let i = 1; i < lines.length; i++) {
+  //   if (lines[i].startsWith("- ") && !lines[i - 1].match(/^<\/?h[1-6]>/)) {
+  //     lines[i] = "<br>" + lines[i];
+  //   }
+  // }
+
+  // // 將行重新合併成字符串
+  // text = lines.join("\n");
+
   // 調用 wrapSubject 函數
-  text = wrapSubject(text);
-  console.log("After wrapSubject:", text);
+  // text = wrapSubject(text);
+  // console.log("After wrapSubject:", text);
 
   // 更新容器的 HTML 內容
   $container.html(text);
