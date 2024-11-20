@@ -584,6 +584,10 @@ def ticker_event_overview():
         
     return render_template("ticker_event_overview.html", event_meta_list=event_meta_list)
 
+@main.route("/value_chain", methods=['GET', 'POST'])
+def value_chain():
+    return render_template("server_value_chain.html")
+
 @main.route('/<page>')
 @login_required
 def render_static_html(page):

@@ -91,16 +91,22 @@ show_source=True) %}
       <td style="white-space: nowrap">{{ item_meta['data_date_str'] }}</td>
       <!-- Author -->
       <td style="white-space: nowrap">{{ item_meta['author'] }}</td>
+      
       <!-- Tickers -->
+      <!-- 若ticker數量 >4，省略並顯示縮略符 -->
       <td>
-        {% for ticker in item_meta['tickers'] %}
+        {% set max_tickers = 6 %} {% for ticker in
+        item_meta['tickers'][:max_tickers-1] %}
         <a
           class="tag true-tag"
           href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
           >{{ ticker }}</a
         >
-        {% endfor %}
+        {% endfor %} {% if item_meta['tickers']|length > max_tickers %}
+        <a class="tag true-tag" href="#">...</a>
+        {% endif %}
       </td>
+
       <!-- Report Type -->
       <td style="white-space: nowrap">
         <span class="tag">{{ item_meta['report_type'] }}</span>

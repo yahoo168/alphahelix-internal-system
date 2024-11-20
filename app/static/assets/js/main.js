@@ -131,15 +131,15 @@ function convertMarkdownText(ID) {
   text = text.replace(/_(.*?)_/g, "<em>$1</em>");
 
   // 替換 ### 標題3 (h5)
-  text = text.replace(/^### (.*)/gm, "<h5>$1</h5>");
+  text = text.replace(/^###\s*(.*)/gm, "<h5>$1</h5>");
   console.log("After replacing ###:", text);
 
   // 替換 ## 標題2 (h4)
-  text = text.replace(/^## (.*)/gm, "<h4>$1</h4>");
+  text = text.replace(/^##\s*(.*)/gm, "<h4>$1</h5>");
   console.log("After replacing ##:", text);
 
   // 替換 # 標題1 (h3)
-  text = text.replace(/^# (.*)/gm, "<h3>$1</h3>");
+  text = text.replace(/^#\s*(.*)/gm, "<h3>$1</h5>");
   console.log("After replacing #:", text);
 
   // 將連續兩個或更多的 \n 替換為單個 \n

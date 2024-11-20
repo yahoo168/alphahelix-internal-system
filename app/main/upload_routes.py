@@ -262,7 +262,7 @@ def create_ticker_info_page():
                                                                 ))
     
     for user_meta in user_meta_list:
-        # Capitalize the first letter of each word in a string?
+        # Capitalize the first letter of each word in a string.
         user_meta["username"] = ' '.join(user_meta["username"].split("_")).title()
         
     return render_template("ticker_info_create.html", user_meta_list=user_meta_list)

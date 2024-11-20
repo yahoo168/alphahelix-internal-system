@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  {% extends "_main_base.html" %}
+  {% block head %}
+  <head>
+    <title>{% block title %}Value Chain - Server{% endblock %}</title>
+    {{ super() }}
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css"
+    />
+    <style>
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        padding-left: 20px; /* 與圖片左側 padding 對齊 */
+      }
+      .head-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      .image-container {
+        flex: 3;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+      .image-container img {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+      }
+      .directory {
+        flex: 1;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+      .directory h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+        text-align: center;
+        color: #333;
+      }
+      .directory table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .directory th,
+      .directory td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+      }
+      .directory th {
+        background-color: #e9ecef;
+        font-weight: bold;
+      }
+      .directory a {
+        color: #333;
+        font-weight: 500;
+        text-decoration: underline; /* 添加下劃線 */
+        transition: color 0.3s;
+      }
+      .directory a:hover {
+        color: #007bff;
+      }
+    </style>
+  </head>
+  {% endblock %}
+  {% block content %}
+  <body>
+    <div class="container">
+      <h1>伺服器產業鏈</h1>
+
+      <div class="head-container">
+        <!-- 左側圖片 -->
+        <div class="image-container">
+          <img
+            src="{{ url_for('static', filename='assets/img/value_chain_server.jpg') }}"
+            alt="伺服器產業鏈"
+          />
+        </div>
+
+        <!-- 右側目錄 -->
+        <div class="directory">
+          <h2>目錄</h2>
+          <table>
+            <tr>
+              <th>分類</th>
+              <th>子分類</th>
+            </tr>
+            <tr>
+              <td>ODM</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>PCB</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>運算晶片</td>
+              <td>
+                <a href="#gpu_section">GPU</a><br />
+                <a href="#cpu_section">CPU</a><br />
+                <a href="#ip_section">IP設計</a>
+              </td>
+            </tr>
+            <tr>
+              <td>記憶體</td>
+              <td>
+                <a href="#dram_section">DRAM</a><br />
+                <a href="#flash_section">Flash</a><br />
+                <a href="#hdd_section">HDD</a>
+              </td>
+            </tr>
+            <tr>
+              <td><a href="#brand_section">品牌廠</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><a href="#cooling_section">散熱</a></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>其他組件</td>
+              <td>
+                <a href="#bmc_section">BMC</a><br />
+                <a href="#high_speed_section">高速傳輸</a><br />
+                <a href="#connector_section">連接器</a><br />
+                <a href="#power_supply_section">電源供應器</a><br />
+                <a href="#chassis_section">機殼</a>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
