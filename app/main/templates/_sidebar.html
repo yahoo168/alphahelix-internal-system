@@ -90,6 +90,17 @@
         <i class="bi bi-caret-down-fill"></i>
       </a>
       <ul class="nav flex-column collapse submenu" id="researchToolsSubmenu">
+        <!-- Stock Pick -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="{{ url_for('main.stock_pick_overview') }}"
+            target="_blank"
+          >
+            <i class="fa-regular fa-lightbulb icon-spacing"></i> Stock Pick
+          </a>
+        </li>
+
         <!-- AI初次研究（prompt） -->
         <li class="nav-item">
           <a
@@ -117,14 +128,14 @@
             新聞總結
           </a>
         </li>
-        
+
         <!-- 個股事件 -->
         <li class="nav-item">
           <a class="nav-link" href="{{url_for('main.ticker_event_overview')}}">
             個股事件
           </a>
         </li>
-        
+
         <!-- 研究筆記 -->
         <li class="nav-item">
           <a class="nav-link" href="{{url_for('main.note_search_page')}}">
@@ -303,9 +314,7 @@
         </li>
         <!-- 功能測試 -->
         <li class="nav-item">
-          <a
-            class="nav-link"
-            href="{{url_for('main.value_chain')}}"
+          <a class="nav-link" href="{{url_for('main.value_chain')}}"
             >功能測試</a
           >
         </li>

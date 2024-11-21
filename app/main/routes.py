@@ -588,6 +588,31 @@ def ticker_event_overview():
 def value_chain():
     return render_template("server_value_chain.html")
 
+@main.route("/stock_pick_overview", methods=['GET'])
+def stock_pick_overview():
+    review_meta_list = list(MDB_client["published_content"]['stock_pick_review'].find({}, 
+                                                                                      sort=[("data_timestamp", -1)], 
+                                                                                      projection={"_id": 1, "data_timestamp": 1, "tickers": 1},
+                                                                                      limit=14))
+    for item_meta in review_meta_list:
+        item_meta["data_date_str"] = datetime2str(item_meta["data_timestamp"])
+    return render_template("stock_pick_overview.html", review_meta_list=review_meta_list)
+
+@main.route("/stock_pick_review/<item_id>")
+def stock_pick_review(item_id):
+    review_meta = MDB_client["published_content"]['stock_pick_review'].find_one({"_id": ObjectId(item_id)})
+    review_meta["data_date_str"] = datetime2str(review_meta["data_timestamp"])
+    
+    ref_report_id_list = review_meta.get("ref_report_id", [])
+    ref_report_meta_list = list(MDB_client["preprocessed_content"]["stock_report"].find({"_id": {"$in": ref_report_id_list}}))
+    ref_report_meta_list.sort(key=lambda x: x["data_timestamp"], reverse=True)
+    
+    for item_meta in ref_report_meta_list:
+        beautify_document_for_display(item_meta)
+        item_meta["read_url"] = url_for("main.stock_document_page", market="US", doc_type="stock_report", doc_id=item_meta["_id"])
+        
+    return render_template("stock_pick_review.html", review_meta=review_meta, ref_report_meta_list=ref_report_meta_list)
+
 @main.route('/<page>')
 @login_required
 def render_static_html(page):

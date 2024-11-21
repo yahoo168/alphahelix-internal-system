@@ -9,14 +9,7 @@
       endblock %}
     </title>
 
-    <style>
-      h3,
-      h4,
-      h5 {
-        margin-top: 20px;
-        /* margin-bottom: 20px; */
-      }
-    </style>
+
   </head>
 
   {% endblock %} {% block content %}
@@ -114,11 +107,9 @@
         </div>
       </div>
 
-      <!-- 全文/多/空摘要-->
+      <!-- 全文摘要-->
       <div class="card" id="summary_section">
         <p id="summary_overview">
-          <!-- {{ item_meta["text_summaries"]["full_text_summary"]|replace('\n+',
-          '<br />') | safe }} -->
           {{ item_meta["text_summaries"]["full_text_summary"]}}
         </p>
       </div>
@@ -210,15 +201,6 @@
 
     <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
     <script>
-      // 使用正則表達式找到「共識點」和「差異點」所在的行，並替換為<h3>標籤
-      // 辨識到「共識點」或「差異點」後，刪除其後面可能連接的':'或'：'
-      // $("#summary_overview").html(function (_, html) {
-      //   return html.replace(
-      //     /(全文摘要|看多論點|看多论点|看空論點|看空论点)/g,
-      //     "<h3>$1</h3>"
-      //   );
-      // });
-
       $(function () {
         $('[data-toggle="popover"]').popover();
         convertMarkdownText("summary_overview");

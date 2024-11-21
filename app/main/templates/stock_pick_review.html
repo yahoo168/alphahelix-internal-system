@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <title>
+    {% block title %}Stock Pick: {{review_meta['data_date_str']}}{% endblock %}
+  </title>
+  <head>
+    {{ super() }}
+
+    <style>
+      h3,
+      h4,
+      h5 {
+        margin-top: 20px;
+        /* margin-bottom: 20px; */
+      }
+    </style>
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="container mt-5">
+      <!-- 報告資訊 -->
+      <div class="card mb-4">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">標題: 個股推薦日報</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-8">
+              <p class="card-text">
+                <strong>Ticker:</strong>
+                {% for ticker in review_meta["tickers"] %}
+                <a
+                  class="tag true-tag"
+                  href="{{ url_for('main.ticker_market_info', ticker=ticker) }}"
+                  >{{ticker}}</a
+                >
+                {% endfor %}
+              </p>
+            </div>
+
+            <div class="col-md-4">
+              <p class="card-text">
+                <strong>發布日期:</strong
+                ><span>{{review_meta["data_date_str"]}}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <p id="review_text">{{review_meta["stock_pick_review"]}}</p>
+        </div>
+      </div>
+
+      <div class="card" id="added_report">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">報告來源</h3>
+        </div>
+
+        <!-- 新增參考報告（table） -->
+        {% from 'macros/stock_document_table.html' import
+        render_stock_document_table %}
+        {{render_stock_document_table(ref_report_meta_list) }}
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
+
+{% block scripts %} {{ super() }}
+<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+<script>
+  convertMarkdownText("review_text");
+</script>
+{% endblock %}

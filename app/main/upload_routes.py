@@ -321,8 +321,10 @@ def market_stock_report_upload_record():
         
     record_meta_list = pool_list_db.get_market_report_upload_record(monitor_period_days)
     id_to_username_mapping_dict = pool_list_db.get_id_to_username_mapping_dict()
+    
     # Sort the list by ticker(Alphabetical order)
-    record_meta_list.sort(key=lambda x: x["ticker"])
+    record_meta_list.sort(key=lambda x: x.get("ticker") or "")
+    
     for record_meta in record_meta_list:
         record_meta["uploader"] = id_to_username_mapping_dict.get(record_meta["uploader"], "Unknown").replace("_", " ").title()
         # 轉換時區（UTC to local）

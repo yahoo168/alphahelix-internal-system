@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+{% extends "_main_base.html" %}
+<html>
+  {% block head %}
+  <title>{% block title %}Stock Pick Review{% endblock %}</title>
+  <head>
+    {{ super() }}
+  </head>
+  {% endblock %} {% block content %}
+  <body>
+    <div class="container mt-2 mx-6">
+      <div class="card" style="margin-top: 200px; max-width: 100%">
+        <div class="card-body">
+          <h5 class="card-title">Stock Pick Review</h5>
+          <p class="card-text">
+            This page shows the stock picks that have been reviewed.
+          </p>
+        </div>
+        <div class="card-body">
+          <!-- Table with hoverable rows -->
+          <table id="Table" class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Date</th>
+                <th scope="col">Stock Picks</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item_meta in review_meta_list %}
+              <tr>
+                <!-- Row number (using th for strong fontsize)-->
+                <th scope="row">{{loop.index}}</th>
+                <td scope="row">{{item_meta["data_date_str"]}}</td>
+                <td scope="row" style="text-align: left">
+                  {% for ticker in item_meta["tickers"] %}
+                  <span class="tag true-tag">{{ticker}}</span>
+                  {% endfor %}
+                </td>
+                <td scope="row">
+                  <a
+                    href="{{ url_for('main.stock_pick_review', item_id=item_meta['_id']) }}"
+                  >
+                    <i class="bi bi-eye button-like"></i
+                  ></a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+  {% endblock %}
+</html>
+
+{% block scripts %}
+<script>
+  {
+    {
+      super();
+    }
+  }
+</script>
+{% endblock %}
