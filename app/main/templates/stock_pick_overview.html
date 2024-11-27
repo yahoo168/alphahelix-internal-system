@@ -5,16 +5,19 @@
   <title>{% block title %}Stock Pick Review{% endblock %}</title>
   <head>
     {{ super() }}
+    <style>
+      .container {
+        max-width: 65%;
+        background: #fff;
+      }
+    </style>
   </head>
   {% endblock %} {% block content %}
   <body>
     <div class="container mt-2 mx-6">
       <div class="card" style="margin-top: 200px; max-width: 100%">
         <div class="card-body">
-          <h5 class="card-title">Stock Pick Review</h5>
-          <p class="card-text">
-            This page shows the stock picks that have been reviewed.
-          </p>
+          <h3 class="card-title">Stock Pick Review</h3>
         </div>
         <div class="card-body">
           <!-- Table with hoverable rows -->
@@ -23,8 +26,8 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Date</th>
+                <th scope="col">Read</th>
                 <th scope="col">Stock Picks</th>
-                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>
@@ -32,18 +35,24 @@
               <tr>
                 <!-- Row number (using th for strong fontsize)-->
                 <th scope="row">{{loop.index}}</th>
+
+                <!-- Date -->
                 <td scope="row">{{item_meta["data_date_str"]}}</td>
-                <td scope="row" style="text-align: left">
-                  {% for ticker in item_meta["tickers"] %}
-                  <span class="tag true-tag">{{ticker}}</span>
-                  {% endfor %}
-                </td>
+
+                <!-- Read Button -->
                 <td scope="row">
                   <a
                     href="{{ url_for('main.stock_pick_review', item_id=item_meta['_id']) }}"
                   >
-                    <i class="bi bi-eye button-like"></i
-                  ></a>
+                    <i class="fa-solid fa-link button-like"></i>
+                  </a>
+                </td>
+
+                <!-- Ticker List -->
+                <td scope="row" style="text-align: left">
+                  {% for ticker in item_meta["tickers"] %}
+                  <span class="tag true-tag">{{ticker}}</span>
+                  {% endfor %}
                 </td>
               </tr>
               {% endfor %}

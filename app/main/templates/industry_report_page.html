@@ -54,24 +54,66 @@
       <h1 class="display-4"><strong>行業報告</strong></h1>
       <hr class="my-4" />
     </div>
+    <div class="container">
+      <div class="card mb-4">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h3 class="mb-0">標題: {{item_meta["title"]}}</h3>
+          <a href="{{item_meta['url']}}" target="_blank" class="btn btn-outline-dark"
+            >查看原文</a
+          >
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="card-text">
+                <strong>報告來源:</strong>
+                <span>{{item_meta["source"]}}</span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p class="card-text">
+                <strong>發布日期:</strong
+                ><span>{{item_meta["data_date_str"]}}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <div class="container mt-4">
+      <!-- 全文摘要 -->
+      <div class="card" id="summary_section">
+        <div class="card-header">
+          <h3 class="mb-0">全文摘要</h3>
+        </div>
+        <div class="card-body">
+          <p id="summary_overview">
+            {{ item_meta["text_summaries"]["full_text_summary"]}}
+          </p>
+        </div>
+      </div>
+
       <!-- 圖片目錄導引 -->
-      <div class="image-nav">
-        <strong>圖片目錄：</strong>
-        <ul>
-          {% for image_meta in item_meta['image_summary'] %}
-          <li>
-            <a
-              href="javascript:void(0)"
-              class="image-link"
-              data-target="{{ loop.index }}"
-            >
-              圖{{ loop.index }}: {{ image_meta['caption'] }}
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">相關圖片</h3>
+        </div>
+        <div class="image-nav">
+          <ul>
+            {% for image_meta in item_meta['image_summary'] %}
+            <li>
+              <a
+                href="javascript:void(0)"
+                class="image-link"
+                data-target="{{ loop.index }}"
+              >
+                圖{{ loop.index }}: {{ image_meta['caption'] }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
 
       <!-- 圖片展示區 -->
@@ -151,6 +193,9 @@
           // 找到對應 index 的圖片連結，並模擬點擊以打開彈出視窗
           $('.image-popup[data-index="' + targetIndex + '"]').click();
         });
+
+        // Markdown格式轉換
+        convertMarkdownText("summary_overview");
       });
     </script>
   </body>

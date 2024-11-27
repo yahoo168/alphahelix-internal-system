@@ -146,7 +146,6 @@
             id="allTextSearch"
             type="text"
             class="form-control search-input"
-            placeholder="# 搜尋功能開發中，僅供測試..."
             aria-label="Search"
           />
 
@@ -204,7 +203,7 @@
         >
           <div class="card-body">
             <i class="fa-solid fa-newspaper" style="margin-right: 8px"></i>
-            新聞彙整
+            每日彙整
           </div>
           <div
             class="card-footer d-flex align-items-center justify-content-between"
@@ -213,7 +212,13 @@
               class="btn function-card-link-btn function-card-blue-btn"
               href="{{url_for('main.ticker_news_overview')}}"
             >
-              每日新聞
+              新聞總結
+            </a>
+            <a
+              class="btn function-card-link-btn function-card-blue-btn"
+              href="{{ url_for('main.stock_pick_overview') }}"
+            >
+              推薦清單
             </a>
           </div>
         </div>
